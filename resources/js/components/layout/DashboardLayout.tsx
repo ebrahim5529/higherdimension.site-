@@ -1,0 +1,142 @@
+/** @jsxImportSource react */
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { router, usePage } from '@inertiajs/react';
+import { Sidebar } from './Sidebar';
+import { Header } from './Header';
+
+interface DashboardLayoutProps {
+  children: React.ReactNode;
+}
+
+interface PageProps {
+  auth?: {
+    user?: any;
+  };
+}
+
+export default function DashboardLayout({
+  children,
+}: DashboardLayoutProps) {
+  const { auth } = usePage<PageProps>().props;
+  const [activeSection, setActiveSection] = useState('main-dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const pathToSectionMap = useMemo(
+    () => ({
+      '/dashboard': 'main-dashboard',
+      '/dashboard/dashboard-interactive': 'dashboard-interactive',
+      '/dashboard/operations-reports': 'operations-reports',
+      '/dashboard/customer-reports': 'customer-reports',
+      '/dashboard/customer-management': 'customer-management',
+      '/dashboard/customer-contracts': 'customer-contracts',
+      '/dashboard/customer-claims': 'customer-claims',
+      '/dashboard/supplier-management': 'supplier-management',
+      '/dashboard/supplier-invoices': 'supplier-invoices',
+      '/dashboard/supplier-purchases': 'supplier-purchases',
+      '/dashboard/inventory-status': 'inventory-status',
+      '/dashboard/purchase-equipment': 'purchase-equipment',
+      '/dashboard/purchases-list': 'purchases-list',
+      '/dashboard/contract-management': 'contract-management',
+      '/dashboard/active-contracts': 'active-contracts',
+      '/dashboard/expired-contracts': 'expired-contracts',
+      '/dashboard/cancelled-contracts': 'cancelled-contracts',
+      '/dashboard/electronic-signature': 'electronic-signature',
+      '/dashboard/delivery-orders': 'delivery-orders',
+      '/dashboard/shipping-tracking': 'shipping-tracking',
+      '/dashboard/delivery-receipt': 'delivery-receipt',
+      '/dashboard/return-inspection': 'return-inspection',
+      '/dashboard/payment-management': 'payment-management',
+      '/dashboard/purchase-management': 'purchase-management',
+      '/dashboard/invoices': 'invoices',
+      '/dashboard/financial-reports': 'financial-reports',
+      '/dashboard/employee-management': 'employee-management',
+      '/dashboard/salaries': 'salaries',
+      '/dashboard/incentives': 'incentives',
+      '/dashboard/attendance': 'attendance',
+      '/dashboard/departments': 'departments',
+      '/dashboard/leaves': 'leaves',
+      '/dashboard/user-roles': 'user-roles',
+      '/dashboard/permission-groups': 'permission-groups',
+      '/dashboard/access-control': 'access-control',
+      '/dashboard/security-settings': 'security-settings',
+      '/dashboard/audit-trail': 'audit-trail',
+      '/dashboard/login-monitoring': 'login-monitoring',
+      '/dashboard/installment-plans': 'installment-plans',
+      '/dashboard/payment-schedules': 'payment-schedules',
+      '/dashboard/installment-tracking': 'installment-tracking',
+      '/dashboard/late-payments': 'late-payments',
+      '/dashboard/payment-methods': 'payment-methods',
+      '/dashboard/installment-reports': 'installment-reports',
+    }),
+    []
+  );
+
+  const getActiveSection = useCallback(
+    (url: string) => {
+      if (url.startsWith('/dashboard/contract-details/')) {
+        return 'contract-management';
+      }
+      return (pathToSectionMap as Record<string, string>)[url] || 'main-dashboard';
+    },
+    [pathToSectionMap]
+  );
+
+  useEffect(() => {
+    const url = window.location.pathname;
+    const newSection = getActiveSection(url);
+    if (newSection !== activeSection) {
+      setActiveSection(newSection);
+    }
+  }, [getActiveSection, activeSection]);
+
+  const handleToggleSidebar = useCallback(() => {
+    setIsSidebarOpen((prev) => !prev);
+  }, []);
+
+  const handleCloseSidebar = useCallback(() => {
+    setIsSidebarOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (!auth?.user) {
+      router.visit('/login');
+    }
+  }, [auth]);
+
+  if (!auth?.user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">جاري التحميل...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="flex flex-col lg:flex-row">
+        {isSidebarOpen && (
+          <Sidebar
+            activeSection={activeSection}
+            onSectionChange={setActiveSection}
+            onClose={handleCloseSidebar}
+          />
+        )}
+
+        <div className="flex-1 flex flex-col min-w-0 lg:min-h-screen">
+          <Header
+            onToggleSidebar={handleToggleSidebar}
+            isSidebarOpen={isSidebarOpen}
+          />
+
+          <main className="flex-1 p-3 sm:p-4 lg:p-6 xl:p-8 overflow-x-auto">
+            <div className="max-w-full">{children}</div>
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}
+
