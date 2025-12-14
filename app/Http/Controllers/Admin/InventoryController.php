@@ -179,36 +179,62 @@ class InventoryController extends Controller
 
         $validated = $request->validate([
             'scaffold_number' => 'required|string|unique:scaffolds,scaffold_number|max:255',
-            'type' => 'required|in:FIXED,MOBILE,TOWER,CANTILEVER,SUSPENDED',
+            'quantity' => 'required|integer|min:1',
+            'description_ar' => 'required|string|max:500',
+            'description_en' => 'required|string|max:500',
+            'daily_rental_price' => 'required|numeric|min:0',
+            'monthly_rental_price' => 'required|numeric|min:0',
+            // حقول اختيارية
+            'type' => 'nullable|in:FIXED,MOBILE,TOWER,CANTILEVER,SUSPENDED',
             'size' => 'nullable|array',
             'size.height' => 'nullable|numeric|min:0|max:100',
             'size.width' => 'nullable|numeric|min:0|max:100',
             'size.length' => 'nullable|numeric|min:0|max:100',
-            'material' => 'required|in:STEEL,ALUMINUM,WOOD,COMPOSITE',
-            'condition' => 'required|in:NEW,USED,REFURBISHED',
-            'status' => 'required|in:AVAILABLE,RENTED,SOLD,MAINTENANCE,RESERVED',
-            'quantity' => 'required|integer|min:1',
-            'available_quantity' => 'required|integer|min:0',
+            'material' => 'nullable|in:STEEL,ALUMINUM,WOOD,COMPOSITE',
+            'condition' => 'nullable|in:NEW,USED,REFURBISHED',
+            'status' => 'nullable|in:AVAILABLE,RENTED,SOLD,MAINTENANCE,RESERVED',
+            'available_quantity' => 'nullable|integer|min:0',
             'location' => 'nullable|string|max:255',
             'warehouse_location' => 'nullable|string|max:255',
             'selling_price' => 'nullable|numeric|min:0',
-            'daily_rental_price' => 'nullable|numeric|min:0',
-            'monthly_rental_price' => 'nullable|numeric|min:0',
             'entry_date' => 'nullable|date',
             'last_maintenance_date' => 'nullable|date',
             'next_maintenance_date' => 'nullable|date',
-            'description_ar' => 'nullable|string',
-            'description_en' => 'nullable|string',
             'notes' => 'nullable|string',
             'supplier_id' => 'nullable|exists:suppliers,id',
         ]);
 
+        // تعيين القيم الافتراضية
+        $dataToCreate = [
+            'scaffold_number' => $validated['scaffold_number'],
+            'quantity' => $validated['quantity'],
+            'available_quantity' => $validated['available_quantity'] ?? $validated['quantity'],
+            'description_ar' => $validated['description_ar'],
+            'description_en' => $validated['description_en'],
+            'daily_rental_price' => $validated['daily_rental_price'],
+            'monthly_rental_price' => $validated['monthly_rental_price'],
+            'type' => $validated['type'] ?? 'FIXED',
+            'material' => $validated['material'] ?? 'STEEL',
+            'condition' => $validated['condition'] ?? 'NEW',
+            'status' => $validated['status'] ?? 'AVAILABLE',
+            'location' => $validated['location'] ?? null,
+            'warehouse_location' => $validated['warehouse_location'] ?? null,
+            'selling_price' => $validated['selling_price'] ?? 0,
+            'entry_date' => $validated['entry_date'] ?? now(),
+            'last_maintenance_date' => $validated['last_maintenance_date'] ?? null,
+            'next_maintenance_date' => $validated['next_maintenance_date'] ?? null,
+            'notes' => $validated['notes'] ?? null,
+            'supplier_id' => $validated['supplier_id'] ?? null,
+        ];
+
         // تحويل size إلى JSON إذا كان array
         if (isset($validated['size']) && is_array($validated['size'])) {
-            $validated['size'] = json_encode($validated['size']);
+            $dataToCreate['size'] = json_encode($validated['size']);
+        } else {
+            $dataToCreate['size'] = json_encode(['height' => 0, 'width' => 0, 'length' => 0]);
         }
 
-        $scaffold = Scaffold::create($validated);
+        $scaffold = Scaffold::create($dataToCreate);
 
         return redirect()->route('inventory.index')
             ->with('success', 'تم إضافة المعدة بنجاح');
