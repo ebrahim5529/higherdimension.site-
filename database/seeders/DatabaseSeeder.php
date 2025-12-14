@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             CompanySignatureSeeder::class,
             SupplierSeeder::class,
             EmployeeSeeder::class,
+            ScaffoldSeeder::class,
             // ContractSeeder::class, // Will be added after customers are seeded
         ]);
     }

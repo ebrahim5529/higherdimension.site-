@@ -36,6 +36,11 @@ Route::middleware('auth')->group(function () {
     Route::resource('suppliers', \App\Http\Controllers\Admin\SupplierController::class);
     Route::get('/dashboard/supplier-management', [\App\Http\Controllers\Admin\SupplierController::class, 'index'])->name('suppliers.management');
     
+    // Inventory
+    Route::resource('inventory', \App\Http\Controllers\Admin\InventoryController::class);
+    Route::get('/dashboard/inventory-status', [\App\Http\Controllers\Admin\InventoryController::class, 'index'])->name('inventory.status');
+    Route::get('/api/inventory/stats', [\App\Http\Controllers\Admin\InventoryController::class, 'stats'])->name('inventory.stats');
+    
     Route::post('/logout', function (Request $request) {
         Auth::logout();
         $request->session()->invalidate();

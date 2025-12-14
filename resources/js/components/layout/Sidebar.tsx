@@ -185,13 +185,24 @@ export function Sidebar({
         label: 'إدارة المخزون',
         icon: Package,
         children: [
-          { id: 'inventory-status', label: 'حالة المخزون', icon: Package },
+          { 
+            id: 'inventory-status', 
+            label: 'حالة المخزون', 
+            icon: Package,
+            href: '/inventory',
+          },
           {
             id: 'purchase-equipment',
             label: 'شراء معدات جديدة',
             icon: ShoppingCart,
+            href: '/dashboard/purchase-equipment',
           },
-          { id: 'purchases-list', label: 'إدارة المشتريات', icon: Receipt },
+          { 
+            id: 'purchases-list', 
+            label: 'إدارة المشتريات', 
+            icon: Receipt,
+            href: '/dashboard/purchases-list',
+          },
         ],
       },
       {
