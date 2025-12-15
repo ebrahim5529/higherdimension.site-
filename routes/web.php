@@ -15,6 +15,10 @@ Route::get('/', function () {
 Route::get('/login', [LoginController::class, 'show'])->middleware('guest')->name('login');
 Route::post('/login', [LoginController::class, 'store'])->middleware('guest');
 
+// Public routes (no authentication required)
+Route::get('/contract/sign/{contractNumber}', [\App\Http\Controllers\Admin\ContractController::class, 'sign'])->name('contracts.sign');
+Route::post('/contracts/{contractNumber}/sign', [\App\Http\Controllers\Admin\ContractController::class, 'saveSignature'])->name('contracts.saveSignature');
+
 // Dashboard routes (protected)
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

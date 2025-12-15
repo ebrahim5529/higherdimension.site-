@@ -26,6 +26,8 @@ class Contract extends Model
         'transport_and_installation_cost',
         'total_discount',
         'contract_notes',
+        'customer_signature',
+        'signed_at',
         'customer_id',
         'user_id',
     ];
@@ -33,6 +35,7 @@ class Contract extends Model
     protected $casts = [
         'start_date' => 'datetime',
         'end_date' => 'datetime',
+        'signed_at' => 'datetime',
         'amount' => 'decimal:2',
         'transport_and_installation_cost' => 'decimal:2',
         'total_discount' => 'decimal:2',

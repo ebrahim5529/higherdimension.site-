@@ -546,6 +546,75 @@ class ContractController extends Controller
         return "$day $month $year";
     }
 
+    /**
+     * عرض صفحة توقيع العقد
+     */
+    public function sign(string $contractNumber)
+    {
+        $contract = Contract::where('contract_number', $contractNumber)
+            ->with(['customer', 'equipment.scaffold'])
+            ->firstOrFail();
+
+        // تحضير بيانات العقد
+        $contractData = [
+            'id' => $contract->id,
+            'contract_number' => $contract->contract_number,
+            'customer_name' => $contract->customer->name ?? 'غير معروف',
+            'customer_id' => $contract->customer_id,
+            'contract_date' => $contract->contract_date?->format('Y-m-d') ?? $contract->start_date?->format('Y-m-d'),
+            'start_date' => $contract->start_date?->format('Y-m-d'),
+            'end_date' => $contract->end_date?->format('Y-m-d'),
+            'amount' => $contract->amount,
+            'total_after_discount' => $contract->amount - ($contract->total_discount ?? 0),
+            'total_discount' => $contract->total_discount ?? 0,
+            'contract_type' => $contract->payment_type === 'CASH' ? 'بيع' : 'تأجير',
+            'delivery_address' => $contract->delivery_address ?? '',
+            'location_map_link' => $contract->location_map_link,
+            'transport_and_installation_cost' => $contract->transport_and_installation_cost ?? 0,
+            'contract_notes' => $contract->contract_notes,
+            'rental_details' => $contract->equipment->map(function ($equipment) {
+                return [
+                    'id' => $equipment->id,
+                    'item_description' => $equipment->item_description,
+                    'quantity' => $equipment->quantity,
+                    'daily_rate' => $equipment->daily_rate,
+                    'monthly_rate' => $equipment->monthly_rate,
+                    'duration' => $equipment->duration,
+                    'duration_type' => $equipment->duration_type,
+                    'start_date' => $equipment->start_date?->format('Y-m-d'),
+                    'end_date' => $equipment->end_date?->format('Y-m-d'),
+                    'total' => $equipment->total,
+                ];
+            })->toArray(),
+            'status' => $this->getStatusLabel($contract->status),
+            'customer_signature' => $contract->customer_signature,
+            'signed_at' => $contract->signed_at?->format('Y-m-d H:i:s'),
+        ];
+
+        return Inertia::render('Contracts/Sign', [
+            'contract' => $contractData,
+        ]);
+    }
+
+    /**
+     * حفظ توقيع العقد
+     */
+    public function saveSignature(Request $request, string $contractNumber)
+    {
+        $validated = $request->validate([
+            'signature' => 'required|string',
+        ]);
+
+        $contract = Contract::where('contract_number', $contractNumber)->firstOrFail();
+
+        $contract->update([
+            'customer_signature' => $validated['signature'],
+            'signed_at' => now(),
+        ]);
+
+        return redirect()->back()->with('success', 'تم حفظ التوقيع بنجاح');
+    }
+
     private function getStatusLabel(string $status): string
     {
         return match ($status) {

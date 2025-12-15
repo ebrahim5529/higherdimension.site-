@@ -51,7 +51,9 @@ export const ContractWhatsAppModal: React.FC<ContractWhatsAppModalProps> = ({
     if (!contract) return;
 
     const contractType = contract.contract_type || 'تأجير معدات بناء';
-    const signUrl = `https://dashboard-seven-self-75.vercel.app/contract/sign/${contract.contract_number}`;
+    // استخدام الرابط الحالي ديناميكيًا بناءً على البيئة
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const signUrl = `${baseUrl}/contract/sign/${contract.contract_number}`;
 
     const message = `السلام عليكم ورحمة الله وبركاته
 
