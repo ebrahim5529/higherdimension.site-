@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { showToast } from '@/hooks/use-toast';
 import { FileText, Save, ArrowLeft, Plus, Trash2, MessageSquare, Package } from 'lucide-react';
 import { ScaffoldSelector } from '@/components/features/ScaffoldSelector';
+import { ContractWhatsAppModal } from '@/components/features/ContractWhatsAppModal';
 
 interface Customer {
   id: number;
@@ -90,6 +91,15 @@ export default function CreateContract({ customers }: CreateContractProps) {
   ]);
   const [transportCost, setTransportCost] = useState(0);
   const [totalDiscount, setTotalDiscount] = useState(0);
+  const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
+  const [createdContract, setCreatedContract] = useState<{
+    id: number;
+    contract_number: string;
+    customer_name: string;
+    total_amount: number;
+    contract_date: string;
+    contract_type?: string;
+  } | null>(null);
 
   useEffect(() => {
     if (flash?.success) {
@@ -347,9 +357,40 @@ export default function CreateContract({ customers }: CreateContractProps) {
     })));
 
     post('/contracts', {
-      onSuccess: () => {
+      onSuccess: (page) => {
         showToast.success('تم الإنشاء بنجاح', 'تم إضافة العقد بنجاح');
-        router.visit('/contracts');
+        
+        // الحصول على بيانات العقد المنشأ من الـ flash message
+        const flash = (page.props as any)?.flash || {};
+        const contractData = flash.contract || null;
+        
+        // حساب الإجمالي النهائي
+        const rentalTotal = rentalDetails.reduce((sum, rental) => sum + rental.total, 0);
+        const totalContractValue = rentalTotal + transportCost;
+        const totalAfterDiscount = totalContractValue - totalDiscount;
+        
+        if (contractData) {
+          setCreatedContract({
+            id: contractData.id,
+            contract_number: contractData.contract_number || contractNumber,
+            customer_name: selectedCustomer?.name || contractData.customer_name || '',
+            total_amount: contractData.total_amount || totalAfterDiscount,
+            contract_date: contractData.contract_date || contractDate,
+            contract_type: contractData.contract_type || 'تأجير معدات بناء',
+          });
+        } else {
+          // إذا لم تكن البيانات متوفرة، استخدم البيانات من الـ form
+          setCreatedContract({
+            id: 0, // سيتم تحديثه لاحقاً
+            contract_number: contractNumber,
+            customer_name: selectedCustomer?.name || '',
+            total_amount: totalAfterDiscount,
+            contract_date: contractDate,
+            contract_type: 'تأجير معدات بناء',
+          });
+        }
+        
+        setWhatsappModalOpen(true);
       },
       onError: (errors) => {
         // عرض رسائل خطأ محددة لكل حقل
@@ -1069,6 +1110,20 @@ export default function CreateContract({ customers }: CreateContractProps) {
           </Card>
         </form>
       </div>
+
+      {/* Modal إرسال العقد عبر الواتساب */}
+      <ContractWhatsAppModal
+        open={whatsappModalOpen}
+        onOpenChange={(open) => {
+          setWhatsappModalOpen(open);
+          if (!open) {
+            // بعد إغلاق Modal، الانتقال إلى صفحة العقود
+            router.visit('/contracts');
+          }
+        }}
+        contract={createdContract}
+        customerPhone={selectedCustomer?.phone || ''}
+      />
     </DashboardLayout>
   );
 }

@@ -215,8 +215,18 @@ class ContractController extends Controller
             }
         }
 
-        return redirect()->route('contracts.index')
-            ->with('success', 'تم إنشاء العقد بنجاح');
+        // إرجاع بيانات العقد في الـ response
+        return redirect()->back()->with([
+            'success' => 'تم إنشاء العقد بنجاح',
+            'contract' => [
+                'id' => $contract->id,
+                'contract_number' => $contract->contract_number,
+                'customer_name' => $contract->customer->name,
+                'total_amount' => $contract->amount,
+                'contract_date' => $contract->contract_date?->format('Y-m-d') ?? $contract->start_date?->format('Y-m-d'),
+                'contract_type' => 'تأجير معدات بناء',
+            ],
+        ]);
     }
 
     /**

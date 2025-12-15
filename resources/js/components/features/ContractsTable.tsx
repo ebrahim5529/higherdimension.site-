@@ -24,8 +24,6 @@ import {
   User,
   DollarSign,
   Package,
-  MapPin,
-  ExternalLink,
   ChevronLeft,
   ChevronRight,
   GitBranch,
@@ -123,8 +121,7 @@ export function ContractsTable({
     return data.filter((contract) => {
       const matchesSearch =
         contract.customerName.toLowerCase().includes(globalFilter.toLowerCase()) ||
-        contract.contractNumber.toLowerCase().includes(globalFilter.toLowerCase()) ||
-        contract.deliveryAddress.toLowerCase().includes(globalFilter.toLowerCase());
+        contract.contractNumber.toLowerCase().includes(globalFilter.toLowerCase());
 
       const matchesStatus = statusFilter === 'all' || contract.status === statusFilter;
       const matchesType = typeFilter === 'all' || contract.type === typeFilter;
@@ -220,35 +217,6 @@ export function ContractsTable({
             >
               {status}
             </span>
-          );
-        },
-      },
-      {
-        accessorKey: 'deliveryAddress',
-        header: 'عنوان التوصيل',
-        cell: ({ row }) => {
-          const address = row.getValue('deliveryAddress') as string;
-          const mapLink = row.original.locationMapLink;
-          return (
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-1">
-                <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                <span className="text-gray-600 dark:text-gray-400 text-sm truncate max-w-[200px]">
-                  {address || '-'}
-                </span>
-              </div>
-              {mapLink && (
-                <a
-                  href={mapLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-blue-600 hover:text-blue-700 text-xs"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  <span>موقع قوقل ماب</span>
-                </a>
-              )}
-            </div>
           );
         },
       },
