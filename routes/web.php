@@ -62,6 +62,7 @@ Route::middleware('auth')->group(function () {
     
     // Attendance routes
     Route::get('/employees/attendance', [\App\Http\Controllers\Admin\AttendanceController::class, 'index'])->name('employees.attendance');
+    Route::get('/employees/attendance/reports', [\App\Http\Controllers\Admin\AttendanceController::class, 'reports'])->name('employees.attendance.reports');
     Route::get('/employees/attendance/create', [\App\Http\Controllers\Admin\AttendanceController::class, 'create'])->name('employees.attendance.create');
     Route::post('/employees/attendance', [\App\Http\Controllers\Admin\AttendanceController::class, 'store'])->name('employees.attendance.store');
     Route::get('/employees/attendance/{id}', [\App\Http\Controllers\Admin\AttendanceController::class, 'show'])->name('employees.attendance.show');

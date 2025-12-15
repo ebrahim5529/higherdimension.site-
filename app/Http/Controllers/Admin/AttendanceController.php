@@ -253,4 +253,150 @@ class AttendanceController extends Controller
         return redirect()->route('employees.attendance')
             ->with('success', 'تم حذف سجل الحضور بنجاح');
     }
+
+    /**
+     * Display attendance reports.
+     */
+    public function reports(Request $request)
+    {
+        $employees = Employee::select('id', 'employee_number', 'name', 'position', 'department')->get();
+        
+        $employeeId = $request->get('employee_id');
+        $period = $request->get('period', 'monthly'); // daily, weekly, monthly
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+
+        // تحديد التواريخ حسب الفترة
+        $now = now();
+        if (!$startDate || !$endDate) {
+            switch ($period) {
+                case 'daily':
+                    $startDate = $now->format('Y-m-d');
+                    $endDate = $now->format('Y-m-d');
+                    break;
+                case 'weekly':
+                    $startDate = $now->startOfWeek()->format('Y-m-d');
+                    $endDate = $now->endOfWeek()->format('Y-m-d');
+                    break;
+                case 'monthly':
+                default:
+                    $startDate = $now->startOfMonth()->format('Y-m-d');
+                    $endDate = $now->endOfMonth()->format('Y-m-d');
+                    break;
+            }
+        }
+
+        $query = Attendance::with('employee')
+            ->whereBetween('date', [$startDate, $endDate]);
+
+        if ($employeeId) {
+            $query->where('employee_id', $employeeId);
+        }
+
+        $attendances = $query->get()->map(function ($attendance) {
+            $checkIn = null;
+            $checkOut = null;
+            
+            if ($attendance->check_in) {
+                if (is_string($attendance->check_in)) {
+                    $checkIn = date('H:i', strtotime($attendance->check_in));
+                } else {
+                    $checkIn = $attendance->check_in->format('H:i');
+                }
+            }
+            
+            if ($attendance->check_out) {
+                if (is_string($attendance->check_out)) {
+                    $checkOut = date('H:i', strtotime($attendance->check_out));
+                } else {
+                    $checkOut = $attendance->check_out->format('H:i');
+                }
+            }
+            
+            return [
+                'id' => $attendance->id,
+                'employeeId' => $attendance->employee->employee_number ?? '',
+                'employeeName' => $attendance->employee->name ?? 'غير معروف',
+                'position' => $attendance->employee->position ?? '',
+                'department' => $attendance->employee->department ?? '',
+                'date' => $attendance->date?->format('Y-m-d'),
+                'checkIn' => $checkIn,
+                'checkOut' => $checkOut,
+                'totalHours' => $attendance->total_hours,
+                'overtime' => $attendance->overtime,
+                'status' => $attendance->status,
+                'notes' => $attendance->notes,
+            ];
+        });
+
+        // إحصائيات حسب الموظف
+        $employeeStats = [];
+        if ($employeeId) {
+            $employee = Employee::find($employeeId);
+            if ($employee) {
+                $employeeAttendances = Attendance::where('employee_id', $employeeId)
+                    ->whereBetween('date', [$startDate, $endDate])
+                    ->get();
+                
+                $presentCount = $employeeAttendances->where('status', 'present')->count();
+                $absentCount = $employeeAttendances->where('status', 'absent')->count();
+                $lateCount = $employeeAttendances->where('status', 'late')->count();
+                $halfDayCount = $employeeAttendances->where('status', 'half_day')->count();
+                $onLeaveCount = $employeeAttendances->where('status', 'on_leave')->count();
+                $totalDays = $employeeAttendances->count();
+                $totalHours = $employeeAttendances->sum('total_hours') ?? 0;
+                $totalOvertime = $employeeAttendances->sum('overtime') ?? 0;
+                
+                // حساب معدل الحضور
+                $workingDays = $totalDays > 0 ? $totalDays : 1;
+                $attendanceRate = $totalDays > 0 ? ($presentCount / $workingDays) * 100 : 0;
+                
+                $employeeStats = [
+                    'employeeId' => $employee->employee_number,
+                    'employeeName' => $employee->name,
+                    'position' => $employee->position ?? '',
+                    'department' => $employee->department ?? '',
+                    'totalDays' => $totalDays,
+                    'presentCount' => $presentCount,
+                    'absentCount' => $absentCount,
+                    'lateCount' => $lateCount,
+                    'halfDayCount' => $halfDayCount,
+                    'onLeaveCount' => $onLeaveCount,
+                    'totalHours' => round($totalHours, 2),
+                    'totalOvertime' => round($totalOvertime, 2),
+                    'attendanceRate' => round($attendanceRate, 2),
+                ];
+            }
+        } else {
+            // إحصائيات عامة لجميع الموظفين
+            $allAttendances = Attendance::whereBetween('date', [$startDate, $endDate])->get();
+            $totalRecords = $allAttendances->count();
+            $presentCount = $allAttendances->where('status', 'present')->count();
+            $absentCount = $allAttendances->where('status', 'absent')->count();
+            $lateCount = $allAttendances->where('status', 'late')->count();
+            $totalHours = $allAttendances->sum('total_hours') ?? 0;
+            $totalOvertime = $allAttendances->sum('overtime') ?? 0;
+            
+            $employeeStats = [
+                'totalRecords' => $totalRecords,
+                'presentCount' => $presentCount,
+                'absentCount' => $absentCount,
+                'lateCount' => $lateCount,
+                'totalHours' => round($totalHours, 2),
+                'totalOvertime' => round($totalOvertime, 2),
+            ];
+        }
+
+        return Inertia::render('Employees/Attendance/Reports', [
+            'attendances' => $attendances,
+            'employees' => $employees,
+            'employeeStats' => $employeeStats,
+            'filters' => [
+                'employee_id' => $employeeId,
+                'period' => $period,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ],
+        ]);
+    }
 }

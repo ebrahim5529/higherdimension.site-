@@ -3,7 +3,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { showToast } from '@/hooks/use-toast';
-import { Clock, BarChart3, Plus, Eye, Edit, Trash2 } from 'lucide-react';
+import { Clock, BarChart3, Plus, Eye, Edit, Trash2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -98,13 +98,23 @@ export default function AttendanceIndex({ attendances, stats }: AttendanceIndexP
             <Clock className="h-5 w-5" />
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">الحضور والانصراف</h1>
           </div>
-          <Button
-            onClick={() => router.visit('/employees/attendance/create')}
-            className="flex items-center gap-2 bg-[#913D95] hover:bg-[#7A2F7D]"
-          >
-            <Plus className="h-4 w-4" />
-            إضافة سجل حضور
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => router.visit('/employees/attendance/reports')}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              التقارير
+            </Button>
+            <Button
+              onClick={() => router.visit('/employees/attendance/create')}
+              className="flex items-center gap-2 bg-[#913D95] hover:bg-[#7A2F7D]"
+            >
+              <Plus className="h-4 w-4" />
+              إضافة سجل حضور
+            </Button>
+          </div>
         </div>
 
         {/* إحصائيات الحضور */}
