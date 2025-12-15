@@ -50,11 +50,13 @@ export default function DashboardLayout({
       '/dashboard/invoices': 'invoices',
       '/dashboard/financial-reports': 'financial-reports',
       '/dashboard/employee-management': 'employee-management',
-      '/dashboard/salaries': 'salaries',
-      '/dashboard/incentives': 'incentives',
-      '/dashboard/attendance': 'attendance',
-      '/dashboard/departments': 'departments',
-      '/dashboard/leaves': 'leaves',
+      '/employees': 'employee-management',
+      '/employees/salaries': 'salaries',
+      '/employees/incentives': 'incentives',
+      '/employees/attendance': 'attendance',
+      '/employees/attendance/reports': 'attendance',
+      '/employees/departments': 'departments',
+      '/employees/leaves': 'leaves',
       '/dashboard/user-roles': 'user-roles',
       '/dashboard/permission-groups': 'permission-groups',
       '/dashboard/access-control': 'access-control',
@@ -75,6 +77,24 @@ export default function DashboardLayout({
     (url: string) => {
       if (url.startsWith('/dashboard/contract-details/')) {
         return 'contract-management';
+      }
+      if (url.startsWith('/employees/attendance')) {
+        return 'attendance';
+      }
+      if (url.startsWith('/employees/salaries')) {
+        return 'salaries';
+      }
+      if (url.startsWith('/employees/incentives')) {
+        return 'incentives';
+      }
+      if (url.startsWith('/employees/departments')) {
+        return 'departments';
+      }
+      if (url.startsWith('/employees/leaves')) {
+        return 'leaves';
+      }
+      if (url.startsWith('/employees')) {
+        return 'employee-management';
       }
       return (pathToSectionMap as Record<string, string>)[url] || 'main-dashboard';
     },

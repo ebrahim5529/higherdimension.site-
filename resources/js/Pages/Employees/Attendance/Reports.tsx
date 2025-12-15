@@ -130,14 +130,18 @@ export default function AttendanceReports({ attendances, employees, employeeStat
         break;
     }
 
-    setFilters({ ...filters, period, start_date: startDate, end_date: endDate });
+    const newFilters = { ...filters, period, start_date: startDate, end_date: endDate };
+    setFilters(newFilters);
+    // تحديث البيانات مباشرة
+    setLoading(true);
+    router.get('/employees/attendance/reports', newFilters, {
+      preserveState: true,
+      preserveScroll: true,
+      onFinish: () => setLoading(false),
+    });
   };
 
-  useEffect(() => {
-    if (filters.start_date && filters.end_date) {
-      handleFilterChange();
-    }
-  }, [filters.period, filters.start_date, filters.end_date, filters.employee_id]);
+  // لا نستخدم useEffect هنا لتجنب loop، سنستخدم handleFilterChange يدوياً
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('ar-SA', {
@@ -194,7 +198,16 @@ export default function AttendanceReports({ attendances, employees, employeeStat
                     })),
                   ]}
                   value={filters.employee_id || ''}
-                  onValueChange={(value) => setFilters({ ...filters, employee_id: value || null })}
+                  onValueChange={(value) => {
+                    const newFilters = { ...filters, employee_id: value || null };
+                    setFilters(newFilters);
+                    setLoading(true);
+                    router.get('/employees/attendance/reports', newFilters, {
+                      preserveState: true,
+                      preserveScroll: true,
+                      onFinish: () => setLoading(false),
+                    });
+                  }}
                   placeholder="اختر الموظف"
                   searchPlaceholder="ابحث عن الموظف..."
                   emptyText="لا يوجد موظفين"
@@ -226,7 +239,16 @@ export default function AttendanceReports({ attendances, employees, employeeStat
                   <Input
                     type="date"
                     value={filters.start_date}
-                    onChange={(e) => setFilters({ ...filters, start_date: e.target.value })}
+                    onChange={(e) => {
+                      const newFilters = { ...filters, start_date: e.target.value };
+                      setFilters(newFilters);
+                      setLoading(true);
+                      router.get('/employees/attendance/reports', newFilters, {
+                        preserveState: true,
+                        preserveScroll: true,
+                        onFinish: () => setLoading(false),
+                      });
+                    }}
                     className="pr-10"
                   />
                 </div>
@@ -240,7 +262,16 @@ export default function AttendanceReports({ attendances, employees, employeeStat
                   <Input
                     type="date"
                     value={filters.end_date}
-                    onChange={(e) => setFilters({ ...filters, end_date: e.target.value })}
+                    onChange={(e) => {
+                      const newFilters = { ...filters, end_date: e.target.value };
+                      setFilters(newFilters);
+                      setLoading(true);
+                      router.get('/employees/attendance/reports', newFilters, {
+                        preserveState: true,
+                        preserveScroll: true,
+                        onFinish: () => setLoading(false),
+                      });
+                    }}
                     className="pr-10"
                   />
                 </div>
