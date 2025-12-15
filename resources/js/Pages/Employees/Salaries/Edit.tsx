@@ -217,15 +217,18 @@ export default function EditSalary({ salary, employees }: EditSalaryProps) {
                   <label className="block text-sm font-medium mb-1">
                     الحالة <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <Combobox
+                    options={[
+                      { value: 'pending', label: 'في الانتظار' },
+                      { value: 'paid', label: 'مدفوعة' },
+                      { value: 'overdue', label: 'متأخرة' },
+                    ]}
                     value={data.status}
-                    onChange={(e) => setData('status', e.target.value as 'paid' | 'pending' | 'overdue')}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white"
-                  >
-                    <option value="pending">في الانتظار</option>
-                    <option value="paid">مدفوعة</option>
-                    <option value="overdue">متأخرة</option>
-                  </select>
+                    onValueChange={(value) => setData('status', value as 'paid' | 'pending' | 'overdue')}
+                    placeholder="اختر الحالة"
+                    searchPlaceholder="ابحث..."
+                    emptyText="لا توجد نتائج"
+                  />
                 </div>
 
                 {/* طريقة الدفع */}
@@ -233,18 +236,18 @@ export default function EditSalary({ salary, employees }: EditSalaryProps) {
                   <label className="block text-sm font-medium mb-1">
                     طريقة الدفع <span className="text-red-500">*</span>
                   </label>
-                  <div className="relative">
-                    <CreditCard className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <select
-                      value={data.payment_method}
-                      onChange={(e) => setData('payment_method', e.target.value as 'bank_transfer' | 'cash' | 'check')}
-                      className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white"
-                    >
-                      <option value="bank_transfer">تحويل بنكي</option>
-                      <option value="cash">نقدي</option>
-                      <option value="check">شيك</option>
-                    </select>
-                  </div>
+                  <Combobox
+                    options={[
+                      { value: 'bank_transfer', label: 'تحويل بنكي' },
+                      { value: 'cash', label: 'نقدي' },
+                      { value: 'check', label: 'شيك' },
+                    ]}
+                    value={data.payment_method}
+                    onValueChange={(value) => setData('payment_method', value as 'bank_transfer' | 'cash' | 'check')}
+                    placeholder="اختر طريقة الدفع"
+                    searchPlaceholder="ابحث..."
+                    emptyText="لا توجد نتائج"
+                  />
                 </div>
 
                 {/* الملاحظات */}
