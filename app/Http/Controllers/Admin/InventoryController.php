@@ -394,4 +394,31 @@ class InventoryController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Get available scaffolds for contract selection
+     */
+    public function getAvailableScaffolds()
+    {
+        $scaffolds = Scaffold::where('status', 'AVAILABLE')
+            ->where('available_quantity', '>', 0)
+            ->get()
+            ->map(function ($scaffold) {
+                return [
+                    'id' => $scaffold->id,
+                    'scaffold_number' => $scaffold->scaffold_number,
+                    'quantity' => $scaffold->quantity,
+                    'available_quantity' => $scaffold->available_quantity,
+                    'description_ar' => $scaffold->description_ar,
+                    'description_en' => $scaffold->description_en,
+                    'daily_rental_price' => $scaffold->daily_rental_price,
+                    'monthly_rental_price' => $scaffold->monthly_rental_price,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $scaffolds,
+        ]);
+    }
 }

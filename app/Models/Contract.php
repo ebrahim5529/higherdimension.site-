@@ -21,38 +21,60 @@ class Contract extends Model
         'status',
         'payment_type',
         'installment_count',
+        'delivery_address',
+        'location_map_link',
+        'transport_and_installation_cost',
+        'total_discount',
+        'contract_notes',
         'customer_id',
         'user_id',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'amount' => 'decimal:2',
-            'start_date' => 'datetime',
-            'end_date' => 'datetime',
-            'installment_count' => 'integer',
-        ];
-    }
+    protected $casts = [
+        'start_date' => 'datetime',
+        'end_date' => 'datetime',
+        'amount' => 'decimal:2',
+        'transport_and_installation_cost' => 'decimal:2',
+        'total_discount' => 'decimal:2',
+    ];
 
-    // Relationships
+    /**
+     * Get the customer that owns the contract.
+     */
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
     }
 
+    /**
+     * Get the user who created the contract.
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Get the payments for the contract.
+     */
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
     }
 
-    public function installments(): HasMany
+    /**
+     * Get the contract equipment.
+     */
+    public function equipment(): HasMany
     {
-        return $this->hasMany(Installment::class);
+        return $this->hasMany(ContractEquipment::class);
+    }
+
+    /**
+     * Get the contract payments (from contract_payments table).
+     */
+    public function contractPayments(): HasMany
+    {
+        return $this->hasMany(ContractPayment::class);
     }
 }

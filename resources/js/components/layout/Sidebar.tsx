@@ -130,6 +130,7 @@ export function Sidebar({
           },
         ],
       },
+   
       {
         id: 'customers',
         label: 'إدارة العملاء',

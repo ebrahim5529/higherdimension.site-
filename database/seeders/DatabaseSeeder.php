@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
             SupplierSeeder::class,
             EmployeeSeeder::class,
             ScaffoldSeeder::class,
-            // ContractSeeder::class, // Will be added after customers are seeded
+            ContractSeeder::class,
         ]);
     }
 }

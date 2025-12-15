@@ -22,6 +22,11 @@ return new class extends Migration
             $table->string('status')->default('ACTIVE')->comment('ACTIVE, EXPIRED, CANCELLED, COMPLETED');
             $table->string('payment_type')->default('INSTALLMENT')->comment('CASH, INSTALLMENT, MONTHLY, QUARTERLY, YEARLY');
             $table->integer('installment_count')->nullable();
+            $table->string('delivery_address')->nullable();
+            $table->string('location_map_link')->nullable();
+            $table->decimal('transport_and_installation_cost', 15, 2)->default(0);
+            $table->decimal('total_discount', 15, 2)->default(0);
+            $table->text('contract_notes')->nullable();
             $table->foreignId('customer_id')->constrained('customers')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('restrict');
             $table->timestamps();

@@ -30,13 +30,16 @@ export default function DashboardLayout({
       '/dashboard/customer-management': 'customer-management',
       '/dashboard/customer-contracts': 'customer-contracts',
       '/dashboard/customer-claims': 'customer-claims',
+      '/contracts': 'contract-management',
+      '/contracts/create': 'contract-management',
+      '/contracts/edit': 'contract-management',
+      '/dashboard/contract-management': 'contract-management',
       '/dashboard/supplier-management': 'supplier-management',
       '/dashboard/supplier-invoices': 'supplier-invoices',
       '/dashboard/supplier-purchases': 'supplier-purchases',
       '/dashboard/inventory-status': 'inventory-status',
       '/dashboard/purchase-equipment': 'purchase-equipment',
       '/dashboard/purchases-list': 'purchases-list',
-      '/dashboard/contract-management': 'contract-management',
       '/dashboard/active-contracts': 'active-contracts',
       '/dashboard/expired-contracts': 'expired-contracts',
       '/dashboard/cancelled-contracts': 'cancelled-contracts',
@@ -75,6 +78,9 @@ export default function DashboardLayout({
 
   const getActiveSection = useCallback(
     (url: string) => {
+      if (url.startsWith('/contracts')) {
+        return 'contract-management';
+      }
       if (url.startsWith('/dashboard/contract-details/')) {
         return 'contract-management';
       }

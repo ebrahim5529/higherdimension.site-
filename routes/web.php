@@ -32,6 +32,11 @@ Route::middleware('auth')->group(function () {
     Route::resource('customers', \App\Http\Controllers\Admin\CustomerController::class);
     Route::get('/dashboard/customer-management', [\App\Http\Controllers\Admin\CustomerController::class, 'index'])->name('customers.management');
     
+    // Contracts
+    Route::resource('contracts', \App\Http\Controllers\Admin\ContractController::class);
+    Route::get('/dashboard/contract-management', [\App\Http\Controllers\Admin\ContractController::class, 'index'])->name('contracts.management');
+    Route::get('/contracts/{id}/invoice', [\App\Http\Controllers\Admin\ContractController::class, 'invoice'])->name('contracts.invoice');
+    
     // Suppliers
     Route::resource('suppliers', \App\Http\Controllers\Admin\SupplierController::class);
     Route::get('/dashboard/supplier-management', [\App\Http\Controllers\Admin\SupplierController::class, 'index'])->name('suppliers.management');
@@ -40,6 +45,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('inventory', \App\Http\Controllers\Admin\InventoryController::class);
     Route::get('/dashboard/inventory-status', [\App\Http\Controllers\Admin\InventoryController::class, 'index'])->name('inventory.status');
     Route::get('/api/inventory/stats', [\App\Http\Controllers\Admin\InventoryController::class, 'stats'])->name('inventory.stats');
+    Route::get('/api/scaffolds/available', [\App\Http\Controllers\Admin\InventoryController::class, 'getAvailableScaffolds'])->name('scaffolds.available');
 
     // Employees - Sub-menus must come BEFORE resource route
     // Salaries routes
