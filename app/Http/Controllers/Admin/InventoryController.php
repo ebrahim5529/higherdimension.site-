@@ -293,30 +293,13 @@ class InventoryController extends Controller
             'scaffold' => [
                 'id' => $scaffold->id,
                 'scaffoldNumber' => $scaffold->scaffold_number,
-                'type' => $scaffold->type,
-                'size' => $size,
-                'height' => $size['height'] ?? 0,
-                'width' => $size['width'] ?? 0,
-                'length' => $size['length'] ?? 0,
-                'material' => $scaffold->material,
-                'condition' => $scaffold->condition,
-                'status' => $scaffold->status,
                 'quantity' => $scaffold->quantity,
-                'availableQuantity' => $scaffold->available_quantity,
-                'location' => $scaffold->location,
-                'warehouseLocation' => $scaffold->warehouse_location,
-                'sellingPrice' => $scaffold->selling_price,
-                'dailyRentalPrice' => $scaffold->daily_rental_price,
-                'monthlyRentalPrice' => $scaffold->monthly_rental_price,
-                'entryDate' => $scaffold->entry_date?->format('Y-m-d'),
-                'lastMaintenanceDate' => $scaffold->last_maintenance_date?->format('Y-m-d'),
-                'nextMaintenanceDate' => $scaffold->next_maintenance_date?->format('Y-m-d'),
                 'descriptionAr' => $scaffold->description_ar,
                 'descriptionEn' => $scaffold->description_en,
-                'notes' => $scaffold->notes,
-                'supplierId' => $scaffold->supplier_id,
+                'dailyRentalPrice' => $scaffold->daily_rental_price,
+                'monthlyRentalPrice' => $scaffold->monthly_rental_price,
+                'status' => $scaffold->status,
             ],
-            'suppliers' => $suppliers,
         ]);
     }
 
@@ -329,28 +312,12 @@ class InventoryController extends Controller
 
         $validated = $request->validate([
             'scaffold_number' => 'required|string|unique:scaffolds,scaffold_number,'.$id.'|max:255',
-            'type' => 'required|in:FIXED,MOBILE,TOWER,CANTILEVER,SUSPENDED',
-            'size' => 'nullable|array',
-            'size.height' => 'nullable|numeric|min:0|max:100',
-            'size.width' => 'nullable|numeric|min:0|max:100',
-            'size.length' => 'nullable|numeric|min:0|max:100',
-            'material' => 'required|in:STEEL,ALUMINUM,WOOD,COMPOSITE',
-            'condition' => 'required|in:NEW,USED,REFURBISHED',
-            'status' => 'required|in:AVAILABLE,RENTED,SOLD,MAINTENANCE,RESERVED',
             'quantity' => 'required|integer|min:1',
-            'available_quantity' => 'required|integer|min:0',
-            'location' => 'nullable|string|max:255',
-            'warehouse_location' => 'nullable|string|max:255',
-            'selling_price' => 'nullable|numeric|min:0',
-            'daily_rental_price' => 'nullable|numeric|min:0',
-            'monthly_rental_price' => 'nullable|numeric|min:0',
-            'entry_date' => 'nullable|date',
-            'last_maintenance_date' => 'nullable|date',
-            'next_maintenance_date' => 'nullable|date',
-            'description_ar' => 'nullable|string',
-            'description_en' => 'nullable|string',
-            'notes' => 'nullable|string',
-            'supplier_id' => 'nullable|exists:suppliers,id',
+            'description_ar' => 'required|string|max:500',
+            'description_en' => 'required|string|max:500',
+            'daily_rental_price' => 'required|numeric|min:0',
+            'monthly_rental_price' => 'required|numeric|min:0',
+            'status' => 'required|in:AVAILABLE,RENTED,SOLD,MAINTENANCE,RESERVED',
         ]);
 
         // تحويل size إلى JSON إذا كان array
@@ -358,7 +325,16 @@ class InventoryController extends Controller
             $validated['size'] = json_encode($validated['size']);
         }
 
-        $scaffold->update($validated);
+        // تحديث الحقول الأساسية
+        $scaffold->update([
+            'scaffold_number' => $validated['scaffold_number'],
+            'quantity' => $validated['quantity'],
+            'description_ar' => $validated['description_ar'],
+            'description_en' => $validated['description_en'],
+            'daily_rental_price' => $validated['daily_rental_price'],
+            'monthly_rental_price' => $validated['monthly_rental_price'],
+            'status' => $validated['status'],
+        ]);
 
         return redirect()->route('inventory.index')
             ->with('success', 'تم تحديث المعدة بنجاح');

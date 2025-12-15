@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { showToast } from '@/hooks/use-toast';
 import { Package, Save, ArrowRight, X } from 'lucide-react';
+import { scaffoldStatuses } from '@/data/inventoryData';
 
 interface Scaffold {
   id: number;
@@ -17,6 +18,7 @@ interface Scaffold {
   descriptionEn: string;
   dailyRentalPrice: number;
   monthlyRentalPrice: number;
+  status?: string;
 }
 
 interface EditScaffoldProps {
@@ -43,6 +45,7 @@ export default function EditScaffold({ scaffold }: EditScaffoldProps) {
     description_en: scaffold.descriptionEn || '',
     daily_rental_price: scaffold.dailyRentalPrice || 0,
     monthly_rental_price: scaffold.monthlyRentalPrice || 0,
+    status: scaffold.status || 'AVAILABLE',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -199,6 +202,34 @@ export default function EditScaffold({ scaffold }: EditScaffoldProps) {
                   />
                   {errors.monthly_rental_price && (
                     <p className="text-red-500 text-xs mt-1">{errors.monthly_rental_price}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* حالة المعدة */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+                حالة المعدة
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    الحالة *
+                  </label>
+                  <select
+                    value={data.status}
+                    onChange={(e) => setData('status', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white"
+                  >
+                    {scaffoldStatuses.map((status) => (
+                      <option key={status.value} value={status.value}>
+                        {status.label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.status && (
+                    <p className="text-red-500 text-xs mt-1">{errors.status}</p>
                   )}
                 </div>
               </div>

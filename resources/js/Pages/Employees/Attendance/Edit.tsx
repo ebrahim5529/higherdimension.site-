@@ -1,0 +1,246 @@
+/** @jsxImportSource react */
+import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { useEffect } from 'react';
+import React from 'react';
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { showToast } from '@/hooks/use-toast';
+import { Clock, Save, ArrowLeft, User, Calendar, FileText } from 'lucide-react';
+
+interface Employee {
+  id: number;
+  employee_number: string;
+  name: string;
+}
+
+interface AttendanceData {
+  id: number;
+  employee_id: number;
+  date: string;
+  check_in: string | null;
+  check_out: string | null;
+  total_hours: number | null;
+  overtime: number | null;
+  status: 'present' | 'absent' | 'late' | 'half_day' | 'on_leave';
+  notes: string | null;
+}
+
+interface EditAttendanceProps {
+  attendance: AttendanceData;
+  employees: Employee[];
+}
+
+export default function EditAttendance({ attendance, employees }: EditAttendanceProps) {
+  const { flash } = usePage().props as any;
+
+  useEffect(() => {
+    if (flash?.success) {
+      showToast.success('نجح', flash.success);
+    }
+    if (flash?.error) {
+      showToast.error('خطأ', flash.error);
+    }
+  }, [flash]);
+
+  const { data, setData, put, processing, errors } = useForm({
+    employee_id: attendance.employee_id.toString(),
+    date: attendance.date,
+    check_in: attendance.check_in || '',
+    check_out: attendance.check_out || '',
+    total_hours: attendance.total_hours?.toString() || '',
+    overtime: attendance.overtime?.toString() || '',
+    status: attendance.status,
+    notes: attendance.notes || '',
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const submitData = { ...data };
+    if (!submitData.check_in) delete submitData.check_in;
+    if (!submitData.check_out) delete submitData.check_out;
+    if (!submitData.total_hours) delete submitData.total_hours;
+    if (!submitData.overtime) delete submitData.overtime;
+    if (!submitData.notes) delete submitData.notes;
+    
+    put(`/employees/attendance/${attendance.id}`, {
+      data: submitData,
+      onSuccess: () => {
+        showToast.success('تم التحديث بنجاح', 'تم تحديث سجل الحضور بنجاح');
+        router.visit(`/employees/attendance/${attendance.id}`);
+      },
+      onError: (errors) => {
+        if (errors.message) {
+          showToast.error('خطأ في التحديث', errors.message);
+        } else {
+          showToast.error('خطأ في التحديث', 'يرجى التحقق من البيانات المدخلة');
+        }
+      },
+    });
+  };
+
+  return (
+    <DashboardLayout>
+      <Head title="تعديل سجل الحضور" />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => router.visit('/employees/attendance')}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Clock className="h-6 w-6" />
+              تعديل سجل الحضور
+            </h1>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                معلومات الحضور
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    الموظف <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <User className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <select
+                      value={data.employee_id}
+                      onChange={(e) => setData('employee_id', e.target.value)}
+                      className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white ${
+                        errors.employee_id ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      }`}
+                    >
+                      <option value="">اختر الموظف</option>
+                      {employees.map((employee) => (
+                        <option key={employee.id} value={employee.id}>
+                          {employee.name} ({employee.employee_number})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {errors.employee_id && <p className="text-red-500 text-xs mt-1">{errors.employee_id}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    التاريخ <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      type="date"
+                      value={data.date}
+                      onChange={(e) => setData('date', e.target.value)}
+                      className={`pr-10 ${errors.date ? 'border-red-500' : ''}`}
+                    />
+                  </div>
+                  {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">وقت الدخول</label>
+                  <Input
+                    type="time"
+                    value={data.check_in}
+                    onChange={(e) => setData('check_in', e.target.value)}
+                    placeholder="HH:MM"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">وقت الخروج</label>
+                  <Input
+                    type="time"
+                    value={data.check_out}
+                    onChange={(e) => setData('check_out', e.target.value)}
+                    placeholder="HH:MM"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">إجمالي الساعات</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={data.total_hours}
+                    onChange={(e) => setData('total_hours', e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">ساعات إضافية</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={data.overtime}
+                    onChange={(e) => setData('overtime', e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    الحالة <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={data.status}
+                    onChange={(e) => setData('status', e.target.value as any)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white"
+                  >
+                    <option value="present">حاضر</option>
+                    <option value="absent">غائب</option>
+                    <option value="late">متأخر</option>
+                    <option value="half_day">نصف يوم</option>
+                    <option value="on_leave">في إجازة</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-1">ملاحظات</label>
+                  <div className="relative">
+                    <FileText className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                    <textarea
+                      value={data.notes}
+                      onChange={(e) => setData('notes', e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white"
+                      placeholder="أدخل أي ملاحظات عن الحضور"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex items-center justify-end gap-4 pt-6 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.visit('/employees/attendance')}
+              disabled={processing}
+            >
+              إلغاء
+            </Button>
+            <Button type="submit" disabled={processing} className="flex items-center gap-2 bg-[#913D95] hover:bg-[#7A2F7D]">
+              <Save className="h-4 w-4" />
+              {processing ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </DashboardLayout>
+  );
+}
+
