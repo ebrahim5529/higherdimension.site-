@@ -1,8 +1,10 @@
 /** @jsxImportSource react */
-import { Head, router, usePage } from '@inertiajs/react';
-import { useEffect } from 'react';
+import { Head, router, usePage, useForm } from '@inertiajs/react';
+import { useEffect, useState, useRef } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { showToast } from '@/hooks/use-toast';
 import {
   FileText,
@@ -21,7 +23,22 @@ import {
   Eye,
   Download,
   TrendingUp,
+  Plus,
+  Trash2,
+  Upload,
 } from 'lucide-react';
+
+interface Attachment {
+  id: number;
+  name: string;
+  file_path: string;
+  file_type: string;
+  file_size: number;
+  file_size_human: string;
+  mime_type: string;
+  description?: string;
+  created_at: string;
+}
 
 interface Contract {
   id: number;
@@ -60,6 +77,7 @@ interface Contract {
   };
   signedAt?: string;
   contractNotes?: string;
+  attachments?: Attachment[];
 }
 
 interface ShowContractProps {
@@ -68,6 +86,16 @@ interface ShowContractProps {
 
 export default function ShowContract({ contract }: ShowContractProps) {
   const { flash } = usePage().props as any;
+  const [showUploadForm, setShowUploadForm] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [attachmentToDelete, setAttachmentToDelete] = useState<Attachment | null>(null);
+
+  const uploadForm = useForm({
+    file: null as File | null,
+    description: '',
+  });
 
   useEffect(() => {
     if (flash?.success) {
@@ -77,6 +105,88 @@ export default function ShowContract({ contract }: ShowContractProps) {
       showToast.error('خطأ', flash.error);
     }
   }, [flash]);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (file) {
+      // التحقق من حجم الملف (10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        showToast.error('خطأ', 'حجم الملف يجب أن يكون أقل من 10MB');
+        return;
+      }
+      uploadForm.setData('file', file);
+    }
+  };
+
+  const handleUpload = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!uploadForm.data.file) {
+      showToast.error('خطأ', 'يرجى اختيار ملف للرفع');
+      return;
+    }
+
+    setUploading(true);
+    uploadForm.post(`/contracts/${contract.id}/attachments`, {
+      forceFormData: true,
+      onSuccess: () => {
+        showToast.success('نجح', 'تم رفع المرفق بنجاح');
+        uploadForm.reset();
+        setShowUploadForm(false);
+        setUploading(false);
+        router.reload();
+      },
+      onError: (errors) => {
+        setUploading(false);
+        if (errors.file) {
+          showToast.error('خطأ', Array.isArray(errors.file) ? errors.file[0] : errors.file);
+        } else {
+          showToast.error('خطأ', 'فشل رفع الملف');
+        }
+      },
+    });
+  };
+
+  const handleDelete = (attachment: Attachment) => {
+    setAttachmentToDelete(attachment);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (!attachmentToDelete) return;
+
+    router.delete(`/contracts/${contract.id}/attachments/${attachmentToDelete.id}`, {
+      onSuccess: () => {
+        showToast.success('نجح', 'تم حذف المرفق بنجاح');
+        setDeleteDialogOpen(false);
+        setAttachmentToDelete(null);
+        router.reload();
+      },
+      onError: () => {
+        showToast.error('خطأ', 'فشل حذف المرفق');
+      },
+    });
+  };
+
+  const handleDownload = (attachment: Attachment) => {
+    window.open(`/contracts/${contract.id}/attachments/${attachment.id}/download`, '_blank');
+  };
+
+  const handlePreview = (attachment: Attachment) => {
+    const fileUrl = `/storage/${attachment.file_path}`;
+    window.open(fileUrl, '_blank');
+  };
+
+  const getFileIcon = (fileType: string) => {
+    const type = fileType.toLowerCase();
+    if (type === 'pdf') {
+      return <FileText className="h-6 w-6 text-red-600" />;
+    } else if (['zip', 'rar', '7z'].includes(type)) {
+      return <FileText className="h-6 w-6 text-orange-600" />;
+    } else if (['jpg', 'jpeg', 'png', 'gif'].includes(type)) {
+      return <FileText className="h-6 w-6 text-blue-600" />;
+    }
+    return <FileText className="h-6 w-6 text-orange-600" />;
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('ar-OM', {
@@ -545,67 +655,132 @@ export default function ShowContract({ contract }: ShowContractProps) {
 
                 {/* المرفقات والمستندات */}
                 <div className="bg-white border-2 border-orange-200 rounded-lg p-6 shadow-sm">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Paperclip className="h-6 w-6 text-orange-600" />
-                    <h3 className="text-lg font-bold text-gray-900">المرفقات والمستندات</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Paperclip className="h-6 w-6 text-orange-600" />
+                      <h3 className="text-lg font-bold text-gray-900">المرفقات والمستندات</h3>
+                    </div>
+                    <Button
+                      onClick={() => setShowUploadForm(!showUploadForm)}
+                      className="bg-orange-600 hover:bg-orange-700 text-white flex items-center gap-2"
+                    >
+                      <Upload className="h-4 w-4" />
+                      رفع مرفق جديد
+                    </Button>
                   </div>
+
+                  {/* نموذج رفع الملف */}
+                  {showUploadForm && (
+                    <form onSubmit={handleUpload} className="mb-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            اختر الملف
+                          </label>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            onChange={handleFileSelect}
+                            accept=".pdf,.doc,.docx,.zip,.rar,.jpg,.jpeg,.png,.gif"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                            required
+                          />
+                          <p className="text-xs text-gray-500 mt-1">الحد الأقصى: 10MB</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            الوصف (اختياري)
+                          </label>
+                          <Input
+                            type="text"
+                            value={uploadForm.data.description}
+                            onChange={(e) => uploadForm.setData('description', e.target.value)}
+                            placeholder="أدخل وصفاً للملف..."
+                            className="w-full"
+                          />
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Button
+                            type="submit"
+                            disabled={uploading || !uploadForm.data.file}
+                            className="bg-orange-600 hover:bg-orange-700 text-white"
+                          >
+                            {uploading ? 'جاري الرفع...' : 'رفع الملف'}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => {
+                              setShowUploadForm(false);
+                              uploadForm.reset();
+                            }}
+                            disabled={uploading}
+                          >
+                            إلغاء
+                          </Button>
+                        </div>
+                      </div>
+                    </form>
+                  )}
+
+                  {/* قائمة المرفقات */}
                   <div className="space-y-3">
-                    {/* عقد الإيجار الموقع */}
-                    <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200 hover:border-orange-300 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-6 w-6 text-orange-600" />
-                        <div>
-                          <p className="font-medium text-gray-900">عقد الإيجار الموقع</p>
-                          <p className="text-sm text-gray-500">PDF • 2.2 MB</p>
+                    {contract.attachments && contract.attachments.length > 0 ? (
+                      contract.attachments.map((attachment) => (
+                        <div
+                          key={attachment.id}
+                          className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200 hover:border-orange-300 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            {getFileIcon(attachment.file_type)}
+                            <div>
+                              <p className="font-medium text-gray-900">{attachment.name}</p>
+                              <p className="text-sm text-gray-500">
+                                {attachment.file_type.toUpperCase()} • {attachment.file_size_human}
+                              </p>
+                              {attachment.description && (
+                                <p className="text-xs text-gray-400 mt-1">{attachment.description}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="p-2 hover:bg-orange-100"
+                              onClick={() => handlePreview(attachment)}
+                              title="معاينة"
+                            >
+                              <Eye className="h-5 w-5 text-orange-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="p-2 hover:bg-orange-100"
+                              onClick={() => handleDownload(attachment)}
+                              title="تحميل"
+                            >
+                              <Download className="h-5 w-5 text-orange-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="p-2 hover:bg-red-100"
+                              onClick={() => handleDelete(attachment)}
+                              title="حذف"
+                            >
+                              <Trash2 className="h-5 w-5 text-red-600" />
+                            </Button>
+                          </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <Paperclip className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+                        <p>لا توجد مرفقات</p>
+                        <p className="text-sm mt-1">قم برفع مرفق جديد للبدء</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="p-2 hover:bg-orange-100">
-                          <Eye className="h-5 w-5 text-orange-600" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="p-2 hover:bg-orange-100">
-                          <Download className="h-5 w-5 text-orange-600" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* صور المعدات */}
-                    <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200 hover:border-orange-300 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-6 w-6 text-orange-600" />
-                        <div>
-                          <p className="font-medium text-gray-900">صور المعدات</p>
-                          <p className="text-sm text-gray-500">ZIP • 6.9 MB</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="p-2 hover:bg-orange-100">
-                          <Eye className="h-5 w-5 text-orange-600" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="p-2 hover:bg-orange-100">
-                          <Download className="h-5 w-5 text-orange-600" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* هوية العميل */}
-                    <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200 hover:border-orange-300 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-6 w-6 text-orange-600" />
-                        <div>
-                          <p className="font-medium text-gray-900">هوية العميل</p>
-                          <p className="text-sm text-gray-500">PDF • 0.9 MB</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="p-2 hover:bg-orange-100">
-                          <Eye className="h-5 w-5 text-orange-600" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="p-2 hover:bg-orange-100">
-                          <Download className="h-5 w-5 text-orange-600" />
-                        </Button>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -613,6 +788,18 @@ export default function ShowContract({ contract }: ShowContractProps) {
           </div>
         </div>
       </main>
+
+      {/* Dialog تأكيد الحذف */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        title="حذف المرفق"
+        description={`هل أنت متأكد من حذف المرفق "${attachmentToDelete?.name}"؟ لا يمكن التراجع عن هذا الإجراء.`}
+        confirmText="حذف"
+        cancelText="إلغاء"
+        variant="danger"
+      />
     </DashboardLayout>
   );
 }

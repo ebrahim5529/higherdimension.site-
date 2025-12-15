@@ -13,21 +13,21 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    /* Teal/Cyan من مجموعة أسهل - #20B2AA */
+    /* Teal/Cyan من مجموعة البعد العالي - #20B2AA */
     --primary: 174 60% 50%;
     --primary-foreground: 0 0% 100%;
-    /* Dark Purple من مجموعة أسهل - #8A2BE2 */
+    /* Dark Purple من مجموعة البعد العالي - #8A2BE2 */
     --secondary: 271 81% 56%;
     --secondary-foreground: 0 0% 100%;
-    /* Green من مجموعة أسهل - #32CD32 */
+    /* Green من مجموعة البعد العالي - #32CD32 */
     --accent: 120 61% 50%;
     --accent-foreground: 0 0% 100%;
-    --tertiary: 33 100% 50%; /* Orange/Gold من مجموعة أسهل */
-    --quaternary: 210 40% 70%; /* Light Blue من مجموعة أسهل */
+    --tertiary: 33 100% 50%; /* Orange/Gold من مجموعة البعد العالي */
+    --quaternary: 210 40% 70%; /* Light Blue من مجموعة البعد العالي */
     --quaternary-foreground: 0 0% 100%;
-    --quinary: 0 0% 20%; /* Dark Gray/Black من مجموعة أسهل */
+    --quinary: 0 0% 20%; /* Dark Gray/Black من مجموعة البعد العالي */
     --quinary-foreground: 0 0% 100%;
-    --senary: 0 0% 90%; /* Light Gray من مجموعة أسهل */
+    --senary: 0 0% 90%; /* Light Gray من مجموعة البعد العالي */
     --senary-foreground: 0 0% 20%;
     --tertiary-foreground: 0 0% 100%;
     --muted: 210 40% 96.1%;

@@ -180,7 +180,7 @@ export default function Login() {
         {/* معلومات الشركة */}
         <div className="mt-8 text-center">
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            © 2024 أسهل عمان - نظام إدارة السقالات
+            © 2024 البعد العالي عمان - نظام إدارة السقالات
           </p>
         </div>
       </div>

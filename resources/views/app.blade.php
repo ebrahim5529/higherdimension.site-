@@ -3,18 +3,18 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>أسهل عمان - نظام إدارة السقالات</title>
-    <meta name="description" content="نظام إدارة السقالات - أسهل عمان" />
-    <meta name="author" content="أسهل عمان" />
+    <title>البعد العالي عمان - نظام إدارة السقالات</title>
+    <meta name="description" content="نظام إدارة السقالات - البعد العالي عمان" />
+    <meta name="author" content="البعد العالي عمان" />
     <meta name="keywords" content="إدارة السقالات, عقود, عملاء, مدفوعات" />
 
-    <meta property="og:title" content="أسهل عمان - نظام إدارة السقالات" />
+    <meta property="og:title" content="البعد العالي عمان - نظام إدارة السقالات" />
     <meta property="og:description" content="نظام إدارة السقالات" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="ar" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="أسهل عمان - نظام إدارة السقالات" />
+    <meta name="twitter:title" content="البعد العالي عمان - نظام إدارة السقالات" />
     <meta name="twitter:description" content="نظام إدارة السقالات" />
 
     <!-- Favicon -->

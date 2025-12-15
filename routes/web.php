@@ -105,6 +105,13 @@ Route::middleware('auth')->group(function () {
     Route::resource('employees', \App\Http\Controllers\Admin\EmployeeController::class);
     Route::get('/dashboard/employee-management', [\App\Http\Controllers\Admin\EmployeeController::class, 'index'])->name('employees.management');
     
+    // Payments Management Routes
+    Route::get('/payments', [\App\Http\Controllers\Admin\PaymentController::class, 'index'])->name('payments.index');
+    Route::get('/payments/create', [\App\Http\Controllers\Admin\PaymentController::class, 'create'])->name('payments.create');
+    Route::post('/payments', [\App\Http\Controllers\Admin\PaymentController::class, 'store'])->name('payments.store');
+    Route::get('/payments/late', [\App\Http\Controllers\Admin\PaymentController::class, 'latePayments'])->name('payments.late');
+    Route::get('/payments/reports', [\App\Http\Controllers\Admin\PaymentController::class, 'reports'])->name('payments.reports');
+    
     Route::post('/logout', function (Request $request) {
         Auth::logout();
         $request->session()->invalidate();

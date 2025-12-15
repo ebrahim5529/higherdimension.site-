@@ -379,7 +379,7 @@ export function Sidebar({
                 </div>
                 <div>
                   <h2 className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">
-                    أسهل
+                    البعد العالي
                   </h2>
                   <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
                     إدارة السقالات
