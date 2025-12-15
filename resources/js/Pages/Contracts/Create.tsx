@@ -9,6 +9,7 @@ import { showToast } from '@/hooks/use-toast';
 import { FileText, Save, ArrowLeft, Plus, Trash2, MessageSquare, Package } from 'lucide-react';
 import { ScaffoldSelector } from '@/components/features/ScaffoldSelector';
 import { ContractWhatsAppModal } from '@/components/features/ContractWhatsAppModal';
+import { ContractPreviewModal } from '@/components/features/ContractPreviewModal';
 
 interface Customer {
   id: number;
@@ -92,6 +93,7 @@ export default function CreateContract({ customers }: CreateContractProps) {
   const [transportCost, setTransportCost] = useState(0);
   const [totalDiscount, setTotalDiscount] = useState(0);
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [createdContract, setCreatedContract] = useState<{
     id: number;
     contract_number: string;
@@ -1082,6 +1084,7 @@ export default function CreateContract({ customers }: CreateContractProps) {
 
                 <Button
                   type="button"
+                  onClick={() => setPreviewModalOpen(true)}
                   disabled={processing || !isFormValid()}
                   className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2"
                 >
@@ -1124,6 +1127,23 @@ export default function CreateContract({ customers }: CreateContractProps) {
         contract={createdContract}
         customerPhone={selectedCustomer?.phone || ''}
       />
+
+      {/* Modal معاينة نموذج الفاتورة */}
+      {selectedCustomer && (
+        <ContractPreviewModal
+          open={previewModalOpen}
+          onOpenChange={setPreviewModalOpen}
+          contractNumber={contractNumber}
+          contractDate={contractDate}
+          customerName={selectedCustomer.name}
+          customerNumber={selectedCustomer.customer_number}
+          deliveryAddress={deliveryAddress}
+          rentalDetails={rentalDetails}
+          transportCost={transportCost}
+          totalDiscount={totalDiscount}
+          customerPhone={selectedCustomer.phone || ''}
+        />
+      )}
     </DashboardLayout>
   );
 }

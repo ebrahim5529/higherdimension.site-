@@ -234,22 +234,67 @@ class ContractController extends Controller
      */
     public function show(string $id)
     {
-        $contract = Contract::with(['customer', 'user'])->findOrFail($id);
+        $contract = Contract::with(['customer', 'user', 'equipment', 'contractPayments', 'attachments'])->findOrFail($id);
         
-        $paidAmount = $contract->payments()->sum('amount') ?? 0;
+        $paidAmount = $contract->contractPayments()->sum('amount') ?? 0;
         $remainingAmount = max(0, $contract->amount - $paidAmount);
         
-        $paymentStatus = 'غير مدفوعة';
-        if ($remainingAmount == 0 && $contract->amount > 0) {
-            $paymentStatus = 'مدفوعة';
-        } elseif ($remainingAmount > 0 && $remainingAmount < $contract->amount) {
-            $paymentStatus = 'مدفوعة جزئياً';
+        $paymentStatus = 'غير مدفوع';
+        $paymentPercentage = 0;
+        if ($contract->amount > 0) {
+            $paymentPercentage = round(($paidAmount / $contract->amount) * 100, 2);
+            if ($remainingAmount == 0) {
+                $paymentStatus = 'مدفوع';
+            } elseif ($remainingAmount < $contract->amount) {
+                $paymentStatus = 'مدفوع جزئياً';
+            }
         }
 
         $contractType = 'تأجير';
         if ($contract->payment_type === 'CASH') {
             $contractType = 'بيع';
         }
+
+        // حساب المدة بالأيام
+        $duration = 0;
+        if ($contract->start_date && $contract->end_date) {
+            $duration = $contract->start_date->diffInDays($contract->end_date);
+        }
+
+        // حساب الأيام المتبقية والمنقضية
+        $now = now();
+        $daysRemaining = 0;
+        $daysElapsed = 0;
+        $progressPercentage = 0;
+        $dailyValue = 0;
+
+        if ($contract->start_date && $contract->end_date) {
+            if ($now < $contract->start_date) {
+                $daysRemaining = $contract->start_date->diffInDays($now);
+            } elseif ($now > $contract->end_date) {
+                $daysElapsed = $contract->start_date->diffInDays($contract->end_date);
+                $progressPercentage = 100;
+            } else {
+                $daysElapsed = $contract->start_date->diffInDays($now);
+                $daysRemaining = $now->diffInDays($contract->end_date);
+                $progressPercentage = round(($daysElapsed / $duration) * 100, 2);
+            }
+
+            if ($duration > 0) {
+                $dailyValue = round($contract->amount / $duration, 3);
+            }
+        }
+
+        // حساب عدد المعدات
+        $equipmentCount = $contract->equipment()->sum('quantity') ?? 0;
+
+        // تحديد مراحل العقد
+        $stages = [
+            'signed' => $contract->signed_at !== null,
+            'delivered' => false, // يمكن إضافة منطق للتسليم
+            'inactive' => $contract->status === 'CANCELLED',
+            'completed' => $contract->status === 'EXPIRED' || $contract->status === 'COMPLETED',
+        ];
 
         return Inertia::render('Contracts/Show', [
             'contract' => [
@@ -258,6 +303,7 @@ class ContractController extends Controller
                 'title' => $contract->title,
                 'description' => $contract->description,
                 'customerName' => $contract->customer->name ?? 'غير معروف',
+                'customerNumber' => $contract->customer->customer_number ?? '',
                 'customerId' => $contract->customer_id,
                 'type' => $contractType,
                 'amount' => $contract->amount,
@@ -265,13 +311,39 @@ class ContractController extends Controller
                 'remainingAmount' => $remainingAmount,
                 'status' => $this->getStatusLabel($contract->status),
                 'paymentStatus' => $paymentStatus,
+                'paymentPercentage' => $paymentPercentage,
                 'startDate' => $contract->start_date?->format('Y-m-d'),
                 'endDate' => $contract->end_date?->format('Y-m-d'),
+                'startDateAr' => $contract->start_date ? $this->formatDateArabic($contract->start_date) : '',
+                'endDateAr' => $contract->end_date ? $this->formatDateArabic($contract->end_date) : '',
                 'createdDate' => $contract->created_at?->format('Y-m-d'),
-                'paymentType' => $contract->payment_type,
-                'installmentCount' => $contract->installment_count,
-                'equipment' => $contract->description ?? '',
-                'notes' => null,
+                'createdDateAr' => $contract->created_at ? $this->formatDateArabic($contract->created_at) : '',
+                'updatedDate' => $contract->updated_at?->format('Y-m-d'),
+                'updatedDateAr' => $contract->updated_at ? $this->formatDateArabic($contract->updated_at) : '',
+                'duration' => $duration,
+                'deliveryAddress' => $contract->delivery_address ?? '',
+                'locationMapLink' => $contract->location_map_link,
+                'equipmentCount' => $equipmentCount,
+                'daysRemaining' => $daysRemaining,
+                'daysElapsed' => $daysElapsed,
+                'progressPercentage' => $progressPercentage,
+                'dailyValue' => $dailyValue,
+                'stages' => $stages,
+                'signedAt' => $contract->signed_at?->format('Y-m-d H:i:s'),
+                'contractNotes' => $contract->contract_notes,
+                'attachments' => $contract->attachments->map(function ($attachment) {
+                    return [
+                        'id' => $attachment->id,
+                        'name' => $attachment->name,
+                        'file_path' => $attachment->file_path,
+                        'file_type' => $attachment->file_type,
+                        'file_size' => $attachment->file_size,
+                        'file_size_human' => $attachment->file_size_human,
+                        'mime_type' => $attachment->mime_type,
+                        'description' => $attachment->description,
+                        'created_at' => $attachment->created_at?->format('Y-m-d H:i:s'),
+                    ];
+                })->toArray(),
             ],
         ]);
     }
@@ -613,6 +685,80 @@ class ContractController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'تم حفظ التوقيع بنجاح');
+    }
+
+    /**
+     * رفع مرفق جديد للعقد
+     */
+    public function uploadAttachment(Request $request, string $id)
+    {
+        $validated = $request->validate([
+            'file' => 'required|file|max:10240', // 10MB max
+            'description' => 'nullable|string|max:500',
+        ]);
+
+        $contract = Contract::findOrFail($id);
+
+        $file = $validated['file'];
+        $originalName = $file->getClientOriginalName();
+        $extension = $file->getClientOriginalExtension();
+        $mimeType = $file->getMimeType();
+        $fileSize = $file->getSize();
+
+        // تحديد نوع الملف
+        $fileType = strtoupper($extension);
+
+        // حفظ الملف
+        $filePath = $file->store('contracts/attachments', 'public');
+
+        // إنشاء سجل المرفق
+        $attachment = \App\Models\ContractAttachment::create([
+            'contract_id' => $contract->id,
+            'name' => $originalName,
+            'file_path' => $filePath,
+            'file_type' => $fileType,
+            'file_size' => $fileSize,
+            'mime_type' => $mimeType,
+            'description' => $validated['description'] ?? null,
+        ]);
+
+        return redirect()->back()->with('success', 'تم رفع المرفق بنجاح');
+    }
+
+    /**
+     * حذف مرفق
+     */
+    public function deleteAttachment(string $contractId, string $attachmentId)
+    {
+        $contract = Contract::findOrFail($contractId);
+        $attachment = \App\Models\ContractAttachment::where('contract_id', $contract->id)
+            ->findOrFail($attachmentId);
+
+        // حذف الملف من التخزين
+        if (\Storage::disk('public')->exists($attachment->file_path)) {
+            \Storage::disk('public')->delete($attachment->file_path);
+        }
+
+        // حذف السجل من قاعدة البيانات
+        $attachment->delete();
+
+        return redirect()->back()->with('success', 'تم حذف المرفق بنجاح');
+    }
+
+    /**
+     * تحميل مرفق
+     */
+    public function downloadAttachment(string $contractId, string $attachmentId)
+    {
+        $contract = Contract::findOrFail($contractId);
+        $attachment = \App\Models\ContractAttachment::where('contract_id', $contract->id)
+            ->findOrFail($attachmentId);
+
+        if (!\Storage::disk('public')->exists($attachment->file_path)) {
+            abort(404, 'الملف غير موجود');
+        }
+
+        return \Storage::disk('public')->download($attachment->file_path, $attachment->name);
     }
 
     private function getStatusLabel(string $status): string

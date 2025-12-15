@@ -80,4 +80,12 @@ class Contract extends Model
     {
         return $this->hasMany(ContractPayment::class);
     }
+
+    /**
+     * Get the contract attachments.
+     */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(ContractAttachment::class);
+    }
 }
