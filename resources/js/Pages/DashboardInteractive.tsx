@@ -20,7 +20,7 @@ export default function DashboardInteractive({ stats }: DashboardInteractiveProp
   return (
     <DashboardLayout>
       <Head title="لوحة التحكم التفاعلية" />
-      <div className="space-y-6">
+      <div className="space-y-6 mt-2 -mx-1 sm:-mx-2 lg:-mx-3 xl:-mx-4">
         {/* العنوان والوصف */}
         <div className="flex items-center justify-between">
           <div>

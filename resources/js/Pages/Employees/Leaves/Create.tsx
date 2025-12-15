@@ -97,7 +97,7 @@ export default function CreateLeave({ employees }: CreateLeaveProps) {
   return (
     <DashboardLayout>
       <Head title="إضافة طلب إجازة جديد" />
-      <div className="space-y-6">
+      <div className="space-y-6 mt-2 -mx-1 sm:-mx-2 lg:-mx-3 xl:-mx-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => router.visit('/employees/leaves')}>

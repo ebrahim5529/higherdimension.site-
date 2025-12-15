@@ -74,7 +74,7 @@ export default function SalariesIndex({ salaries, stats }: SalariesIndexProps) {
   return (
     <DashboardLayout>
       <Head title="الرواتب" />
-      <div className="space-y-6">
+      <div className="space-y-6 mt-2 -mx-1 sm:-mx-2 lg:-mx-3 xl:-mx-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -91,7 +91,7 @@ export default function SalariesIndex({ salaries, stats }: SalariesIndexProps) {
         </div>
 
         {/* إحصائيات الرواتب */}
-        <div className="space-y-6">
+        <div className="space-y-6 mt-2 -mx-1 sm:-mx-2 lg:-mx-3 xl:-mx-4">
           <div className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
             <h2 className="text-xl font-semibold">إحصائيات الرواتب</h2>

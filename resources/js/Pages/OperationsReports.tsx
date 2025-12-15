@@ -15,7 +15,7 @@ export default function OperationsReports({ stats }: OperationsReportsProps) {
   return (
     <DashboardLayout>
       <Head title="تقارير العمليات" />
-      <div className="space-y-6">
+      <div className="space-y-6 mt-2 -mx-1 sm:-mx-2 lg:-mx-3 xl:-mx-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             تقارير العمليات

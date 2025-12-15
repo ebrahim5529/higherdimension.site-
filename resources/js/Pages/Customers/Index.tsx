@@ -113,7 +113,7 @@ export default function CustomersIndex({ customers, stats }: CustomersIndexProps
   return (
     <DashboardLayout>
       <Head title="إدارة العملاء" />
-      <div className="w-full space-y-6">
+      <div className="w-full space-y-6 mt-2 -mx-1 sm:-mx-2 lg:-mx-3 xl:-mx-4">
         {/* العنوان */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

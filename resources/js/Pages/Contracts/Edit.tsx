@@ -481,7 +481,7 @@ export default function EditContract({ contract, customers }: EditContractProps)
   return (
     <DashboardLayout>
       <Head title="تعديل العقد" />
-      <div className="space-y-6 pb-8">
+      <div className="space-y-6 pb-8 mt-2 -mx-1 sm:-mx-2 lg:-mx-3 xl:-mx-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">

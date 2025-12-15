@@ -60,7 +60,7 @@ export default function MainDashboard({ mainStats, recentActivities, officePerfo
   return (
     <DashboardLayout>
       <Head title="لوحة التحكم الرئيسية" />
-      <div className="space-y-6">
+      <div className="space-y-6 mt-2 -mx-1 sm:-mx-2 lg:-mx-3 xl:-mx-4">
         {/* عنوان الصفحة */}
         <div className="flex justify-between items-center">
           <div>

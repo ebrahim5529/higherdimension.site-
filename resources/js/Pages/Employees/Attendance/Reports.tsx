@@ -158,7 +158,7 @@ export default function AttendanceReports({ attendances, employees, employeeStat
   return (
     <DashboardLayout>
       <Head title="تقارير الحضور والانصراف" />
-      <div className="space-y-6">
+      <div className="space-y-6 mt-2 -mx-1 sm:-mx-2 lg:-mx-3 xl:-mx-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
