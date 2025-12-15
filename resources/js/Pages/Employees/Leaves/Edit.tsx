@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { showToast } from '@/hooks/use-toast';
 import { Calendar, Save, ArrowLeft, User, FileText } from 'lucide-react';
+import { Combobox } from '@/components/ui/combobox';
 
 interface Employee {
   id: number;
@@ -140,23 +141,18 @@ export default function EditLeave({ leave, employees }: EditLeaveProps) {
                   <label className="block text-sm font-medium mb-1">
                     الموظف <span className="text-red-500">*</span>
                   </label>
-                  <div className="relative">
-                    <User className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <select
-                      value={data.employee_id}
-                      onChange={(e) => setData('employee_id', e.target.value)}
-                      className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white ${
-                        errors.employee_id ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                      }`}
-                    >
-                      <option value="">اختر الموظف</option>
-                      {employees.map((employee) => (
-                        <option key={employee.id} value={employee.id}>
-                          {employee.name} ({employee.employee_number})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <Combobox
+                    options={employees.map((emp) => ({
+                      value: emp.id.toString(),
+                      label: `${emp.name} (${emp.employee_number})`,
+                    }))}
+                    value={data.employee_id}
+                    onValueChange={(value) => setData('employee_id', value)}
+                    placeholder="اختر الموظف"
+                    searchPlaceholder="ابحث عن الموظف..."
+                    emptyText="لا يوجد موظفين"
+                    error={!!errors.employee_id}
+                  />
                   {errors.employee_id && <p className="text-red-500 text-xs mt-1">{errors.employee_id}</p>}
                 </div>
 
@@ -164,17 +160,17 @@ export default function EditLeave({ leave, employees }: EditLeaveProps) {
                   <label className="block text-sm font-medium mb-1">
                     نوع الإجازة <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <Combobox
+                    options={leaveTypes.map((type) => ({
+                      value: type.value,
+                      label: type.label,
+                    }))}
                     value={data.leave_type}
-                    onChange={(e) => setData('leave_type', e.target.value as any)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white"
-                  >
-                    {leaveTypes.map((type) => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
+                    onValueChange={(value) => setData('leave_type', value as any)}
+                    placeholder="اختر نوع الإجازة"
+                    searchPlaceholder="ابحث..."
+                    emptyText="لا توجد نتائج"
+                  />
                 </div>
 
                 <div>
@@ -246,16 +242,19 @@ export default function EditLeave({ leave, employees }: EditLeaveProps) {
                   <label className="block text-sm font-medium mb-1">
                     الحالة <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <Combobox
+                    options={[
+                      { value: 'PENDING', label: 'في الانتظار' },
+                      { value: 'APPROVED', label: 'موافق عليه' },
+                      { value: 'REJECTED', label: 'مرفوض' },
+                      { value: 'CANCELLED', label: 'ملغاة' },
+                    ]}
                     value={data.status}
-                    onChange={(e) => setData('status', e.target.value as any)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white"
-                  >
-                    <option value="PENDING">في الانتظار</option>
-                    <option value="APPROVED">موافق عليه</option>
-                    <option value="REJECTED">مرفوض</option>
-                    <option value="CANCELLED">ملغاة</option>
-                  </select>
+                    onValueChange={(value) => setData('status', value as any)}
+                    placeholder="اختر الحالة"
+                    searchPlaceholder="ابحث..."
+                    emptyText="لا توجد نتائج"
+                  />
                 </div>
 
                 <div>

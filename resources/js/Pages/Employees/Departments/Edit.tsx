@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { showToast } from '@/hooks/use-toast';
 import { Building2, Save, ArrowLeft, User, MapPin, DollarSign } from 'lucide-react';
+import { Combobox } from '@/components/ui/combobox';
 
 interface Manager {
   id: number;
@@ -133,35 +134,34 @@ export default function EditDepartment({ department, managers }: EditDepartmentP
 
                 <div>
                   <label className="block text-sm font-medium mb-1">المدير</label>
-                  <div className="relative">
-                    <User className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <select
-                      value={data.manager_id}
-                      onChange={(e) => setData('manager_id', e.target.value)}
-                      className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white"
-                    >
-                      <option value="">اختر المدير</option>
-                      {managers.map((manager) => (
-                        <option key={manager.id} value={manager.id}>
-                          {manager.name} ({manager.position})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <Combobox
+                    options={managers.map((mgr) => ({
+                      value: mgr.id.toString(),
+                      label: `${mgr.name} (${mgr.position})`,
+                    }))}
+                    value={data.manager_id}
+                    onValueChange={(value) => setData('manager_id', value)}
+                    placeholder="اختر المدير"
+                    searchPlaceholder="ابحث عن المدير..."
+                    emptyText="لا يوجد مديرين"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     الحالة <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <Combobox
+                    options={[
+                      { value: 'ACTIVE', label: 'نشط' },
+                      { value: 'INACTIVE', label: 'غير نشط' },
+                    ]}
                     value={data.status}
-                    onChange={(e) => setData('status', e.target.value as 'ACTIVE' | 'INACTIVE')}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white"
-                  >
-                    <option value="ACTIVE">نشط</option>
-                    <option value="INACTIVE">غير نشط</option>
-                  </select>
+                    onValueChange={(value) => setData('status', value as 'ACTIVE' | 'INACTIVE')}
+                    placeholder="اختر الحالة"
+                    searchPlaceholder="ابحث..."
+                    emptyText="لا توجد نتائج"
+                  />
                 </div>
 
                 <div>
