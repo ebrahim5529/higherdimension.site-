@@ -149,7 +149,7 @@ class DashboardController extends Controller
             $activities[] = [
                 'description' => "تم إنشاء عقد {$contractType} سقالات - {$contract->title}",
                 'time' => $timeAgo,
-                'user' => $contract->user->name ?? 'غير معروف',
+                'user' => $contract->user?->name ?? 'غير معروف',
                 'timestamp' => $contract->created_at->timestamp,
             ];
         }
@@ -162,8 +162,8 @@ class DashboardController extends Controller
         
         foreach ($recentPayments as $payment) {
             $timeAgo = $this->formatTimeAgo($payment->created_at);
-            $customerName = $payment->contract->customer->name ?? 'غير معروف';
-            $userName = $payment->contract->user->name ?? 'غير معروف';
+            $customerName = $payment->contract?->customer?->name ?? 'غير معروف';
+            $userName = $payment->contract?->user?->name ?? 'غير معروف';
             $activities[] = [
                 'description' => "تم استلام دفعة بقيمة " . number_format($payment->amount, 2) . " ر.ع. من {$customerName}",
                 'time' => $timeAgo,
@@ -203,7 +203,7 @@ class DashboardController extends Controller
                 return [
                     'id' => $contract->id,
                     'contractNumber' => $contract->contract_number,
-                    'customerName' => $contract->customer->name ?? 'غير معروف',
+                    'customerName' => $contract->customer?->name ?? 'غير معروف',
                     'contractType' => $contractType,
                     'status' => $contract->status,
                     'progress' => $this->getContractProgress($contract),
