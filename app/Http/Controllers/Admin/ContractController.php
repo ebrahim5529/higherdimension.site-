@@ -102,6 +102,138 @@ class ContractController extends Controller
     }
 
     /**
+     * Display active contracts.
+     */
+    public function active()
+    {
+        $contracts = Contract::with(['customer', 'user', 'contractPayments'])
+            ->where('status', 'ACTIVE')
+            ->get()
+            ->map(function ($contract) {
+                $paidAmount = $contract->contractPayments()->sum('amount') ?? 0;
+                $remainingAmount = max(0, $contract->amount - $paidAmount);
+                
+                $contractType = $contract->payment_type === 'rental' ? 'تأجير' : ($contract->payment_type === 'sale' ? 'شراء' : 'تأجير');
+                
+                return [
+                    'id' => $contract->id,
+                    'contractNumber' => $contract->contract_number,
+                    'title' => $contract->title,
+                    'customerName' => $contract->customer->name ?? 'غير معروف',
+                    'customerId' => $contract->customer_id,
+                    'type' => $contractType,
+                    'amount' => (float) $contract->amount,
+                    'totalPayments' => (float) $paidAmount,
+                    'remainingAmount' => (float) $remainingAmount,
+                    'status' => $this->getStatusLabel($contract->status),
+                    'startDate' => $contract->start_date?->format('Y-m-d'),
+                    'endDate' => $contract->end_date?->format('Y-m-d'),
+                    'createdDate' => $contract->created_at?->format('Y-m-d'),
+                ];
+            });
+
+        $stats = [
+            'total' => $contracts->count(),
+            'totalValue' => $contracts->sum('amount'),
+            'totalPaid' => $contracts->sum('totalPayments'),
+            'totalRemaining' => $contracts->sum('remainingAmount'),
+        ];
+
+        return Inertia::render('Contracts/Active', [
+            'contracts' => $contracts,
+            'stats' => $stats,
+        ]);
+    }
+
+    /**
+     * Display expired contracts.
+     */
+    public function expired()
+    {
+        $contracts = Contract::with(['customer', 'user', 'contractPayments'])
+            ->where('status', 'EXPIRED')
+            ->get()
+            ->map(function ($contract) {
+                $paidAmount = $contract->contractPayments()->sum('amount') ?? 0;
+                $remainingAmount = max(0, $contract->amount - $paidAmount);
+                
+                $contractType = $contract->payment_type === 'rental' ? 'تأجير' : ($contract->payment_type === 'sale' ? 'شراء' : 'تأجير');
+                
+                return [
+                    'id' => $contract->id,
+                    'contractNumber' => $contract->contract_number,
+                    'title' => $contract->title,
+                    'customerName' => $contract->customer->name ?? 'غير معروف',
+                    'customerId' => $contract->customer_id,
+                    'type' => $contractType,
+                    'amount' => (float) $contract->amount,
+                    'totalPayments' => (float) $paidAmount,
+                    'remainingAmount' => (float) $remainingAmount,
+                    'status' => $this->getStatusLabel($contract->status),
+                    'startDate' => $contract->start_date?->format('Y-m-d'),
+                    'endDate' => $contract->end_date?->format('Y-m-d'),
+                    'createdDate' => $contract->created_at?->format('Y-m-d'),
+                ];
+            });
+
+        $stats = [
+            'total' => $contracts->count(),
+            'totalValue' => $contracts->sum('amount'),
+            'totalPaid' => $contracts->sum('totalPayments'),
+            'totalRemaining' => $contracts->sum('remainingAmount'),
+        ];
+
+        return Inertia::render('Contracts/Expired', [
+            'contracts' => $contracts,
+            'stats' => $stats,
+        ]);
+    }
+
+    /**
+     * Display cancelled contracts.
+     */
+    public function cancelled()
+    {
+        $contracts = Contract::with(['customer', 'user', 'contractPayments'])
+            ->where('status', 'CANCELLED')
+            ->get()
+            ->map(function ($contract) {
+                $paidAmount = $contract->contractPayments()->sum('amount') ?? 0;
+                $remainingAmount = max(0, $contract->amount - $paidAmount);
+                
+                $contractType = $contract->payment_type === 'rental' ? 'تأجير' : ($contract->payment_type === 'sale' ? 'شراء' : 'تأجير');
+                
+                return [
+                    'id' => $contract->id,
+                    'contractNumber' => $contract->contract_number,
+                    'title' => $contract->title,
+                    'customerName' => $contract->customer->name ?? 'غير معروف',
+                    'customerId' => $contract->customer_id,
+                    'type' => $contractType,
+                    'amount' => (float) $contract->amount,
+                    'totalPayments' => (float) $paidAmount,
+                    'remainingAmount' => (float) $remainingAmount,
+                    'status' => $this->getStatusLabel($contract->status),
+                    'startDate' => $contract->start_date?->format('Y-m-d'),
+                    'endDate' => $contract->end_date?->format('Y-m-d'),
+                    'createdDate' => $contract->created_at?->format('Y-m-d'),
+                ];
+            });
+
+        $stats = [
+            'total' => $contracts->count(),
+            'totalValue' => $contracts->sum('amount'),
+            'totalPaid' => $contracts->sum('totalPayments'),
+            'totalRemaining' => $contracts->sum('remainingAmount'),
+        ];
+
+        return Inertia::render('Contracts/Cancelled', [
+            'contracts' => $contracts,
+            'stats' => $stats,
+        ]);
+    }
+
+    /**
      * Show the form for creating a new resource.
      */
     public function create()

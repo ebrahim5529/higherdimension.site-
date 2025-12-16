@@ -33,6 +33,9 @@ export default function DashboardLayout({
       '/contracts': 'contract-management',
       '/contracts/create': 'contract-management',
       '/contracts/edit': 'contract-management',
+      '/contracts/active': 'active-contracts',
+      '/contracts/expired': 'expired-contracts',
+      '/contracts/cancelled': 'cancelled-contracts',
       '/dashboard/contract-management': 'contract-management',
       '/dashboard/supplier-management': 'supplier-management',
       '/dashboard/supplier-invoices': 'supplier-invoices',
@@ -77,6 +80,15 @@ export default function DashboardLayout({
   const getActiveSection = useCallback(
     (url: string) => {
       if (url.startsWith('/contracts')) {
+        if (url.includes('/active')) {
+          return 'active-contracts';
+        }
+        if (url.includes('/expired')) {
+          return 'expired-contracts';
+        }
+        if (url.includes('/cancelled')) {
+          return 'cancelled-contracts';
+        }
         return 'contract-management';
       }
       if (url.startsWith('/dashboard/contract-details/')) {

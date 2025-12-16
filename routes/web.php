@@ -39,10 +39,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/customer-claims', [\App\Http\Controllers\Admin\CustomerController::class, 'claims'])->name('customers.claims');
     Route::post('/customers/{id}/notes', [\App\Http\Controllers\Admin\CustomerController::class, 'storeNote'])->name('customers.notes.store');
     
-    // Contracts
+    // Contracts - يجب وضع المسارات المخصصة قبل Route::resource
+    Route::get('/contracts/active', [\App\Http\Controllers\Admin\ContractController::class, 'active'])->name('contracts.active');
+    Route::get('/contracts/expired', [\App\Http\Controllers\Admin\ContractController::class, 'expired'])->name('contracts.expired');
+    Route::get('/contracts/cancelled', [\App\Http\Controllers\Admin\ContractController::class, 'cancelled'])->name('contracts.cancelled');
+    Route::get('/contracts/{id}/invoice', [\App\Http\Controllers\Admin\ContractController::class, 'invoice'])->name('contracts.invoice');
     Route::resource('contracts', \App\Http\Controllers\Admin\ContractController::class);
     Route::get('/dashboard/contract-management', [\App\Http\Controllers\Admin\ContractController::class, 'index'])->name('contracts.management');
-    Route::get('/contracts/{id}/invoice', [\App\Http\Controllers\Admin\ContractController::class, 'invoice'])->name('contracts.invoice');
     Route::post('/contracts/{id}/attachments', [\App\Http\Controllers\Admin\ContractController::class, 'uploadAttachment'])->name('contracts.attachments.upload');
     Route::delete('/contracts/{contractId}/attachments/{attachmentId}', [\App\Http\Controllers\Admin\ContractController::class, 'deleteAttachment'])->name('contracts.attachments.delete');
     Route::get('/contracts/{contractId}/attachments/{attachmentId}/download', [\App\Http\Controllers\Admin\ContractController::class, 'downloadAttachment'])->name('contracts.attachments.download');
