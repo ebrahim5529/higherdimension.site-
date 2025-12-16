@@ -1,0 +1,45 @@
+<?php
+
+/**
+ * index.php للاستضافة المشتركة (Hostinger)
+ * 
+ * في الاستضافة المشتركة، Document Root هو public_html مباشرة
+ * لذلك يجب أن يكون هذا الملف في public_html/index.php
+ * 
+ * تأكد من تعديل المسارات حسب هيكل مجلداتك:
+ * - إذا كان Laravel في public_html مباشرة: استخدم المسارات الحالية
+ * - إذا كان Laravel في مجلد فرعي: عدّل المسارات حسب الحاجة
+ */
+
+use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
+
+define('LARAVEL_START', microtime(true));
+
+// Determine if the application is in maintenance mode...
+// في الاستضافة المشتركة، قد يكون المسار مختلفاً
+$maintenancePath = __DIR__.'/../storage/framework/maintenance.php';
+if (file_exists($maintenancePath)) {
+    require $maintenancePath;
+}
+
+// Register the Composer autoloader...
+// في الاستضافة المشتركة، قد يكون vendor في مجلد مختلف
+$autoloadPath = __DIR__.'/../vendor/autoload.php';
+if (!file_exists($autoloadPath)) {
+    // جرب مسار بديل
+    $autoloadPath = dirname(__DIR__).'/vendor/autoload.php';
+}
+require $autoloadPath;
+
+// Bootstrap Laravel and handle the request...
+/** @var Application $app */
+$appPath = __DIR__.'/../bootstrap/app.php';
+if (!file_exists($appPath)) {
+    // جرب مسار بديل
+    $appPath = dirname(__DIR__).'/bootstrap/app.php';
+}
+$app = require_once $appPath;
+
+$app->handleRequest(Request::capture());
+

@@ -66,28 +66,39 @@ class AppServiceProvider extends ServiceProvider
         // Path 1: Standard Laravel path (public/build/manifest.json)
         $paths[] = public_path('build/manifest.json');
 
-        // Path 2: Direct public_html path (for shared hosting where public_html = document root)
+        // Path 2: Direct in public folder (public/manifest.json) - fallback for misconfigured builds
+        $paths[] = public_path('manifest.json');
+
+        // Path 3: Direct public_html path (for shared hosting where public_html = document root)
         $standardPath = public_path('build/manifest.json');
         $publicHtmlPath = str_replace('/public/', '/', $standardPath);
         if ($publicHtmlPath !== $standardPath) {
             $paths[] = $publicHtmlPath;
         }
 
-        // Path 3: Base path with public
+        // Path 4: Base path with public
         $paths[] = base_path('public/build/manifest.json');
+        $paths[] = base_path('public/manifest.json');
 
-        // Path 4: Check if we're in public_html directly (common in shared hosting)
+        // Path 5: Check if we're in public_html directly (common in shared hosting)
         $basePath = base_path();
         if (str_contains($basePath, 'public_html')) {
             // Try public_html/build/manifest.json
             $paths[] = str_replace('/public_html/public/', '/public_html/', $standardPath);
             $paths[] = str_replace('/public_html/public/', '/public_html/', base_path('public/build/manifest.json'));
+            // Also try public_html/manifest.json
+            $paths[] = str_replace('/public_html/public/', '/public_html/', public_path('manifest.json'));
         }
 
-        // Path 5: Absolute path from document root
+        // Path 6: Absolute path from document root
         if (isset($_SERVER['DOCUMENT_ROOT'])) {
             $docRoot = $_SERVER['DOCUMENT_ROOT'];
             $paths[] = rtrim($docRoot, '/').'/build/manifest.json';
+            $paths[] = rtrim($docRoot, '/').'/manifest.json';
+            // Also check public/manifest.json relative to document root
+            if (str_contains($docRoot, 'public_html')) {
+                $paths[] = rtrim($docRoot, '/').'/public/manifest.json';
+            }
         }
 
         // Remove duplicates and return
@@ -99,8 +110,15 @@ class AppServiceProvider extends ServiceProvider
      */
     private function configureViteWithManifest(string $manifestPath): void
     {
+        // Determine build directory based on manifest location
+        $buildDirectory = 'build';
+        if (str_ends_with($manifestPath, '/manifest.json') && !str_contains($manifestPath, '/build/')) {
+            // If manifest is directly in public folder (not in build subfolder), use empty build directory
+            $buildDirectory = '';
+        }
+
         // Set build directory
-        Vite::useBuildDirectory('build');
+        Vite::useBuildDirectory($buildDirectory);
 
         // Check if we need to customize asset paths for shared hosting
         $isSharedHosting = $this->isSharedHostingSetup($manifestPath);
