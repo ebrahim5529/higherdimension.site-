@@ -57,4 +57,54 @@
  deployment-files/build/assets/Show-BNlQgEtE.js     |    1 [32m+[m
  deployment-files/build/assets/Show-BVApwwzQ.js     |    1 [32m+[m
  deployment-files/build/assets/Show-CFtNkc0k.js     |    1 [32m+[m
- deployment-files/build/a
+ deployment-files/build/assets/Show-CPmkRpF8.js     |    1 [32m+[m
+ deployment-files/build/assets/Show-CQDTn2zZ.js     |    1 [32m+[m
+ deployment-files/build/assets/Show-C_Ubps2o.js     |    1 [32m+[m
+ deployment-files/build/assets/Show-DFIFEcnc.js     |    1 [32m+[m
+ deployment-files/build/assets/Show-z_Vvu49M.js     |    1 [32m+[m
+ deployment-files/build/assets/Sign-DsXs8Odq.js     |    1 [32m+[m
+ deployment-files/build/assets/app-C4SmtXzs.js      |   91 [32m+[m
+ deployment-files/build/assets/app-zNvbvzzP.css     |    1 [32m+[m
+ .../build/assets/arrow-left-vgf7Q5lf.js            |    1 [32m+[m
+ .../build/assets/arrow-right-DnFsnGx-.js           |    1 [32m+[m
+ deployment-files/build/assets/building-PhME4Jvs.js |    1 [32m+[m
+ deployment-files/build/assets/button-CPi2Vosb.js   |    1 [32m+[m
+ deployment-files/build/assets/card-CGBAZfCO.js     |    1 [32m+[m
+ deployment-files/build/assets/check-C1KUnJra.js    |    1 [32m+[m
+ .../build/assets/chevron-left-CnVdLIeF.js          |    1 [32m+[m
+ .../build/assets/chevron-up-DXDM5Z4o.js            |    1 [32m+[m
+ .../build/assets/circle-check-big-C6s4kiI1.js      |    1 [32m+[m
+ deployment-files/build/assets/circle-x-YxrWUNqq.js |    1 [32m+[m
+ deployment-files/build/assets/combobox-un8GLm6a.js |    1 [32m+[m
+ .../build/assets/confirm-dialog-BZndedRM.js        |    1 [32m+[m
+ deployment-files/build/assets/copy-D76Ok7lZ.js     |    1 [32m+[m
+ .../build/assets/customersData-48ZDDR8v.js         |    1 [32m+[m
+ deployment-files/build/assets/dialog-CLOl0Txm.js   |   45 [32m+[m
+ deployment-files/build/assets/download-BeX5tWbj.js |    1 [32m+[m
+ deployment-files/build/assets/eye-pcZE0Q26.js      |    1 [32m+[m
+ deployment-files/build/assets/filter-CWN5aXn1.js   |    1 [32m+[m
+ .../build/assets/git-branch-DuxoMG2D.js            |    1 [32m+[m
+ deployment-files/build/assets/image-DkdGy7dK.js    |    1 [32m+[m
+ deployment-files/build/assets/index-Ba6VjTkz.js    |    4 [32m+[m
+ deployment-files/build/assets/index.php            |    6 [32m+[m
+ deployment-files/build/assets/input-qDfbrajX.js    |    1 [32m+[m
+ deployment-files/build/assets/mail-ZHQO5KUs.js     |    1 [32m+[m
+ deployment-files/build/assets/map-pin-BGfRqu9a.js  |    1 [32m+[m
+ deployment-files/build/assets/phone-BNjyhZNU.js    |    1 [32m+[m
+ deployment-files/build/assets/printer-CpJdvQDs.js  |    1 [32m+[m
+ deployment-files/build/assets/save-uAZOBswd.js     |    1 [32m+[m
+ deployment-files/build/assets/send-D9odrq_d.js     |    1 [32m+[m
+ .../build/assets/square-pen-DlPyCUdH.js            |    1 [32m+[m
+ deployment-files/build/assets/star-BrX2yoFz.js     |    1 [32m+[m
+ .../build/assets/suppliersData-DVWfbLdD.js         |    1 [32m+[m
+ deployment-files/build/assets/table-g3D2mruS.js    |    1 [32m+[m
+ deployment-files/build/assets/trash-2-BFFXdZS-.js  |    1 [32m+[m
+ .../build/assets/triangle-alert-BuVdEArW.js        |    1 [32m+[m
+ deployment-files/build/assets/upload-hBGJxNAI.js   |    1 [32m+[m
+ .../build/assets/use-toast-B9HC7Yw7.js             |    5 [32m+[m
+ deployment-files/build/assets/user-BFbh6T51.js     |    1 [32m+[m
+ deployment-files/build/index.php                   |    6 [32m+[m
+ deployment-files/build/manifest.json               | 1778 [32m++++++++++++++++++++[m
+ deployment-files/favicon.ico                       |  Bin
+ deployment-files/index.php                         |   20 [32m+[m
+ 109 files changed, 2276 insertions(+)
