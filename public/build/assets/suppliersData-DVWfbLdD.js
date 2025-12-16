@@ -1,0 +1,1 @@
+const a=[{value:"INDIVIDUAL",label:"فرد"},{value:"COMPANY",label:"شركة"}],l=[{value:"ACTIVE",label:"نشط"},{value:"INACTIVE",label:"غير نشط"},{value:"SUSPENDED",label:"معلق"}],e=["عماني","سعودي","إماراتي","كويتي","قطري","بحريني","مصري","سوري","لبناني","أردني","فلسطيني","عراقي","يمني","سوداني","مغربي","تونسي","جزائري","ليبي","أخرى"];export{e as a,l as b,a as s};
