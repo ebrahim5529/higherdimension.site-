@@ -24,8 +24,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Ensure Vite uses the standard build directory
-        // This is the default, but we set it explicitly to avoid issues
-        Vite::useBuildDirectory('build');
+        // Check if manifest exists in build directory (standard Laravel Vite location)
+        $buildManifestPath = public_path('build/manifest.json');
+        $assetsManifestPath = public_path('assets/manifest.json');
+
+        // If manifest is in assets directory (shared hosting setup), use that
+        if (file_exists($assetsManifestPath) && ! file_exists($buildManifestPath)) {
+            Vite::useBuildDirectory('assets');
+            Vite::useManifestPath($assetsManifestPath);
+        } else {
+            // Use standard build directory
+            Vite::useBuildDirectory('build');
+        }
     }
 }
