@@ -25,10 +25,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Fix Vite manifest path for Hostinger shared hosting
-        // On Hostinger, Document Root is public_html/public, so Laravel searches in:
-        // /home/u183760739/domains/higherdimension.site/public_html/public/build/manifest.json
-        // The manifest.json should be in public/build/manifest.json relative to project root
-        // We need to ensure the path is correctly resolved
+        // On Hostinger, Document Root is public_html (not public_html/public)
+        // Laravel's public_path() returns: /home/.../public_html/public/build/manifest.json
+        // But actual path is: /home/.../public_html/build/manifest.json
         if (app()->environment('production')) {
             // Standard path where manifest should be (relative to public directory)
             $manifestPath = public_path('build/manifest.json');
@@ -38,27 +37,51 @@ class AppServiceProvider extends ServiceProvider
                 // Manifest exists, ensure Vite uses the correct build directory
                 Vite::useBuildDirectory('build');
             } else {
-                // Try alternative paths
+                // Try alternative paths for shared hosting
+                // Path 1: Direct public_html path (if public_html is the document root)
+                $publicHtmlPath = str_replace('/public/', '/', public_path('build/manifest.json'));
+                
+                // Path 2: Base path with public
+                $basePublicPath = base_path('public/build/manifest.json');
+                
+                // Path 3: Just build in base
+                $baseBuildPath = base_path('build/manifest.json');
+                
                 $alternativePaths = [
-                    base_path('public/build/manifest.json'),
-                    base_path('build/manifest.json'),
+                    $publicHtmlPath,
+                    $basePublicPath,
+                    $baseBuildPath,
                 ];
                 
                 $found = false;
+                $foundPath = null;
+                
                 foreach ($alternativePaths as $altPath) {
                     if (file_exists($altPath)) {
                         // Found manifest in alternative location
-                        // Use build directory relative to where manifest was found
-                        Vite::useBuildDirectory('build');
+                        $foundPath = $altPath;
                         $found = true;
                         break;
                     }
                 }
                 
-                // If manifest not found, log warning but don't break
-                if (!$found) {
+                if ($found && $foundPath) {
+                    // Use build directory relative to where manifest was found
+                    Vite::useBuildDirectory('build');
+                    
+                    // If manifest is in public_html directly (not public_html/public)
+                    // we need to tell Vite to use the correct base path
+                    if (str_contains($foundPath, '/public_html/build/') && !str_contains($foundPath, '/public_html/public/')) {
+                        // The manifest is in public_html/build/, which is correct
+                        // Vite should use 'build' as the directory
+                        Vite::useBuildDirectory('build');
+                    }
+                } else {
+                    // If manifest not found, log warning but don't break
                     \Log::warning('Vite manifest.json not found in expected locations', [
                         'searched_paths' => array_merge([$manifestPath], $alternativePaths),
+                        'public_path' => public_path(),
+                        'base_path' => base_path(),
                     ]);
                 }
             }
