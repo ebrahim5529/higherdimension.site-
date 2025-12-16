@@ -28,28 +28,38 @@ class AppServiceProvider extends ServiceProvider
         // On Hostinger, Document Root is public_html/public, so Laravel searches in:
         // /home/u183760739/domains/higherdimension.site/public_html/public/build/manifest.json
         // The manifest.json should be in public/build/manifest.json relative to project root
-        // We need to specify the correct manifest path
+        // We need to ensure the path is correctly resolved
         if (app()->environment('production')) {
-            // Standard path where manifest should be
+            // Standard path where manifest should be (relative to public directory)
             $manifestPath = public_path('build/manifest.json');
             
-            // If manifest exists in standard location, use it
+            // Check if manifest exists in standard location
             if (file_exists($manifestPath)) {
-                // Ensure Vite uses the correct build directory
+                // Manifest exists, ensure Vite uses the correct build directory
                 Vite::useBuildDirectory('build');
             } else {
-                // Try to find manifest in alternative locations
-                $possiblePaths = [
+                // Try alternative paths
+                $alternativePaths = [
                     base_path('public/build/manifest.json'),
                     base_path('build/manifest.json'),
                 ];
                 
-                foreach ($possiblePaths as $path) {
-                    if (file_exists($path)) {
-                        // Use absolute path for manifest
-                        Vite::useManifestFilename($path);
+                $found = false;
+                foreach ($alternativePaths as $altPath) {
+                    if (file_exists($altPath)) {
+                        // Found manifest in alternative location
+                        // Use build directory relative to where manifest was found
+                        Vite::useBuildDirectory('build');
+                        $found = true;
                         break;
                     }
+                }
+                
+                // If manifest not found, log warning but don't break
+                if (!$found) {
+                    \Log::warning('Vite manifest.json not found in expected locations', [
+                        'searched_paths' => array_merge([$manifestPath], $alternativePaths),
+                    ]);
                 }
             }
         }
