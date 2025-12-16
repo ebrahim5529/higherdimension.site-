@@ -78,6 +78,21 @@ interface Contract {
   signedAt?: string;
   contractNotes?: string;
   attachments?: Attachment[];
+  payments?: Payment[];
+}
+
+interface Payment {
+  id: number;
+  paymentMethod: string;
+  paymentMethodValue: string;
+  paymentDate: string;
+  amount: number;
+  checkNumber?: string;
+  bankName?: string;
+  checkDate?: string;
+  checkImagePath?: string;
+  notes?: string;
+  createdAt: string;
 }
 
 interface ShowContractProps {
@@ -651,6 +666,102 @@ export default function ShowContract({ contract }: ShowContractProps) {
                       <span className="font-semibold">الحالة الحالية:</span> {contract.status}
                     </p>
                   </div>
+                </div>
+
+                {/* المدفوعات */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      <CreditCard className="h-5 w-5 text-[#58d2c8]" />
+                      المدفوعات
+                    </h3>
+                    <Button
+                      onClick={() => router.visit(`/payments/create?contract_id=${contract.id}`)}
+                      className="bg-[#58d2c8] hover:bg-[#4AB8B3] text-white flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      تسديد دفعة جديدة
+                    </Button>
+                  </div>
+
+                  {contract.payments && contract.payments.length > 0 ? (
+                    <div className="space-y-3">
+                      {contract.payments.map((payment) => (
+                        <div
+                          key={payment.id}
+                          className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-[#58d2c8] transition-colors cursor-pointer"
+                          onClick={() => router.visit(`/payments/${payment.id}`)}
+                        >
+                          <div className="flex items-center gap-4 flex-1">
+                            <div className="p-2 bg-[#58d2c8]/10 rounded-lg">
+                              <CreditCard className="h-5 w-5 text-[#58d2c8]" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3">
+                                <p className="font-semibold text-gray-900 dark:text-white">
+                                  #{payment.id}
+                                </p>
+                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                                  {payment.paymentMethod}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-4 mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-4 w-4" />
+                                  <span>{payment.paymentDate}</span>
+                                </div>
+                                {payment.checkNumber && (
+                                  <div className="flex items-center gap-1">
+                                    <FileText className="h-4 w-4" />
+                                    <span>رقم الشيك: {payment.checkNumber}</span>
+                                  </div>
+                                )}
+                                {payment.bankName && (
+                                  <div className="flex items-center gap-1">
+                                    <Building2 className="h-4 w-4" />
+                                    <span>{payment.bankName}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-left">
+                              <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                                {new Intl.NumberFormat('ar-SA', {
+                                  style: 'currency',
+                                  currency: 'OMR',
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                }).format(payment.amount)}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {payment.createdAt}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 mr-4">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="p-2 hover:bg-[#58d2c8]/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.visit(`/payments/${payment.id}`);
+                              }}
+                              title="عرض التفاصيل"
+                            >
+                              <Eye className="h-5 w-5 text-[#58d2c8]" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <CreditCard className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+                      <p>لا توجد مدفوعات</p>
+                      <p className="text-sm mt-1">قم بتسديد دفعة جديدة للبدء</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* المرفقات والمستندات */}

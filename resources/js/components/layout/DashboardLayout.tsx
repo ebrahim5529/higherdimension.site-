@@ -66,12 +66,10 @@ export default function DashboardLayout({
       '/dashboard/security-settings': 'security-settings',
       '/dashboard/audit-trail': 'audit-trail',
       '/dashboard/login-monitoring': 'login-monitoring',
-      '/dashboard/installment-plans': 'installment-plans',
-      '/dashboard/payment-schedules': 'payment-schedules',
-      '/dashboard/installment-tracking': 'installment-tracking',
-      '/dashboard/late-payments': 'late-payments',
-      '/dashboard/payment-methods': 'payment-methods',
-      '/dashboard/installment-reports': 'installment-reports',
+      '/payments': 'all-payments',
+      '/payments/create': 'all-payments',
+      '/payments/late': 'late-payments',
+      '/payments/reports': 'payment-reports',
     }),
     []
   );
@@ -98,6 +96,15 @@ export default function DashboardLayout({
       }
       if (url.startsWith('/employees/leaves')) {
         return 'leaves';
+      }
+      if (url.startsWith('/payments')) {
+        if (url.includes('/late')) {
+          return 'late-payments';
+        }
+        if (url.includes('/reports')) {
+          return 'payment-reports';
+        }
+        return 'all-payments';
       }
       if (url.startsWith('/employees')) {
         return 'employee-management';

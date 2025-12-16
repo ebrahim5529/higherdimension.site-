@@ -1,8 +1,19 @@
 /** @jsxImportSource react */
-import { Head, router } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import {
   User,
   Building2,
@@ -24,8 +35,10 @@ import {
   CheckCircle,
   XCircle,
   Eye,
+  Plus,
 } from 'lucide-react';
 import { useState } from 'react';
+import { showToast } from '@/hooks/use-toast';
 
 interface PhoneNumber {
   number: string;
@@ -71,6 +84,7 @@ interface Customer {
   commercial_record_copy_path?: string;
   contracts?: any[];
   payments?: any[];
+  contractPayments?: ContractPayment[];
   customerNotes?: any[];
   contractsSummary?: {
     total: number;
@@ -86,6 +100,23 @@ interface Customer {
     overdue: number;
     totalAmount: number;
   };
+}
+
+interface ContractPayment {
+  id: number;
+  contractId: number;
+  contractNumber: string;
+  contractTitle: string;
+  paymentMethod: string;
+  paymentMethodValue: string;
+  paymentDate: string;
+  amount: number;
+  checkNumber?: string;
+  bankName?: string;
+  checkDate?: string;
+  checkImagePath?: string;
+  notes?: string;
+  createdAt: string;
 }
 
 interface CustomerShowProps {
@@ -613,68 +644,103 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
         )}
 
         {activeTab === 'payments' && (
-          <Card>
-            <CardHeader>
-              <CardTitle>مدفوعات العميل</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {customer.payments && customer.payments.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">رقم الدفعة</th>
-                        <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">المبلغ</th>
-                        <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">تاريخ الدفع</th>
-                        <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">الحالة</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {customer.payments.map((payment: any) => (
-                        <tr
-                          key={payment.id}
-                          className="border-b hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                        >
-                          <td className="py-3 px-4">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                              {payment.payment_number || payment.id}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-[#58d2c8]" />
+                  مدفوعات العميل
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {customer.contractPayments && customer.contractPayments.length > 0 ? (
+                  <div className="space-y-3">
+                    {customer.contractPayments.map((payment: ContractPayment) => (
+                      <div
+                        key={payment.id}
+                        className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-[#58d2c8] transition-colors cursor-pointer"
+                        onClick={() => router.visit(`/payments/${payment.id}`)}
+                      >
+                        <div className="flex items-center gap-4 flex-1">
+                          <div className="p-2 bg-[#58d2c8]/10 rounded-lg">
+                            <DollarSign className="h-5 w-5 text-[#58d2c8]" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3">
+                              <p className="font-semibold text-gray-900 dark:text-white">
+                                #{payment.id}
+                              </p>
+                              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                                {payment.paymentMethod}
+                              </span>
                             </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                              {formatCurrency(payment.amount || 0)}
+                            <div className="flex items-center gap-4 mt-1 text-sm text-gray-600 dark:text-gray-400">
+                              <div className="flex items-center gap-1">
+                                <FileText className="h-4 w-4" />
+                                <span>{payment.contractNumber}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-4 w-4" />
+                                <span>{payment.paymentDate}</span>
+                              </div>
+                              {payment.checkNumber && (
+                                <div className="flex items-center gap-1">
+                                  <FileText className="h-4 w-4" />
+                                  <span>رقم الشيك: {payment.checkNumber}</span>
+                                </div>
+                              )}
+                              {payment.bankName && (
+                                <div className="flex items-center gap-1">
+                                  <Building2 className="h-4 w-4" />
+                                  <span>{payment.bankName}</span>
+                                </div>
+                              )}
                             </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                              {payment.payment_date ? formatDate(payment.payment_date) : '-'}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span
-                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                                payment.status
-                              )}`}
-                            >
-                              {payment.status === 'PAID' ? 'مدفوع' : payment.status === 'PENDING' ? 'معلق' : payment.status === 'OVERDUE' ? 'متأخر' : '-'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">لا توجد مدفوعات لهذا العميل</p>
-              )}
-            </CardContent>
-          </Card>
+                          </div>
+                          <div className="text-left">
+                            <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                              {formatCurrency(payment.amount)}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              {payment.createdAt}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 mr-4">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="p-2 hover:bg-[#58d2c8]/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.visit(`/payments/${payment.id}`);
+                            }}
+                            title="عرض التفاصيل"
+                          >
+                            <Eye className="h-5 w-5 text-[#58d2c8]" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <DollarSign className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+                    <p>لا توجد مدفوعات لهذا العميل</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {activeTab === 'notes' && (
           <Card>
             <CardHeader>
-              <CardTitle>ملاحظات العميل</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>ملاحظات العميل</CardTitle>
+                <AddNoteDialog customerId={customer.id} />
+              </div>
             </CardHeader>
             <CardContent>
               {customer.customerNotes && customer.customerNotes.length > 0 ? (
@@ -692,13 +758,113 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground">لا توجد ملاحظات لهذا العميل</p>
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+                  <p className="text-muted-foreground mb-4">لا توجد ملاحظات لهذا العميل</p>
+                  <AddNoteDialog customerId={customer.id} />
+                </div>
               )}
             </CardContent>
           </Card>
         )}
       </div>
     </DashboardLayout>
+  );
+}
+
+function AddNoteDialog({ customerId }: { customerId: number }) {
+  const [open, setOpen] = useState(false);
+  const { data, setData, post, processing, errors, reset } = useForm({
+    title: '',
+    content: '',
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    post(`/customers/${customerId}/notes`, {
+      onSuccess: () => {
+        showToast.success('نجح', 'تم إضافة الملاحظة بنجاح');
+        reset();
+        setOpen(false);
+      },
+      onError: (errors) => {
+        if (errors.title) {
+          showToast.error('خطأ', errors.title);
+        }
+        if (errors.content) {
+          showToast.error('خطأ', errors.content);
+        }
+      },
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="bg-[#58d2c8] hover:bg-[#4AB8B3] text-white flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          إضافة ملاحظة
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>إضافة ملاحظة جديدة</DialogTitle>
+          <DialogDescription>
+            أضف ملاحظة جديدة للعميل
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="title" className="text-sm font-medium">
+                العنوان
+              </label>
+              <Input
+                id="title"
+                value={data.title}
+                onChange={(e) => setData('title', e.target.value)}
+                placeholder="عنوان الملاحظة"
+                className={errors.title ? 'border-red-500' : ''}
+              />
+              {errors.title && (
+                <p className="text-sm text-red-500">{errors.title}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="content" className="text-sm font-medium">
+                المحتوى
+              </label>
+              <Textarea
+                id="content"
+                value={data.content}
+                onChange={(e) => setData('content', e.target.value)}
+                placeholder="محتوى الملاحظة"
+                rows={5}
+                className={errors.content ? 'border-red-500' : ''}
+              />
+              {errors.content && (
+                <p className="text-sm text-red-500">{errors.content}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setOpen(false);
+                reset();
+              }}
+            >
+              إلغاء
+            </Button>
+            <Button type="submit" disabled={processing} className="bg-[#58d2c8] hover:bg-[#4AB8B3] text-white">
+              {processing ? 'جاري الحفظ...' : 'حفظ'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -88,8 +88,30 @@ class PaymentController extends Controller
             'unpaidContracts' => $unpaidContracts,
         ];
 
+        // جلب جميع المدفوعات الفردية
+        $allPayments = ContractPayment::with(['contract.customer'])
+            ->orderBy('payment_date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($payment) {
+                return [
+                    'id' => $payment->id,
+                    'contractId' => $payment->contract_id,
+                    'contractNumber' => $payment->contract->contract_number ?? 'غير معروف',
+                    'contractTitle' => $payment->contract->title ?? 'غير معروف',
+                    'customerName' => $payment->contract->customer->name ?? 'غير معروف',
+                    'paymentMethod' => $this->getPaymentMethodLabel($payment->payment_method),
+                    'paymentDate' => $payment->payment_date->format('Y-m-d'),
+                    'amount' => (float) $payment->amount,
+                    'checkNumber' => $payment->check_number,
+                    'bankName' => $payment->bank_name,
+                    'createdAt' => $payment->created_at->format('Y-m-d H:i:s'),
+                ];
+            });
+
         return Inertia::render('Payments/Index', [
             'contracts' => $contracts,
+            'payments' => $allPayments,
             'stats' => $stats,
         ]);
     }
@@ -178,7 +200,7 @@ class PaymentController extends Controller
 
         // رفع صورة الشيك إن وجدت
         $checkImagePath = null;
-        if ($request->hasFile('check_image')) {
+        if ($request->hasFile('check_image') && $request->file('check_image')->isValid()) {
             $checkImagePath = $request->file('check_image')->store('contracts/checks', 'public');
         }
 
@@ -196,6 +218,52 @@ class PaymentController extends Controller
         ]);
 
         return redirect()->route('payments.index')->with('success', 'تم تسديد الدفعة بنجاح');
+    }
+
+    /**
+     * Display the specified payment.
+     */
+    public function show(string $id)
+    {
+        $payment = ContractPayment::with(['contract.customer', 'contract.user'])->findOrFail($id);
+        
+        $contract = $payment->contract;
+        $paidAmount = $contract->contractPayments()->sum('amount') ?? 0;
+        $remainingAmount = max(0, $contract->amount - $paidAmount);
+        
+        return Inertia::render('Payments/Show', [
+            'payment' => [
+                'id' => $payment->id,
+                'contractId' => $payment->contract_id,
+                'contractNumber' => $contract->contract_number,
+                'contractTitle' => $contract->title,
+                'customerName' => $contract->customer->name ?? 'غير معروف',
+                'customerPhone' => $contract->customer->phone ?? null,
+                'customerAddress' => $contract->customer->address ?? null,
+                'paymentMethod' => $this->getPaymentMethodLabel($payment->payment_method),
+                'paymentMethodValue' => $payment->payment_method,
+                'paymentDate' => $payment->payment_date->format('Y-m-d'),
+                'paymentDateAr' => $payment->payment_date->format('Y-m-d'),
+                'amount' => (float) $payment->amount,
+                'checkNumber' => $payment->check_number,
+                'bankName' => $payment->bank_name,
+                'checkDate' => $payment->check_date ? $payment->check_date->format('Y-m-d') : null,
+                'checkImagePath' => $payment->check_image_path ? \Illuminate\Support\Facades\Storage::url($payment->check_image_path) : null,
+                'notes' => $payment->notes,
+                'createdAt' => $payment->created_at->format('Y-m-d H:i:s'),
+                'createdAtAr' => $payment->created_at->format('Y-m-d H:i:s'),
+            ],
+            'contract' => [
+                'id' => $contract->id,
+                'contractNumber' => $contract->contract_number,
+                'title' => $contract->title,
+                'amount' => (float) $contract->amount,
+                'paidAmount' => (float) $paidAmount,
+                'remainingAmount' => (float) $remainingAmount,
+                'startDate' => $contract->start_date->format('Y-m-d'),
+                'endDate' => $contract->end_date->format('Y-m-d'),
+            ],
+        ]);
     }
 
     /**

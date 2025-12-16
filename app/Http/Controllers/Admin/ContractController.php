@@ -344,6 +344,21 @@ class ContractController extends Controller
                         'created_at' => $attachment->created_at?->format('Y-m-d H:i:s'),
                     ];
                 })->toArray(),
+                'payments' => $contract->contractPayments->map(function ($payment) {
+                    return [
+                        'id' => $payment->id,
+                        'paymentMethod' => $this->getPaymentMethodLabel($payment->payment_method),
+                        'paymentMethodValue' => $payment->payment_method,
+                        'paymentDate' => $payment->payment_date->format('Y-m-d'),
+                        'amount' => (float) $payment->amount,
+                        'checkNumber' => $payment->check_number,
+                        'bankName' => $payment->bank_name,
+                        'checkDate' => $payment->check_date ? $payment->check_date->format('Y-m-d') : null,
+                        'checkImagePath' => $payment->check_image_path ? Storage::url($payment->check_image_path) : null,
+                        'notes' => $payment->notes,
+                        'createdAt' => $payment->created_at->format('Y-m-d H:i:s'),
+                    ];
+                })->toArray(),
             ],
         ]);
     }
@@ -769,6 +784,20 @@ class ContractController extends Controller
             'CANCELLED' => 'ملغي',
             'COMPLETED' => 'مكتمل',
             default => $status,
+        };
+    }
+
+    /**
+     * Get payment method label in Arabic.
+     */
+    private function getPaymentMethodLabel($method)
+    {
+        return match($method) {
+            'cash' => 'نقداً',
+            'check' => 'شيك',
+            'credit_card' => 'بطاقة ائتمان',
+            'bank_transfer' => 'تحويل بنكي',
+            default => $method,
         };
     }
 }

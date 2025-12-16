@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { PaymentStats } from '@/components/features/PaymentStats';
 import { PaymentsTable } from '@/components/features/PaymentsTable';
+import { PaymentsListTable } from '@/components/features/PaymentsListTable';
 import { Button } from '@/components/ui/button';
 import { showToast } from '@/hooks/use-toast';
 import { Plus, DollarSign } from 'lucide-react';
@@ -39,12 +40,27 @@ interface PaymentStatsType {
   unpaidContracts: number;
 }
 
+interface Payment {
+  id: number;
+  contractId: number;
+  contractNumber: string;
+  contractTitle: string;
+  customerName: string;
+  paymentMethod: string;
+  paymentDate: string;
+  amount: number;
+  checkNumber?: string;
+  bankName?: string;
+  createdAt: string;
+}
+
 interface PaymentsIndexProps {
   contracts: Contract[];
+  payments: Payment[];
   stats: PaymentStatsType;
 }
 
-export default function PaymentsIndex({ contracts, stats }: PaymentsIndexProps) {
+export default function PaymentsIndex({ contracts, payments, stats }: PaymentsIndexProps) {
   const { flash } = usePage().props as any;
 
   useEffect(() => {
@@ -66,6 +82,10 @@ export default function PaymentsIndex({ contracts, stats }: PaymentsIndexProps) 
 
   const handleViewContract = (contract: Contract) => {
     router.visit(`/contracts/${contract.id}`);
+  };
+
+  const handleViewPayment = (payment: Payment) => {
+    router.visit(`/payments/${payment.id}`);
   };
 
   return (
@@ -96,11 +116,17 @@ export default function PaymentsIndex({ contracts, stats }: PaymentsIndexProps) 
         {/* الإحصائيات */}
         <PaymentStats stats={stats} />
 
-        {/* جدول المدفوعات */}
+        {/* جدول العقود */}
         <PaymentsTable
           contracts={contracts}
           onViewContract={handleViewContract}
           onAddPayment={handleAddPayment}
+        />
+
+        {/* جدول جميع المدفوعات الفردية */}
+        <PaymentsListTable
+          payments={payments}
+          onViewPayment={handleViewPayment}
         />
       </div>
     </DashboardLayout>

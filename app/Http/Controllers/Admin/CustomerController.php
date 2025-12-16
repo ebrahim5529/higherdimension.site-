@@ -213,7 +213,7 @@ class CustomerController extends Controller
      */
     public function show(string $id)
     {
-        $customer = Customer::with(['contracts.payments', 'payments', 'customerNotes'])
+        $customer = Customer::with(['contracts.contractPayments', 'contracts.customer', 'payments', 'customerNotes'])
             ->findOrFail($id);
 
         // حساب إحصائيات العقود
@@ -299,6 +299,26 @@ class CustomerController extends Controller
                         'status' => $payment->status,
                     ];
                 }),
+                'contractPayments' => $customer->contracts->flatMap(function ($contract) {
+                    return $contract->contractPayments->map(function ($payment) use ($contract) {
+                        return [
+                            'id' => $payment->id,
+                            'contractId' => $contract->id,
+                            'contractNumber' => $contract->contract_number,
+                            'contractTitle' => $contract->title,
+                            'paymentMethod' => $this->getPaymentMethodLabel($payment->payment_method),
+                            'paymentMethodValue' => $payment->payment_method,
+                            'paymentDate' => $payment->payment_date->format('Y-m-d'),
+                            'amount' => (float) $payment->amount,
+                            'checkNumber' => $payment->check_number,
+                            'bankName' => $payment->bank_name,
+                            'checkDate' => $payment->check_date ? $payment->check_date->format('Y-m-d') : null,
+                            'checkImagePath' => $payment->check_image_path ? \Illuminate\Support\Facades\Storage::url($payment->check_image_path) : null,
+                            'notes' => $payment->notes,
+                            'createdAt' => $payment->created_at->format('Y-m-d H:i:s'),
+                        ];
+                    });
+                })->values()->toArray(),
                 'customerNotes' => $customer->customerNotes->map(function ($note) {
                     return [
                         'id' => $note->id,
@@ -311,6 +331,20 @@ class CustomerController extends Controller
                 'paymentsSummary' => $paymentsSummary,
             ],
         ]);
+    }
+
+    /**
+     * Get payment method label in Arabic.
+     */
+    private function getPaymentMethodLabel($method)
+    {
+        return match($method) {
+            'cash' => 'نقداً',
+            'check' => 'شيك',
+            'credit_card' => 'بطاقة ائتمان',
+            'bank_transfer' => 'تحويل بنكي',
+            default => $method,
+        };
     }
 
     /**
@@ -498,5 +532,140 @@ class CustomerController extends Controller
 
         return redirect()->route('customers.index')
             ->with('success', 'تم حذف العميل بنجاح');
+    }
+
+    /**
+     * Display customer contracts with count.
+     */
+    public function contracts()
+    {
+        $customers = Customer::with(['contracts', 'contracts.contractPayments'])
+            ->get()
+            ->map(function ($customer) {
+                $contracts = $customer->contracts;
+                $totalPaid = $contracts->sum(function ($contract) {
+                    return $contract->contractPayments->sum('amount') ?? 0;
+                });
+                $totalRemaining = $contracts->sum(function ($contract) {
+                    $paid = $contract->contractPayments->sum('amount') ?? 0;
+                    return max(0, ($contract->amount ?? 0) - $paid);
+                });
+
+                return [
+                    'id' => $customer->id,
+                    'customerNumber' => $customer->customer_number,
+                    'name' => $customer->name,
+                    'phone' => $customer->phone,
+                    'email' => $customer->email,
+                    'contractsCount' => $contracts->count(),
+                    'activeContractsCount' => $contracts->where('status', 'ACTIVE')->count(),
+                    'totalContractsValue' => $contracts->sum('amount') ?? 0,
+                    'totalPaid' => $totalPaid,
+                    'totalRemaining' => $totalRemaining,
+                    'contracts' => $contracts->map(function ($contract) {
+                        $paid = $contract->contractPayments->sum('amount') ?? 0;
+                        return [
+                            'id' => $contract->id,
+                            'contractNumber' => $contract->contract_number,
+                            'title' => $contract->title,
+                            'status' => $contract->status,
+                            'amount' => $contract->amount ?? 0,
+                            'paidAmount' => $paid,
+                            'remainingAmount' => max(0, ($contract->amount ?? 0) - $paid),
+                            'startDate' => $contract->start_date,
+                            'endDate' => $contract->end_date,
+                        ];
+                    })->toArray(),
+                ];
+            })
+            ->sortByDesc('contractsCount')
+            ->values();
+
+        return Inertia::render('Customers/Contracts', [
+            'customers' => $customers,
+        ]);
+    }
+
+    /**
+     * Display customer claims (payments and remaining amounts).
+     */
+    public function claims()
+    {
+        $customers = Customer::with(['contracts.contractPayments'])
+            ->get()
+            ->map(function ($customer) {
+                $contracts = $customer->contracts;
+                $totalPaid = $contracts->sum(function ($contract) {
+                    return $contract->contractPayments->sum('amount') ?? 0;
+                });
+                $totalRemaining = $contracts->sum(function ($contract) {
+                    $paid = $contract->contractPayments->sum('amount') ?? 0;
+                    return max(0, ($contract->amount ?? 0) - $paid);
+                });
+                $overdueAmount = $contracts->filter(function ($contract) {
+                    return $contract->status === 'ACTIVE' && 
+                           $contract->end_date && 
+                           now()->greaterThan($contract->end_date);
+                })->sum(function ($contract) {
+                    $paid = $contract->contractPayments->sum('amount') ?? 0;
+                    return max(0, ($contract->amount ?? 0) - $paid);
+                });
+
+                return [
+                    'id' => $customer->id,
+                    'customerNumber' => $customer->customer_number,
+                    'name' => $customer->name,
+                    'phone' => $customer->phone,
+                    'email' => $customer->email,
+                    'totalContractsValue' => $contracts->sum('amount') ?? 0,
+                    'totalPaid' => $totalPaid,
+                    'totalRemaining' => $totalRemaining,
+                    'overdueAmount' => $overdueAmount,
+                    'contractsCount' => $contracts->count(),
+                    'payments' => $contracts->flatMap(function ($contract) {
+                        return $contract->contractPayments->map(function ($payment) use ($contract) {
+                            return [
+                                'id' => $payment->id,
+                                'contractId' => $contract->id,
+                                'contractNumber' => $contract->contract_number,
+                                'paymentMethod' => $this->getPaymentMethodLabel($payment->payment_method),
+                                'paymentDate' => $payment->payment_date->format('Y-m-d'),
+                                'amount' => (float) $payment->amount,
+                            ];
+                        });
+                    })->values()->toArray(),
+                ];
+            })
+            ->filter(function ($customer) {
+                return $customer['totalRemaining'] > 0;
+            })
+            ->sortByDesc('totalRemaining')
+            ->values();
+
+        return Inertia::render('Customers/Claims', [
+            'customers' => $customers,
+        ]);
+    }
+
+    /**
+     * Store a new customer note.
+     */
+    public function storeNote(Request $request, string $id)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'content' => 'required|string',
+        ]);
+
+        $customer = Customer::findOrFail($id);
+        
+        $note = $customer->customerNotes()->create([
+            'title' => $validated['title'],
+            'content' => $validated['content'],
+            'user_id' => auth()->id(),
+        ]);
+
+        return redirect()->back()
+            ->with('success', 'تم إضافة الملاحظة بنجاح');
     }
 }

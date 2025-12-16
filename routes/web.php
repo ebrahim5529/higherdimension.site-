@@ -35,6 +35,9 @@ Route::middleware('auth')->group(function () {
     // Customers
     Route::resource('customers', \App\Http\Controllers\Admin\CustomerController::class);
     Route::get('/dashboard/customer-management', [\App\Http\Controllers\Admin\CustomerController::class, 'index'])->name('customers.management');
+    Route::get('/dashboard/customer-contracts', [\App\Http\Controllers\Admin\CustomerController::class, 'contracts'])->name('customers.contracts');
+    Route::get('/dashboard/customer-claims', [\App\Http\Controllers\Admin\CustomerController::class, 'claims'])->name('customers.claims');
+    Route::post('/customers/{id}/notes', [\App\Http\Controllers\Admin\CustomerController::class, 'storeNote'])->name('customers.notes.store');
     
     // Contracts
     Route::resource('contracts', \App\Http\Controllers\Admin\ContractController::class);
@@ -105,12 +108,13 @@ Route::middleware('auth')->group(function () {
     Route::resource('employees', \App\Http\Controllers\Admin\EmployeeController::class);
     Route::get('/dashboard/employee-management', [\App\Http\Controllers\Admin\EmployeeController::class, 'index'])->name('employees.management');
     
-    // Payments Management Routes
+    // Payments Management Routes - Specific routes must come before resource routes
     Route::get('/payments', [\App\Http\Controllers\Admin\PaymentController::class, 'index'])->name('payments.index');
     Route::get('/payments/create', [\App\Http\Controllers\Admin\PaymentController::class, 'create'])->name('payments.create');
     Route::post('/payments', [\App\Http\Controllers\Admin\PaymentController::class, 'store'])->name('payments.store');
     Route::get('/payments/late', [\App\Http\Controllers\Admin\PaymentController::class, 'latePayments'])->name('payments.late');
     Route::get('/payments/reports', [\App\Http\Controllers\Admin\PaymentController::class, 'reports'])->name('payments.reports');
+    Route::get('/payments/{id}', [\App\Http\Controllers\Admin\PaymentController::class, 'show'])->name('payments.show');
     
     Route::post('/logout', function (Request $request) {
         Auth::logout();
