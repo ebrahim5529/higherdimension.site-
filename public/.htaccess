@@ -18,6 +18,11 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
+    # Serve static files directly (images, fonts, etc.)
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteCond %{REQUEST_URI} \.(png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|css|js|pdf|zip|txt)$ [NC]
+    RewriteRule ^ - [L]
+
     # Serve static assets from build directory
     RewriteCond %{REQUEST_URI} ^/build/assets/.*\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot|ico)$ [NC]
     RewriteCond %{REQUEST_FILENAME} -f
