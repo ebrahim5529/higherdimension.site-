@@ -19,6 +19,11 @@ export default defineConfig({
             '@': path.resolve(__dirname, './resources/js'),
         },
     },
+    build: {
+        outDir: 'public/build',
+        manifest: true,
+        emptyOutDir: true,
+    },
     server: {
         port: parseInt(process.env.VITE_PORT || '5173'),
         host: process.env.VITE_HOST || 'localhost',
