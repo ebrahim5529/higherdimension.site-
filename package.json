@@ -4,6 +4,9 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
+        "dev:port": "vite --port",
+        "serve": "php artisan serve",
+        "serve:port": "php artisan serve --port",
         "build": "vite build",
         "build:production": "vite build --mode production"
     },

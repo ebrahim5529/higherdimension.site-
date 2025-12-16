@@ -20,6 +20,8 @@ export default defineConfig({
         },
     },
     server: {
+        port: parseInt(process.env.VITE_PORT || '5173'),
+        host: process.env.VITE_HOST || 'localhost',
         watch: {
             ignored: ['**/storage/framework/views/**'],
         },
