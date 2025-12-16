@@ -25,24 +25,30 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Fix Vite manifest path for Hostinger shared hosting
-        // The manifest.json should be in public/build/manifest.json
-        // But if Document Root is public_html/public, Laravel will look in the correct place
-        // This ensures the path is correctly resolved
+        // On Hostinger, Document Root is public_html/public, so Laravel searches in:
+        // /home/u183760739/domains/higherdimension.site/public_html/public/build/manifest.json
+        // The manifest.json should be in public/build/manifest.json relative to project root
+        // We need to specify the correct manifest path
         if (app()->environment('production')) {
+            // Standard path where manifest should be
             $manifestPath = public_path('build/manifest.json');
             
-            // If manifest doesn't exist in standard location, check alternative paths
-            if (!file_exists($manifestPath)) {
-                // Try base_path/public/build/manifest.json
-                $altPath1 = base_path('public/build/manifest.json');
-                if (file_exists($altPath1)) {
-                    // Path is correct, just ensure Vite uses the right directory
-                    Vite::useBuildDirectory('build');
-                } else {
-                    // Try build/manifest.json (if Document Root is public_html/public)
-                    $altPath2 = base_path('build/manifest.json');
-                    if (file_exists($altPath2)) {
-                        Vite::useBuildDirectory('build');
+            // If manifest exists in standard location, use it
+            if (file_exists($manifestPath)) {
+                // Ensure Vite uses the correct build directory
+                Vite::useBuildDirectory('build');
+            } else {
+                // Try to find manifest in alternative locations
+                $possiblePaths = [
+                    base_path('public/build/manifest.json'),
+                    base_path('build/manifest.json'),
+                ];
+                
+                foreach ($possiblePaths as $path) {
+                    if (file_exists($path)) {
+                        // Use absolute path for manifest
+                        Vite::useManifestFilename($path);
+                        break;
                     }
                 }
             }
