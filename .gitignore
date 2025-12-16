@@ -1,10 +1,4 @@
-*.log
-.DS_Store
-.env
-.env.backup
-.env.production
-.phpactor.json
-.phpunit.result.cache
+# Laravel Framework
 /.fleet
 /.idea
 /.nova
@@ -14,19 +8,65 @@
 /.cursor
 /.cursorrules
 /auth.json
+
+# Dependencies (يجب تثبيتها على السيرفر)
 /node_modules
+/vendor
+
+# Environment files
+.env
+.env.backup
+.env.production
+.env.*.local
+
+# Logs
+*.log
+storage/logs/*.log
+
+# Storage
 /public/hot
 /public/storage
 /storage/*.key
 /storage/pail
-/vendor
+
+# Database
+/database/database.sqlite
+/database/*.sqlite
+
+# Testing
+.phpunit.result.cache
+test-db-connection.js
+check-deployment.php
+
+# IDE & Editor files
+.phpactor.json
+.idea
+.vscode
+.fleet
+.cursor
+.cursorrules
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Homestead
 Homestead.json
 Homestead.yaml
-Thumbs.db
-*.md
 
+# Documentation & Scripts (لا يجب رفعها على Hostinger)
+*.md
 *.txt
 *.ps1
-*.md
 *.zip
-test-db-connection.js
+*.bat
+*.sh
+
+# Deployment folders (إذا كانت موجودة محلياً)
+/public_html
+
+# Public assets (إذا كانت فارغة)
+/public/assets
+
+# Reference files
+/public/index.php.shared-hosting
