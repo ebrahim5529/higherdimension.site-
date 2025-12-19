@@ -1,10 +1,10 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\Request;
-use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Auth\LoginController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 // Home page - redirect based on auth status
 Route::get('/', function () {
@@ -22,23 +22,23 @@ Route::post('/contracts/{contractNumber}/sign', [\App\Http\Controllers\Admin\Con
 // Dashboard routes (protected)
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
+
     // Main Dashboard
     Route::get('/dashboard/main-dashboard', [\App\Http\Controllers\Admin\MainDashboardController::class, 'index'])->name('dashboard.main');
     Route::get('/dashboard/dashboard-interactive', [\App\Http\Controllers\Admin\DashboardInteractiveController::class, 'index'])->name('dashboard.interactive');
-    
+
     // Reports
     Route::get('/dashboard/operations-reports', [\App\Http\Controllers\Admin\OperationsReportsController::class, 'index'])->name('reports.operations');
     Route::get('/dashboard/customer-reports', [\App\Http\Controllers\Admin\CustomerReportsController::class, 'index'])->name('reports.customers');
     Route::get('/dashboard/financial-reports', [\App\Http\Controllers\Admin\FinancialReportsController::class, 'index'])->name('reports.financial');
-    
+
     // Customers
     Route::resource('customers', \App\Http\Controllers\Admin\CustomerController::class);
     Route::get('/dashboard/customer-management', [\App\Http\Controllers\Admin\CustomerController::class, 'index'])->name('customers.management');
     Route::get('/dashboard/customer-contracts', [\App\Http\Controllers\Admin\CustomerController::class, 'contracts'])->name('customers.contracts');
     Route::get('/dashboard/customer-claims', [\App\Http\Controllers\Admin\CustomerController::class, 'claims'])->name('customers.claims');
     Route::post('/customers/{id}/notes', [\App\Http\Controllers\Admin\CustomerController::class, 'storeNote'])->name('customers.notes.store');
-    
+
     // Contracts - يجب وضع المسارات المخصصة قبل Route::resource
     Route::get('/contracts/active', [\App\Http\Controllers\Admin\ContractController::class, 'active'])->name('contracts.active');
     Route::get('/contracts/expired', [\App\Http\Controllers\Admin\ContractController::class, 'expired'])->name('contracts.expired');
@@ -49,11 +49,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/contracts/{id}/attachments', [\App\Http\Controllers\Admin\ContractController::class, 'uploadAttachment'])->name('contracts.attachments.upload');
     Route::delete('/contracts/{contractId}/attachments/{attachmentId}', [\App\Http\Controllers\Admin\ContractController::class, 'deleteAttachment'])->name('contracts.attachments.delete');
     Route::get('/contracts/{contractId}/attachments/{attachmentId}/download', [\App\Http\Controllers\Admin\ContractController::class, 'downloadAttachment'])->name('contracts.attachments.download');
-    
+
     // Suppliers
     Route::resource('suppliers', \App\Http\Controllers\Admin\SupplierController::class);
     Route::get('/dashboard/supplier-management', [\App\Http\Controllers\Admin\SupplierController::class, 'index'])->name('suppliers.management');
-    
+
     // Inventory
     Route::resource('inventory', \App\Http\Controllers\Admin\InventoryController::class);
     Route::get('/dashboard/inventory-status', [\App\Http\Controllers\Admin\InventoryController::class, 'index'])->name('inventory.status');
@@ -69,7 +69,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/employees/salaries/{id}/edit', [\App\Http\Controllers\Admin\SalaryController::class, 'edit'])->name('employees.salaries.edit');
     Route::put('/employees/salaries/{id}', [\App\Http\Controllers\Admin\SalaryController::class, 'update'])->name('employees.salaries.update');
     Route::delete('/employees/salaries/{id}', [\App\Http\Controllers\Admin\SalaryController::class, 'destroy'])->name('employees.salaries.destroy');
-    
+
     // Incentives routes
     Route::get('/employees/incentives', [\App\Http\Controllers\Admin\IncentiveController::class, 'index'])->name('employees.incentives');
     Route::get('/employees/incentives/create', [\App\Http\Controllers\Admin\IncentiveController::class, 'create'])->name('employees.incentives.create');
@@ -78,7 +78,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/employees/incentives/{id}/edit', [\App\Http\Controllers\Admin\IncentiveController::class, 'edit'])->name('employees.incentives.edit');
     Route::put('/employees/incentives/{id}', [\App\Http\Controllers\Admin\IncentiveController::class, 'update'])->name('employees.incentives.update');
     Route::delete('/employees/incentives/{id}', [\App\Http\Controllers\Admin\IncentiveController::class, 'destroy'])->name('employees.incentives.destroy');
-    
+
     // Attendance routes
     Route::get('/employees/attendance', [\App\Http\Controllers\Admin\AttendanceController::class, 'index'])->name('employees.attendance');
     Route::get('/employees/attendance/reports', [\App\Http\Controllers\Admin\AttendanceController::class, 'reports'])->name('employees.attendance.reports');
@@ -88,7 +88,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/employees/attendance/{id}/edit', [\App\Http\Controllers\Admin\AttendanceController::class, 'edit'])->name('employees.attendance.edit');
     Route::put('/employees/attendance/{id}', [\App\Http\Controllers\Admin\AttendanceController::class, 'update'])->name('employees.attendance.update');
     Route::delete('/employees/attendance/{id}', [\App\Http\Controllers\Admin\AttendanceController::class, 'destroy'])->name('employees.attendance.destroy');
-    
+
     // Departments routes
     Route::get('/employees/departments', [\App\Http\Controllers\Admin\DepartmentController::class, 'index'])->name('employees.departments');
     Route::get('/employees/departments/create', [\App\Http\Controllers\Admin\DepartmentController::class, 'create'])->name('employees.departments.create');
@@ -97,7 +97,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/employees/departments/{id}/edit', [\App\Http\Controllers\Admin\DepartmentController::class, 'edit'])->name('employees.departments.edit');
     Route::put('/employees/departments/{id}', [\App\Http\Controllers\Admin\DepartmentController::class, 'update'])->name('employees.departments.update');
     Route::delete('/employees/departments/{id}', [\App\Http\Controllers\Admin\DepartmentController::class, 'destroy'])->name('employees.departments.destroy');
-    
+
     // Leaves routes
     Route::get('/employees/leaves', [\App\Http\Controllers\Admin\LeaveController::class, 'index'])->name('employees.leaves');
     Route::get('/employees/leaves/create', [\App\Http\Controllers\Admin\LeaveController::class, 'create'])->name('employees.leaves.create');
@@ -106,11 +106,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/employees/leaves/{id}/edit', [\App\Http\Controllers\Admin\LeaveController::class, 'edit'])->name('employees.leaves.edit');
     Route::put('/employees/leaves/{id}', [\App\Http\Controllers\Admin\LeaveController::class, 'update'])->name('employees.leaves.update');
     Route::delete('/employees/leaves/{id}', [\App\Http\Controllers\Admin\LeaveController::class, 'destroy'])->name('employees.leaves.destroy');
-    
+
     // Employees Resource
     Route::resource('employees', \App\Http\Controllers\Admin\EmployeeController::class);
     Route::get('/dashboard/employee-management', [\App\Http\Controllers\Admin\EmployeeController::class, 'index'])->name('employees.management');
-    
+
     // Payments Management Routes - Specific routes must come before resource routes
     Route::get('/payments', [\App\Http\Controllers\Admin\PaymentController::class, 'index'])->name('payments.index');
     Route::get('/payments/create', [\App\Http\Controllers\Admin\PaymentController::class, 'create'])->name('payments.create');
@@ -118,11 +118,30 @@ Route::middleware('auth')->group(function () {
     Route::get('/payments/late', [\App\Http\Controllers\Admin\PaymentController::class, 'latePayments'])->name('payments.late');
     Route::get('/payments/reports', [\App\Http\Controllers\Admin\PaymentController::class, 'reports'])->name('payments.reports');
     Route::get('/payments/{id}', [\App\Http\Controllers\Admin\PaymentController::class, 'show'])->name('payments.show');
-    
+
+    // Permissions Management Routes
+    Route::middleware('admin')->group(function () {
+        Route::get('/dashboard/user-roles', [\App\Http\Controllers\Admin\UserRoleController::class, 'index'])->name('user-roles.index');
+        Route::post('/user-roles', [\App\Http\Controllers\Admin\UserRoleController::class, 'store'])->name('user-roles.store');
+        Route::put('/user-roles/{user}/roles', [\App\Http\Controllers\Admin\UserRoleController::class, 'updateRoles'])->name('user-roles.update-roles');
+        Route::put('/user-roles/{user}/permissions', [\App\Http\Controllers\Admin\UserRoleController::class, 'updatePermissions'])->name('user-roles.update-permissions');
+
+        Route::get('/dashboard/permission-groups', [\App\Http\Controllers\Admin\PermissionController::class, 'index'])->name('permissions.index');
+        Route::post('/permissions', [\App\Http\Controllers\Admin\PermissionController::class, 'store'])->name('permissions.store');
+        Route::put('/permissions/{permission}', [\App\Http\Controllers\Admin\PermissionController::class, 'update'])->name('permissions.update');
+        Route::delete('/permissions/{permission}', [\App\Http\Controllers\Admin\PermissionController::class, 'destroy'])->name('permissions.destroy');
+
+        Route::get('/dashboard/roles', [\App\Http\Controllers\Admin\RoleController::class, 'index'])->name('roles.index');
+        Route::post('/roles', [\App\Http\Controllers\Admin\RoleController::class, 'store'])->name('roles.store');
+        Route::put('/roles/{role}', [\App\Http\Controllers\Admin\RoleController::class, 'update'])->name('roles.update');
+        Route::delete('/roles/{role}', [\App\Http\Controllers\Admin\RoleController::class, 'destroy'])->name('roles.destroy');
+    });
+
     Route::post('/logout', function (Request $request) {
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect('/login');
     })->name('logout');
 });

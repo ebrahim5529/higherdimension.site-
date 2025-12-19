@@ -22,6 +22,7 @@
     <link rel="shortcut icon" type="image/png" href="/logo.png" />
     <link rel="apple-touch-icon" href="/logo.png" />
 
+    @viteReactRefresh
     @vite(['resources/css/app.css', 'resources/js/app.tsx'])
     
     <!-- Summernote WYSIWYG Editor -->
