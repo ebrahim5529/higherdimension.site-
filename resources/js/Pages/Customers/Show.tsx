@@ -36,6 +36,7 @@ import {
   XCircle,
   Eye,
   Plus,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { useState } from 'react';
 import { showToast } from '@/hooks/use-toast';
@@ -303,8 +304,12 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
+                      <label className="text-sm font-medium text-muted-foreground">رقم العميل</label>
+                      <p className="text-sm font-mono font-semibold">{customer.customer_number}</p>
+                    </div>
+                    <div>
                       <label className="text-sm font-medium text-muted-foreground">الاسم الكامل</label>
-                      <p className="text-sm">{customer.name}</p>
+                      <p className="text-sm font-semibold">{customer.name}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">نوع العميل</label>
@@ -312,12 +317,18 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
                         {customer.customer_type === 'COMPANY' ? 'شركة' : 'فرد'}
                       </p>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">رقم الهوية/السجل</label>
-                      <p className="text-sm font-mono">
-                        {customer.id_number || customer.commercial_record || '-'}
-                      </p>
-                    </div>
+                    {customer.customer_type === 'INDIVIDUAL' && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">رقم الهوية</label>
+                        <p className="text-sm font-mono">{customer.id_number || '-'}</p>
+                      </div>
+                    )}
+                    {customer.customer_type === 'COMPANY' && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">السجل التجاري</label>
+                        <p className="text-sm font-mono">{customer.commercial_record || '-'}</p>
+                      </div>
+                    )}
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">الجنسية</label>
                       <p className="text-sm">{customer.nationality || '-'}</p>
@@ -336,7 +347,7 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
                           {customer.phones.map((phone: PhoneNumber, index: number) => (
                             <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
                               <Phone className="h-4 w-4 text-gray-400" />
-                              <span className="text-sm">{phone.number}</span>
+                              <span className="text-sm font-medium">{phone.number}</span>
                               <span className="text-xs text-muted-foreground">
                                 ({phone.type === 'MOBILE' ? 'جوال' : phone.type === 'LANDLINE' ? 'أرضي' : 'واتساب'})
                               </span>
@@ -355,7 +366,7 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
                       <label className="text-sm font-medium text-muted-foreground">البريد الإلكتروني</label>
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4" />
-                        <p className="text-sm">{customer.email || '-'}</p>
+                        <p className="text-sm break-all">{customer.email || '-'}</p>
                       </div>
                     </div>
                     <div className="md:col-span-2">
@@ -372,6 +383,28 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
                         <p className="text-sm">{formatDate(customer.registration_date)}</p>
                       </div>
                     </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">الحالة</label>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(
+                            customer.status
+                          )}`}
+                        >
+                          {getStatusIcon(customer.status)}
+                          {customer.status === 'ACTIVE' ? 'نشط' : 'غير نشط'}
+                        </span>
+                      </div>
+                    </div>
+                    {customer.rating && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">التقييم</label>
+                        <div className="flex items-center gap-1">
+                          <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                          <span className="text-sm font-medium">{customer.rating}/5</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -449,6 +482,109 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
                         </div>
                       </div>
                     )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Attachments */}
+              {(customer.id_card_copy_path || customer.guarantor_id_card_copy_path || customer.commercial_record_copy_path) && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      المرفقات
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {customer.id_card_copy_path && (
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-muted-foreground">نسخة البطاقة الشخصية</label>
+                          <div className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-800">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  window.open(`/customers/${customer.id}/view/id-card`, '_blank');
+                                }}
+                                className="flex items-center justify-center gap-2 text-sm text-primary hover:underline cursor-pointer flex-1 px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                title="عرض الملف"
+                              >
+                                <Eye className="h-4 w-4" />
+                                عرض
+                              </button>
+                              <button
+                                onClick={() => {
+                                  window.open(`/customers/${customer.id}/download/id-card`, '_blank');
+                                }}
+                                className="flex items-center justify-center gap-2 text-sm text-primary hover:underline cursor-pointer flex-1 px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                title="تحميل الملف"
+                              >
+                                <Download className="h-4 w-4" />
+                                تحميل
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {customer.guarantor_id_card_copy_path && (
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-muted-foreground">نسخة بطاقة الضامن</label>
+                          <div className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-800">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  window.open(`/customers/${customer.id}/view/guarantor-id-card`, '_blank');
+                                }}
+                                className="flex items-center justify-center gap-2 text-sm text-primary hover:underline cursor-pointer flex-1 px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                title="عرض الملف"
+                              >
+                                <Eye className="h-4 w-4" />
+                                عرض
+                              </button>
+                              <button
+                                onClick={() => {
+                                  window.open(`/customers/${customer.id}/download/guarantor-id-card`, '_blank');
+                                }}
+                                className="flex items-center justify-center gap-2 text-sm text-primary hover:underline cursor-pointer flex-1 px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                title="تحميل الملف"
+                              >
+                                <Download className="h-4 w-4" />
+                                تحميل
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {customer.commercial_record_copy_path && (
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-muted-foreground">نسخة السجل التجاري</label>
+                          <div className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-800">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  window.open(`/customers/${customer.id}/view/commercial-record`, '_blank');
+                                }}
+                                className="flex items-center justify-center gap-2 text-sm text-primary hover:underline cursor-pointer flex-1 px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                title="عرض الملف"
+                              >
+                                <Eye className="h-4 w-4" />
+                                عرض
+                              </button>
+                              <button
+                                onClick={() => {
+                                  window.open(`/customers/${customer.id}/download/commercial-record`, '_blank');
+                                }}
+                                className="flex items-center justify-center gap-2 text-sm text-primary hover:underline cursor-pointer flex-1 px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                title="تحميل الملف"
+                              >
+                                <Download className="h-4 w-4" />
+                                تحميل
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               )}

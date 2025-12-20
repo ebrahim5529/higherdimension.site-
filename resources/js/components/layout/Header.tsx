@@ -13,10 +13,8 @@ import {
   ChevronDown,
   FileText,
   Users,
-  Settings,
   LogOut,
   UserCircle,
-  Shield,
   Monitor,
   Wrench,
 } from 'lucide-react';
@@ -176,7 +174,7 @@ export function Header({ onToggleSidebar, isSidebarOpen }: HeaderProps) {
               <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
                 <div className="py-1">
                   <Link
-                    href="/dashboard/contract-management?mode=form"
+                    href="/contracts/create"
                     className="flex items-center w-full px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rtl:text-right"
                     onClick={() => setIsDropdownOpen(false)}
                   >
@@ -184,7 +182,7 @@ export function Header({ onToggleSidebar, isSidebarOpen }: HeaderProps) {
                     <span className="mr-2 rtl:mr-0 rtl:ml-2">عقد جديد</span>
                   </Link>
                   <Link
-                    href="/dashboard/inventory-status?mode=form"
+                    href="/inventory/create"
                     className="flex items-center w-full px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rtl:text-right"
                     onClick={() => setIsDropdownOpen(false)}
                   >
@@ -192,7 +190,7 @@ export function Header({ onToggleSidebar, isSidebarOpen }: HeaderProps) {
                     <span className="mr-2 rtl:mr-0 rtl:ml-2">إضافة معدة</span>
                   </Link>
                   <Link
-                    href="/dashboard/customer-management?mode=form"
+                    href="/customers/create"
                     className="flex items-center w-full px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rtl:text-right"
                     onClick={() => setIsDropdownOpen(false)}
                   >
@@ -271,24 +269,6 @@ export function Header({ onToggleSidebar, isSidebarOpen }: HeaderProps) {
                   >
                     <UserCircle className="h-4 w-4 ml-4 rtl:ml-0 rtl:mr-4" />
                     <span className="mr-2 rtl:mr-0 rtl:ml-2">الملف الشخصي</span>
-                  </Link>
-
-                  <Link
-                    href="/dashboard/settings"
-                    className="flex items-center w-full px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rtl:text-right"
-                    onClick={() => setIsUserMenuOpen(false)}
-                  >
-                    <Settings className="h-4 w-4 ml-4 rtl:ml-0 rtl:mr-4" />
-                    <span className="mr-2 rtl:mr-0 rtl:ml-2">إعدادات الحساب</span>
-                  </Link>
-
-                  <Link
-                    href="/dashboard/security"
-                    className="flex items-center w-full px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rtl:text-right"
-                    onClick={() => setIsUserMenuOpen(false)}
-                  >
-                    <Shield className="h-4 w-4 ml-4 rtl:ml-0 rtl:mr-4" />
-                    <span className="mr-2 rtl:mr-0 rtl:ml-2">الأمان والخصوصية</span>
                   </Link>
 
                   <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>

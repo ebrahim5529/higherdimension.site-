@@ -273,6 +273,9 @@ export default function CreateCustomer() {
                       </button>
                     ))}
                   </div>
+                  {errors.customer_type && (
+                    <p className="text-red-500 text-xs mt-1">{errors.customer_type}</p>
+                  )}
                 </div>
 
                 {/* رقم الهوية */}
@@ -454,7 +457,11 @@ export default function CreateCustomer() {
                   <select
                     value={data.status}
                     onChange={(e) => setData('status', e.target.value as 'ACTIVE' | 'INACTIVE')}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white"
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white ${
+                      errors.status 
+                        ? 'border-red-500' 
+                        : 'border-gray-300 dark:border-gray-600'
+                    }`}
                   >
                     {customerStatuses.map((status) => (
                       <option key={status.value} value={status.value}>
@@ -462,6 +469,9 @@ export default function CreateCustomer() {
                       </option>
                     ))}
                   </select>
+                  {errors.status && (
+                    <p className="text-red-500 text-xs mt-1">{errors.status}</p>
+                  )}
                 </div>
 
                 {/* التقييم */}
@@ -508,7 +518,11 @@ export default function CreateCustomer() {
                       value={data.guarantorData.name}
                       onChange={(e) => setData('guarantorData', { ...data.guarantorData, name: e.target.value })}
                       placeholder="أدخل اسم الضامن"
+                      className={errors['guarantorData.name'] ? 'border-red-500' : ''}
                     />
+                    {errors['guarantorData.name'] && (
+                      <p className="text-red-500 text-xs mt-1">{errors['guarantorData.name']}</p>
+                    )}
                   </div>
 
                   <div>
@@ -520,7 +534,11 @@ export default function CreateCustomer() {
                       value={data.guarantorData.phone}
                       onChange={(e) => setData('guarantorData', { ...data.guarantorData, phone: e.target.value })}
                       placeholder="أدخل هاتف الضامن"
+                      className={errors['guarantorData.phone'] ? 'border-red-500' : ''}
                     />
+                    {errors['guarantorData.phone'] && (
+                      <p className="text-red-500 text-xs mt-1">{errors['guarantorData.phone']}</p>
+                    )}
                   </div>
 
                   <div>
@@ -532,7 +550,11 @@ export default function CreateCustomer() {
                       value={data.guarantorData.idNumber}
                       onChange={(e) => setData('guarantorData', { ...data.guarantorData, idNumber: e.target.value })}
                       placeholder="أدخل رقم هوية الضامن"
+                      className={errors['guarantorData.idNumber'] ? 'border-red-500' : ''}
                     />
+                    {errors['guarantorData.idNumber'] && (
+                      <p className="text-red-500 text-xs mt-1">{errors['guarantorData.idNumber']}</p>
+                    )}
                   </div>
 
                   <div>
@@ -542,7 +564,11 @@ export default function CreateCustomer() {
                     <select
                       value={data.guarantorData.nationality}
                       onChange={(e) => setData('guarantorData', { ...data.guarantorData, nationality: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white"
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white ${
+                        errors['guarantorData.nationality'] 
+                          ? 'border-red-500' 
+                          : 'border-gray-300 dark:border-gray-600'
+                      }`}
                     >
                       <option value="">اختر جنسية الضامن</option>
                       {availableNationalities.map((nationality) => (
@@ -551,6 +577,9 @@ export default function CreateCustomer() {
                         </option>
                       ))}
                     </select>
+                    {errors['guarantorData.nationality'] && (
+                      <p className="text-red-500 text-xs mt-1">{errors['guarantorData.nationality']}</p>
+                    )}
                   </div>
 
                   <div>
@@ -562,7 +591,11 @@ export default function CreateCustomer() {
                       value={data.guarantorData.relationship}
                       onChange={(e) => setData('guarantorData', { ...data.guarantorData, relationship: e.target.value })}
                       placeholder="مثل: أخ، أب، صديق"
+                      className={errors['guarantorData.relationship'] ? 'border-red-500' : ''}
                     />
+                    {errors['guarantorData.relationship'] && (
+                      <p className="text-red-500 text-xs mt-1">{errors['guarantorData.relationship']}</p>
+                    )}
                   </div>
 
                   <div>
@@ -583,9 +616,16 @@ export default function CreateCustomer() {
                       value={data.guarantorData.address}
                       onChange={(e) => setData('guarantorData', { ...data.guarantorData, address: e.target.value })}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white"
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white ${
+                        errors['guarantorData.address'] 
+                          ? 'border-red-500' 
+                          : 'border-gray-300 dark:border-gray-600'
+                      }`}
                       placeholder="أدخل عنوان الضامن الكامل"
                     />
+                    {errors['guarantorData.address'] && (
+                      <p className="text-red-500 text-xs mt-1">{errors['guarantorData.address']}</p>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -637,7 +677,11 @@ export default function CreateCustomer() {
                   <label className="block text-sm font-medium mb-1">
                     نسخة البطاقة الشخصية للعميل
                   </label>
-                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center">
+                  <div className={`border-2 border-dashed rounded-lg p-4 text-center ${
+                    errors.idCardCopy 
+                      ? 'border-red-500 dark:border-red-700' 
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}>
                     {previewUrls.idCardCopy ? (
                       <div className="space-y-2">
                         <img
@@ -672,13 +716,20 @@ export default function CreateCustomer() {
                       </>
                     )}
                   </div>
+                  {errors.idCardCopy && (
+                    <p className="text-red-500 text-xs mt-1">{errors.idCardCopy}</p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     نسخة بطاقة الضامن الشخصية
                   </label>
-                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center">
+                  <div className={`border-2 border-dashed rounded-lg p-4 text-center ${
+                    errors.guarantorIdCardCopy 
+                      ? 'border-red-500 dark:border-red-700' 
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}>
                     {previewUrls.guarantorIdCardCopy ? (
                       <div className="space-y-2">
                         <img
@@ -713,6 +764,9 @@ export default function CreateCustomer() {
                       </>
                     )}
                   </div>
+                  {errors.guarantorIdCardCopy && (
+                    <p className="text-red-500 text-xs mt-1">{errors.guarantorIdCardCopy}</p>
+                  )}
                 </div>
 
                 {data.customerType === 'COMPANY' && (
@@ -720,7 +774,11 @@ export default function CreateCustomer() {
                     <label className="block text-sm font-medium mb-1">
                       نسخة السجل التجاري
                     </label>
-                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center">
+                    <div className={`border-2 border-dashed rounded-lg p-4 text-center ${
+                      errors.commercialRecordCopy 
+                        ? 'border-red-500 dark:border-red-700' 
+                        : 'border-gray-300 dark:border-gray-600'
+                    }`}>
                       {previewUrls.commercialRecordCopy ? (
                         <div className="space-y-2">
                           <img
@@ -755,6 +813,9 @@ export default function CreateCustomer() {
                         </>
                       )}
                     </div>
+                    {errors.commercialRecordCopy && (
+                      <p className="text-red-500 text-xs mt-1">{errors.commercialRecordCopy}</p>
+                    )}
                   </div>
                 )}
               </div>

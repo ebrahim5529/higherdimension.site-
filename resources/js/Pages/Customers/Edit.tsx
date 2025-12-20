@@ -225,8 +225,14 @@ export default function EditCustomer({ customer }: EditCustomerProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // التأكد من أن name موجود قبل الإرسال
+    if (!data.name || data.name.trim() === '') {
+      showToast.error('خطأ', 'اسم العميل مطلوب');
+      return;
+    }
+    
     put(`/customers/${customer.id}`, {
-      forceFormData: true,
       onSuccess: () => {
         showToast.success('تم التحديث بنجاح', 'تم تحديث بيانات العميل بنجاح');
         router.visit(`/customers/${customer.id}`);
@@ -318,11 +324,10 @@ export default function EditCustomer({ customer }: EditCustomerProps) {
                         key={type.value}
                         type="button"
                         onClick={() => setData('customerType', type.value)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-                          data.customerType === type.value
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${data.customerType === type.value
                             ? 'bg-primary text-white border-primary'
                             : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                        }`}
+                          }`}
                       >
                         {type.value === 'COMPANY' ? (
                           <Building2 className="h-4 w-4" />
@@ -453,11 +458,10 @@ export default function EditCustomer({ customer }: EditCustomerProps) {
                           variant="ghost"
                           size="sm"
                           onClick={() => setPrimaryPhone(index)}
-                          className={`h-8 w-8 p-0 ${
-                            phone.isPrimary
+                          className={`h-8 w-8 p-0 ${phone.isPrimary
                               ? 'bg-primary text-white'
                               : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                          }`}
+                            }`}
                           title="رقم رئيسي"
                         >
                           <Star className="h-3 w-3" />

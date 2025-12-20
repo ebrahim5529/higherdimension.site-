@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class CustomerController extends Controller
@@ -130,7 +131,37 @@ class CustomerController extends Controller
             $customerNumber = 'CUST-'.str_pad((string) ($lastNumber + 1), 3, '0', STR_PAD_LEFT);
         }
 
-        $validated = $request->validate([
+        // تحويل camelCase إلى snake_case إذا كان موجوداً
+        $requestData = $request->all();
+        if (isset($requestData['customerType'])) {
+            $requestData['customer_type'] = $requestData['customerType'];
+        }
+        if (isset($requestData['idNumber'])) {
+            $requestData['id_number'] = $requestData['idNumber'];
+        }
+        if (isset($requestData['commercialRecord'])) {
+            $requestData['commercial_record'] = $requestData['commercialRecord'];
+        }
+        if (isset($requestData['guarantorName'])) {
+            $requestData['guarantor_name'] = $requestData['guarantorName'];
+        }
+        if (isset($requestData['guarantorPhone'])) {
+            $requestData['guarantor_phone'] = $requestData['guarantorPhone'];
+        }
+        if (isset($requestData['guarantorId'])) {
+            $requestData['guarantor_id'] = $requestData['guarantorId'];
+        }
+
+        // دمج البيانات المحولة مع البيانات الأصلية
+        $request->merge($requestData);
+
+        // التحقق من الحقول المطلوبة للضامن للعملاء غير العمانيين
+        $nationality = $request->input('nationality');
+        $customerType = $request->input('customer_type') ?? $request->input('customerType');
+        $guarantorData = $request->input('guarantorData');
+
+        // بناء قواعد التحقق
+        $rules = [
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|unique:customers,email',
             'phone' => 'nullable|string',
@@ -164,7 +195,29 @@ class CustomerController extends Controller
             'idCardCopy' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
             'guarantorIdCardCopy' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
             'commercialRecordCopy' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
-        ]);
+        ];
+
+        // إضافة قواعد التحقق المطلوبة للضامن للعملاء غير العمانيين
+        $messages = [];
+        if ($nationality && $nationality !== 'عماني' && $customerType === 'INDIVIDUAL' && $guarantorData) {
+            $rules['guarantorData.name'] = 'required|string|max:255';
+            $rules['guarantorData.phone'] = 'required|string';
+            $rules['guarantorData.idNumber'] = 'required|string';
+            $rules['guarantorData.nationality'] = 'required|string';
+            $rules['guarantorData.address'] = 'required|string';
+            $rules['guarantorData.relationship'] = 'required|string';
+
+            $messages = [
+                'guarantorData.name.required' => 'اسم الضامن مطلوب للعملاء غير العمانيين',
+                'guarantorData.phone.required' => 'هاتف الضامن مطلوب للعملاء غير العمانيين',
+                'guarantorData.idNumber.required' => 'رقم هوية الضامن مطلوب للعملاء غير العمانيين',
+                'guarantorData.nationality.required' => 'جنسية الضامن مطلوبة للعملاء غير العمانيين',
+                'guarantorData.address.required' => 'عنوان الضامن مطلوب للعملاء غير العمانيين',
+                'guarantorData.relationship.required' => 'صلة القرابة مطلوبة للعملاء غير العمانيين',
+            ];
+        }
+
+        $validated = $request->validate($rules, $messages);
 
         // إضافة رقم العميل
         $validated['customer_number'] = $customerNumber;
@@ -338,7 +391,7 @@ class CustomerController extends Controller
      */
     private function getPaymentMethodLabel($method)
     {
-        return match($method) {
+        return match ($method) {
             'cash' => 'نقداً',
             'check' => 'شيك',
             'credit_card' => 'بطاقة ائتمان',
@@ -408,7 +461,7 @@ class CustomerController extends Controller
     {
         $customer = Customer::findOrFail($id);
 
-        // تحويل customerType إلى customer_type إذا كان موجوداً
+        // تحويل camelCase إلى snake_case إذا كان موجوداً (نفس أسلوب SupplierController)
         $requestData = $request->all();
         if (isset($requestData['customerType'])) {
             $requestData['customer_type'] = $requestData['customerType'];
@@ -432,10 +485,25 @@ class CustomerController extends Controller
             $requestData['registration_date'] = $requestData['registration_date'];
         }
 
+        // معالجة guarantorData إذا كانت موجودة
+        if (isset($requestData['guarantorData']) && is_array($requestData['guarantorData'])) {
+            $guarantorData = $requestData['guarantorData'];
+            if (isset($guarantorData['name'])) {
+                $requestData['guarantor_name'] = $guarantorData['name'];
+            }
+            if (isset($guarantorData['phone'])) {
+                $requestData['guarantor_phone'] = $guarantorData['phone'];
+            }
+            if (isset($guarantorData['idNumber'])) {
+                $requestData['guarantor_id'] = $guarantorData['idNumber'];
+            }
+        }
+
         // دمج البيانات المحولة مع البيانات الأصلية
         $request->merge($requestData);
 
-        $validated = $request->validate([
+        // التحقق من البيانات
+        $rules = [
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|unique:customers,email,'.$id,
             'phone' => 'nullable|string',
@@ -454,21 +522,38 @@ class CustomerController extends Controller
             'guarantor_name' => 'nullable|string',
             'guarantor_phone' => 'nullable|string',
             'guarantor_id' => 'nullable|string',
-            'guarantorData' => 'nullable|array',
-            'guarantorData.name' => 'nullable|string',
-            'guarantorData.phone' => 'nullable|string',
-            'guarantorData.idNumber' => 'nullable|string',
-            'guarantorData.nationality' => 'nullable|string',
-            'guarantorData.address' => 'nullable|string',
-            'guarantorData.relationship' => 'nullable|string',
-            'guarantorData.workPlace' => 'nullable|string',
-            'guarantorData.workPhone' => 'nullable|string',
             'notes' => 'nullable|string',
             'warnings' => 'nullable|string',
             'rating' => 'nullable|integer|min:1|max:5',
             'idCardCopy' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
             'guarantorIdCardCopy' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
             'commercialRecordCopy' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+        ];
+
+        // التحقق من الحقول المطلوبة للضامن للعملاء غير العمانيين
+        $nationality = $requestData['nationality'] ?? $customer->nationality;
+        $customerType = $requestData['customer_type'] ?? $requestData['customerType'] ?? $customer->customer_type;
+        if ($nationality && $nationality !== 'عماني' && $customerType === 'INDIVIDUAL') {
+            $rules['guarantorData'] = 'required|array';
+            $rules['guarantorData.name'] = 'required|string|max:255';
+            $rules['guarantorData.phone'] = 'required|string';
+            $rules['guarantorData.idNumber'] = 'required|string';
+            $rules['guarantorData.nationality'] = 'required|string';
+            $rules['guarantorData.address'] = 'required|string';
+            $rules['guarantorData.relationship'] = 'required|string';
+        }
+
+        $validated = $request->validate($rules, [
+            'name.required' => 'اسم العميل مطلوب',
+            'customer_type.required' => 'نوع العميل مطلوب',
+            'status.required' => 'حالة العميل مطلوبة',
+            'guarantorData.required' => 'بيانات الضامن مطلوبة للعملاء غير العمانيين',
+            'guarantorData.name.required' => 'اسم الضامن مطلوب للعملاء غير العمانيين',
+            'guarantorData.phone.required' => 'هاتف الضامن مطلوب للعملاء غير العمانيين',
+            'guarantorData.idNumber.required' => 'رقم هوية الضامن مطلوب للعملاء غير العمانيين',
+            'guarantorData.nationality.required' => 'جنسية الضامن مطلوبة للعملاء غير العمانيين',
+            'guarantorData.address.required' => 'عنوان الضامن مطلوب للعملاء غير العمانيين',
+            'guarantorData.relationship.required' => 'صلة القرابة مطلوبة للعملاء غير العمانيين',
         ]);
 
         // إضافة تاريخ التسجيل إذا لم يتم إرساله
@@ -501,16 +586,11 @@ class CustomerController extends Controller
             $validated['commercial_record_copy_path'] = $request->file('commercialRecordCopy')->store('customers/commercial-records', 'public');
         }
 
-        // حفظ بيانات الضامن الكاملة في JSON إذا كانت موجودة
-        if (isset($validated['guarantorData']) && ! empty($validated['guarantorData'])) {
-            $validated['guarantor_name'] = $validated['guarantorData']['name'] ?? $validated['guarantor_name'] ?? null;
-            $validated['guarantor_phone'] = $validated['guarantorData']['phone'] ?? $validated['guarantor_phone'] ?? null;
-            $validated['guarantor_id'] = $validated['guarantorData']['idNumber'] ?? $validated['guarantor_id'] ?? null;
-        }
-
         // حفظ أرقام الهواتف في JSON
         if (isset($validated['phones']) && ! empty($validated['phones'])) {
             $validated['phones'] = json_encode($validated['phones']);
+        } else {
+            $validated['phones'] = null;
         }
 
         // إزالة الحقول غير المطلوبة من $validated قبل الحفظ
@@ -548,6 +628,7 @@ class CustomerController extends Controller
                 });
                 $totalRemaining = $contracts->sum(function ($contract) {
                     $paid = $contract->contractPayments->sum('amount') ?? 0;
+
                     return max(0, ($contract->amount ?? 0) - $paid);
                 });
 
@@ -564,6 +645,7 @@ class CustomerController extends Controller
                     'totalRemaining' => $totalRemaining,
                     'contracts' => $contracts->map(function ($contract) {
                         $paid = $contract->contractPayments->sum('amount') ?? 0;
+
                         return [
                             'id' => $contract->id,
                             'contractNumber' => $contract->contract_number,
@@ -600,14 +682,16 @@ class CustomerController extends Controller
                 });
                 $totalRemaining = $contracts->sum(function ($contract) {
                     $paid = $contract->contractPayments->sum('amount') ?? 0;
+
                     return max(0, ($contract->amount ?? 0) - $paid);
                 });
                 $overdueAmount = $contracts->filter(function ($contract) {
-                    return $contract->status === 'ACTIVE' && 
-                           $contract->end_date && 
+                    return $contract->status === 'ACTIVE' &&
+                           $contract->end_date &&
                            now()->greaterThan($contract->end_date);
                 })->sum(function ($contract) {
                     $paid = $contract->contractPayments->sum('amount') ?? 0;
+
                     return max(0, ($contract->amount ?? 0) - $paid);
                 });
 
@@ -658,7 +742,7 @@ class CustomerController extends Controller
         ]);
 
         $customer = Customer::findOrFail($id);
-        
+
         $note = $customer->customerNotes()->create([
             'title' => $validated['title'],
             'content' => $validated['content'],
@@ -667,5 +751,119 @@ class CustomerController extends Controller
 
         return redirect()->back()
             ->with('success', 'تم إضافة الملاحظة بنجاح');
+    }
+
+    /**
+     * تحميل نسخة البطاقة الشخصية
+     */
+    public function downloadIdCard(string $id)
+    {
+        $customer = Customer::findOrFail($id);
+
+        if (! $customer->id_card_copy_path) {
+            abort(404, 'الملف غير موجود');
+        }
+
+        if (! Storage::disk('public')->exists($customer->id_card_copy_path)) {
+            abort(404, 'الملف غير موجود');
+        }
+
+        $fileName = 'بطاقة_شخصية_'.$customer->name.'_'.$customer->customer_number.'.'.pathinfo($customer->id_card_copy_path, PATHINFO_EXTENSION);
+
+        return Storage::disk('public')->download($customer->id_card_copy_path, $fileName);
+    }
+
+    /**
+     * تحميل نسخة بطاقة الضامن
+     */
+    public function downloadGuarantorIdCard(string $id)
+    {
+        $customer = Customer::findOrFail($id);
+
+        if (! $customer->guarantor_id_card_copy_path) {
+            abort(404, 'الملف غير موجود');
+        }
+
+        if (! Storage::disk('public')->exists($customer->guarantor_id_card_copy_path)) {
+            abort(404, 'الملف غير موجود');
+        }
+
+        $fileName = 'بطاقة_الضامن_'.$customer->name.'_'.$customer->customer_number.'.'.pathinfo($customer->guarantor_id_card_copy_path, PATHINFO_EXTENSION);
+
+        return Storage::disk('public')->download($customer->guarantor_id_card_copy_path, $fileName);
+    }
+
+    /**
+     * تحميل نسخة السجل التجاري
+     */
+    public function downloadCommercialRecord(string $id)
+    {
+        $customer = Customer::findOrFail($id);
+
+        if (! $customer->commercial_record_copy_path) {
+            abort(404, 'الملف غير موجود');
+        }
+
+        if (! Storage::disk('public')->exists($customer->commercial_record_copy_path)) {
+            abort(404, 'الملف غير موجود');
+        }
+
+        $fileName = 'السجل_التجاري_'.$customer->name.'_'.$customer->customer_number.'.'.pathinfo($customer->commercial_record_copy_path, PATHINFO_EXTENSION);
+
+        return Storage::disk('public')->download($customer->commercial_record_copy_path, $fileName);
+    }
+
+    /**
+     * عرض نسخة البطاقة الشخصية
+     */
+    public function viewIdCard(string $id)
+    {
+        $customer = Customer::findOrFail($id);
+
+        if (! $customer->id_card_copy_path) {
+            abort(404, 'الملف غير موجود');
+        }
+
+        if (! Storage::disk('public')->exists($customer->id_card_copy_path)) {
+            abort(404, 'الملف غير موجود');
+        }
+
+        return Storage::disk('public')->response($customer->id_card_copy_path);
+    }
+
+    /**
+     * عرض نسخة بطاقة الضامن
+     */
+    public function viewGuarantorIdCard(string $id)
+    {
+        $customer = Customer::findOrFail($id);
+
+        if (! $customer->guarantor_id_card_copy_path) {
+            abort(404, 'الملف غير موجود');
+        }
+
+        if (! Storage::disk('public')->exists($customer->guarantor_id_card_copy_path)) {
+            abort(404, 'الملف غير موجود');
+        }
+
+        return Storage::disk('public')->response($customer->guarantor_id_card_copy_path);
+    }
+
+    /**
+     * عرض نسخة السجل التجاري
+     */
+    public function viewCommercialRecord(string $id)
+    {
+        $customer = Customer::findOrFail($id);
+
+        if (! $customer->commercial_record_copy_path) {
+            abort(404, 'الملف غير موجود');
+        }
+
+        if (! Storage::disk('public')->exists($customer->commercial_record_copy_path)) {
+            abort(404, 'الملف غير موجود');
+        }
+
+        return Storage::disk('public')->response($customer->commercial_record_copy_path);
     }
 }

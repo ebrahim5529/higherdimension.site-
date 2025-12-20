@@ -38,6 +38,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/customer-contracts', [\App\Http\Controllers\Admin\CustomerController::class, 'contracts'])->name('customers.contracts');
     Route::get('/dashboard/customer-claims', [\App\Http\Controllers\Admin\CustomerController::class, 'claims'])->name('customers.claims');
     Route::post('/customers/{id}/notes', [\App\Http\Controllers\Admin\CustomerController::class, 'storeNote'])->name('customers.notes.store');
+    Route::get('/customers/{id}/download/id-card', [\App\Http\Controllers\Admin\CustomerController::class, 'downloadIdCard'])->name('customers.download.id-card');
+    Route::get('/customers/{id}/download/guarantor-id-card', [\App\Http\Controllers\Admin\CustomerController::class, 'downloadGuarantorIdCard'])->name('customers.download.guarantor-id-card');
+    Route::get('/customers/{id}/download/commercial-record', [\App\Http\Controllers\Admin\CustomerController::class, 'downloadCommercialRecord'])->name('customers.download.commercial-record');
+    Route::get('/customers/{id}/view/id-card', [\App\Http\Controllers\Admin\CustomerController::class, 'viewIdCard'])->name('customers.view.id-card');
+    Route::get('/customers/{id}/view/guarantor-id-card', [\App\Http\Controllers\Admin\CustomerController::class, 'viewGuarantorIdCard'])->name('customers.view.guarantor-id-card');
+    Route::get('/customers/{id}/view/commercial-record', [\App\Http\Controllers\Admin\CustomerController::class, 'viewCommercialRecord'])->name('customers.view.commercial-record');
 
     // Contracts - يجب وضع المسارات المخصصة قبل Route::resource
     Route::get('/contracts/active', [\App\Http\Controllers\Admin\ContractController::class, 'active'])->name('contracts.active');
@@ -136,6 +142,11 @@ Route::middleware('auth')->group(function () {
         Route::put('/roles/{role}', [\App\Http\Controllers\Admin\RoleController::class, 'update'])->name('roles.update');
         Route::delete('/roles/{role}', [\App\Http\Controllers\Admin\RoleController::class, 'destroy'])->name('roles.destroy');
     });
+
+    // Profile routes
+    Route::get('/dashboard/profile', [\App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
+    Route::put('/profile', [\App\Http\Controllers\ProfileController::class, 'updateProfile'])->name('profile.update');
+    Route::put('/profile/password', [\App\Http\Controllers\ProfileController::class, 'changePassword'])->name('profile.password.update');
 
     Route::post('/logout', function (Request $request) {
         Auth::logout();

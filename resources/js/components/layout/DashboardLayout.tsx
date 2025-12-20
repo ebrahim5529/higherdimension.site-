@@ -70,6 +70,7 @@ export default function DashboardLayout({
       '/payments/create': 'all-payments',
       '/payments/late': 'late-payments',
       '/payments/reports': 'payment-reports',
+      '/dashboard/profile': 'profile',
     }),
     []
   );
