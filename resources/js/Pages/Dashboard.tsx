@@ -1,7 +1,9 @@
 /** @jsxImportSource react */
 import type { ComponentType } from 'react';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
+import { useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { showToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -149,6 +151,17 @@ export default function Dashboard({
   equipmentByOffice,
   recentContracts,
 }: DashboardProps) {
+  const { flash } = usePage().props as any;
+
+  // عرض رسائل Flash من Laravel
+  useEffect(() => {
+    if (flash?.success) {
+      showToast.success('نجح', flash.success);
+    }
+    if (flash?.error) {
+      showToast.error('خطأ', flash.error);
+    }
+  }, [flash]);
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',

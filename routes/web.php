@@ -33,28 +33,34 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/financial-reports', [\App\Http\Controllers\Admin\FinancialReportsController::class, 'index'])->name('reports.financial');
 
     // Customers
-    Route::resource('customers', \App\Http\Controllers\Admin\CustomerController::class);
-    Route::get('/dashboard/customer-management', [\App\Http\Controllers\Admin\CustomerController::class, 'index'])->name('customers.management');
-    Route::get('/dashboard/customer-contracts', [\App\Http\Controllers\Admin\CustomerController::class, 'contracts'])->name('customers.contracts');
-    Route::get('/dashboard/customer-claims', [\App\Http\Controllers\Admin\CustomerController::class, 'claims'])->name('customers.claims');
-    Route::post('/customers/{id}/notes', [\App\Http\Controllers\Admin\CustomerController::class, 'storeNote'])->name('customers.notes.store');
-    Route::get('/customers/{id}/download/id-card', [\App\Http\Controllers\Admin\CustomerController::class, 'downloadIdCard'])->name('customers.download.id-card');
-    Route::get('/customers/{id}/download/guarantor-id-card', [\App\Http\Controllers\Admin\CustomerController::class, 'downloadGuarantorIdCard'])->name('customers.download.guarantor-id-card');
-    Route::get('/customers/{id}/download/commercial-record', [\App\Http\Controllers\Admin\CustomerController::class, 'downloadCommercialRecord'])->name('customers.download.commercial-record');
-    Route::get('/customers/{id}/view/id-card', [\App\Http\Controllers\Admin\CustomerController::class, 'viewIdCard'])->name('customers.view.id-card');
-    Route::get('/customers/{id}/view/guarantor-id-card', [\App\Http\Controllers\Admin\CustomerController::class, 'viewGuarantorIdCard'])->name('customers.view.guarantor-id-card');
-    Route::get('/customers/{id}/view/commercial-record', [\App\Http\Controllers\Admin\CustomerController::class, 'viewCommercialRecord'])->name('customers.view.commercial-record');
+    Route::middleware('permission:access-customers')->group(function () {
+        Route::resource('customers', \App\Http\Controllers\Admin\CustomerController::class);
+        Route::get('/dashboard/customer-management', [\App\Http\Controllers\Admin\CustomerController::class, 'index'])->name('customers.management');
+        Route::get('/dashboard/customer-contracts', [\App\Http\Controllers\Admin\CustomerController::class, 'contracts'])->name('customers.contracts');
+        Route::get('/dashboard/customer-claims', [\App\Http\Controllers\Admin\CustomerController::class, 'claims'])->name('customers.claims');
+    });
+    Route::middleware('permission:access-customers')->group(function () {
+        Route::post('/customers/{id}/notes', [\App\Http\Controllers\Admin\CustomerController::class, 'storeNote'])->name('customers.notes.store');
+        Route::get('/customers/{id}/download/id-card', [\App\Http\Controllers\Admin\CustomerController::class, 'downloadIdCard'])->name('customers.download.id-card');
+        Route::get('/customers/{id}/download/guarantor-id-card', [\App\Http\Controllers\Admin\CustomerController::class, 'downloadGuarantorIdCard'])->name('customers.download.guarantor-id-card');
+        Route::get('/customers/{id}/download/commercial-record', [\App\Http\Controllers\Admin\CustomerController::class, 'downloadCommercialRecord'])->name('customers.download.commercial-record');
+        Route::get('/customers/{id}/view/id-card', [\App\Http\Controllers\Admin\CustomerController::class, 'viewIdCard'])->name('customers.view.id-card');
+        Route::get('/customers/{id}/view/guarantor-id-card', [\App\Http\Controllers\Admin\CustomerController::class, 'viewGuarantorIdCard'])->name('customers.view.guarantor-id-card');
+        Route::get('/customers/{id}/view/commercial-record', [\App\Http\Controllers\Admin\CustomerController::class, 'viewCommercialRecord'])->name('customers.view.commercial-record');
+    });
 
     // Contracts - يجب وضع المسارات المخصصة قبل Route::resource
-    Route::get('/contracts/active', [\App\Http\Controllers\Admin\ContractController::class, 'active'])->name('contracts.active');
-    Route::get('/contracts/expired', [\App\Http\Controllers\Admin\ContractController::class, 'expired'])->name('contracts.expired');
-    Route::get('/contracts/cancelled', [\App\Http\Controllers\Admin\ContractController::class, 'cancelled'])->name('contracts.cancelled');
-    Route::get('/contracts/{id}/invoice', [\App\Http\Controllers\Admin\ContractController::class, 'invoice'])->name('contracts.invoice');
-    Route::resource('contracts', \App\Http\Controllers\Admin\ContractController::class);
-    Route::get('/dashboard/contract-management', [\App\Http\Controllers\Admin\ContractController::class, 'index'])->name('contracts.management');
-    Route::post('/contracts/{id}/attachments', [\App\Http\Controllers\Admin\ContractController::class, 'uploadAttachment'])->name('contracts.attachments.upload');
-    Route::delete('/contracts/{contractId}/attachments/{attachmentId}', [\App\Http\Controllers\Admin\ContractController::class, 'deleteAttachment'])->name('contracts.attachments.delete');
-    Route::get('/contracts/{contractId}/attachments/{attachmentId}/download', [\App\Http\Controllers\Admin\ContractController::class, 'downloadAttachment'])->name('contracts.attachments.download');
+    Route::middleware('permission:access-contracts')->group(function () {
+        Route::get('/contracts/active', [\App\Http\Controllers\Admin\ContractController::class, 'active'])->name('contracts.active');
+        Route::get('/contracts/expired', [\App\Http\Controllers\Admin\ContractController::class, 'expired'])->name('contracts.expired');
+        Route::get('/contracts/cancelled', [\App\Http\Controllers\Admin\ContractController::class, 'cancelled'])->name('contracts.cancelled');
+        Route::get('/contracts/{id}/invoice', [\App\Http\Controllers\Admin\ContractController::class, 'invoice'])->name('contracts.invoice');
+        Route::resource('contracts', \App\Http\Controllers\Admin\ContractController::class);
+        Route::get('/dashboard/contract-management', [\App\Http\Controllers\Admin\ContractController::class, 'index'])->name('contracts.management');
+        Route::post('/contracts/{id}/attachments', [\App\Http\Controllers\Admin\ContractController::class, 'uploadAttachment'])->name('contracts.attachments.upload');
+        Route::delete('/contracts/{contractId}/attachments/{attachmentId}', [\App\Http\Controllers\Admin\ContractController::class, 'deleteAttachment'])->name('contracts.attachments.delete');
+        Route::get('/contracts/{contractId}/attachments/{attachmentId}/download', [\App\Http\Controllers\Admin\ContractController::class, 'downloadAttachment'])->name('contracts.attachments.download');
+    });
 
     // Suppliers
     Route::resource('suppliers', \App\Http\Controllers\Admin\SupplierController::class);
@@ -118,15 +124,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/employee-management', [\App\Http\Controllers\Admin\EmployeeController::class, 'index'])->name('employees.management');
 
     // Payments Management Routes - Specific routes must come before resource routes
-    Route::get('/payments', [\App\Http\Controllers\Admin\PaymentController::class, 'index'])->name('payments.index');
-    Route::get('/payments/create', [\App\Http\Controllers\Admin\PaymentController::class, 'create'])->name('payments.create');
-    Route::post('/payments', [\App\Http\Controllers\Admin\PaymentController::class, 'store'])->name('payments.store');
-    Route::get('/payments/late', [\App\Http\Controllers\Admin\PaymentController::class, 'latePayments'])->name('payments.late');
-    Route::get('/payments/reports', [\App\Http\Controllers\Admin\PaymentController::class, 'reports'])->name('payments.reports');
-    Route::get('/payments/{id}', [\App\Http\Controllers\Admin\PaymentController::class, 'show'])->name('payments.show');
+    Route::middleware('permission:access-financial')->group(function () {
+        Route::get('/payments', [\App\Http\Controllers\Admin\PaymentController::class, 'index'])->name('payments.index');
+        Route::get('/payments/create', [\App\Http\Controllers\Admin\PaymentController::class, 'create'])->name('payments.create');
+        Route::post('/payments', [\App\Http\Controllers\Admin\PaymentController::class, 'store'])->name('payments.store');
+        Route::get('/payments/late', [\App\Http\Controllers\Admin\PaymentController::class, 'latePayments'])->name('payments.late');
+        Route::get('/payments/reports', [\App\Http\Controllers\Admin\PaymentController::class, 'reports'])->name('payments.reports');
+        Route::get('/payments/{id}', [\App\Http\Controllers\Admin\PaymentController::class, 'show'])->name('payments.show');
+    });
 
     // Permissions Management Routes
-    Route::middleware('admin')->group(function () {
+    Route::middleware('permission:access-permissions')->group(function () {
         Route::get('/dashboard/user-roles', [\App\Http\Controllers\Admin\UserRoleController::class, 'index'])->name('user-roles.index');
         Route::post('/user-roles', [\App\Http\Controllers\Admin\UserRoleController::class, 'store'])->name('user-roles.store');
         Route::put('/user-roles/{user}/roles', [\App\Http\Controllers\Admin\UserRoleController::class, 'updateRoles'])->name('user-roles.update-roles');

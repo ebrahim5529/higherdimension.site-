@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 
 interface MenuItemType {
   id: string;
@@ -52,13 +52,94 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
+interface PageProps {
+  auth?: {
+    user?: {
+      id: number;
+      name: string;
+      email: string;
+      roles: string[];
+      permissions: string[];
+    };
+  };
+}
+
 export function Sidebar({
   activeSection,
   onSectionChange,
   onClose,
 }: SidebarProps) {
+  const { auth } = usePage<PageProps>().props;
+  const userPermissions = auth?.user?.permissions || [];
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+
+  // خريطة الصلاحيات المطلوبة لكل عنصر قائمة
+  const menuPermissionsMap: Record<string, string | string[]> = {
+    'main-dashboard': 'access-main-dashboard',
+    'dashboard': 'access-dashboard-reports',
+    'dashboard-interactive': 'access-dashboard-interactive',
+    'financial-reports': 'access-financial-reports',
+    'operations-reports': 'access-operations-reports',
+    'customer-reports': 'access-customer-reports',
+    'customers': 'access-customers',
+    'customer-management': 'manage-customers',
+    'customer-contracts': 'view-customer-contracts',
+    'customer-claims': 'manage-customer-claims',
+    'suppliers': 'access-suppliers',
+    'supplier-management': 'manage-suppliers',
+    'supplier-invoices': 'view-supplier-invoices',
+    'supplier-purchases': 'manage-supplier-purchases',
+    'inventory': 'access-inventory',
+    'inventory-status': 'manage-inventory',
+    'purchase-equipment': 'purchase-equipment',
+    'purchases-list': 'manage-purchases',
+    'contracts': 'access-contracts',
+    'contract-management': 'manage-contracts',
+    'active-contracts': 'view-active-contracts',
+    'expired-contracts': 'view-expired-contracts',
+    'cancelled-contracts': 'view-cancelled-contracts',
+    'operations': 'access-operations',
+    'delivery-orders': 'manage-delivery-orders',
+    'shipping-tracking': 'track-shipping',
+    'delivery-receipt': 'manage-delivery-receipt',
+    'return-inspection': 'manage-return-inspection',
+    'financial': 'access-financial',
+    'payment-management': 'manage-payment-transactions',
+    'purchase-management': 'manage-purchases',
+    'invoices': 'manage-invoices',
+    'employees': 'access-employees',
+    'employee-management': 'manage-employees',
+    'salaries': 'manage-salaries',
+    'incentives': 'manage-incentives',
+    'attendance': 'manage-attendance',
+    'departments': 'manage-departments',
+    'leaves': 'manage-leaves',
+    'permissions-management': 'access-permissions',
+    'user-roles': 'manage-user-roles',
+    'permission-groups': 'manage-permission-groups',
+    'roles': 'manage-roles',
+    'payments': 'access-payments',
+    'all-payments': 'view-all-payments',
+    'late-payments': 'view-late-payments',
+    'payment-reports': 'view-payment-reports',
+    'settings': 'access-settings',
+    'electronic-signature': 'manage-electronic-signature',
+  };
+
+  // دالة للتحقق من الصلاحيات
+  const hasPermission = useCallback((menuId: string): boolean => {
+    const requiredPermission = menuPermissionsMap[menuId];
+    if (!requiredPermission) {
+      return true; // إذا لم يكن هناك صلاحية محددة، اسمح بالوصول
+    }
+    
+    if (Array.isArray(requiredPermission)) {
+      return requiredPermission.some(perm => userPermissions.includes(perm));
+    }
+    
+    return userPermissions.includes(requiredPermission);
+  }, [userPermissions]);
 
   const toggleMenu = useCallback((menuId: string) => {
     setExpandedMenus((prev) =>
@@ -266,17 +347,25 @@ export function Sidebar({
             id: 'payment-management',
             label: 'إدارة المعاملات المالية',
             icon: CreditCard,
+            href: '/payments',
           },
           {
             id: 'purchase-management',
             label: 'إدارة عمليات الشراء',
             icon: ShoppingCart,
+            href: '/dashboard/purchases-list',
           },
-          { id: 'invoices', label: 'الفواتير', icon: Receipt },
+          { 
+            id: 'invoices', 
+            label: 'الفواتير', 
+            icon: Receipt,
+            href: '/dashboard/invoices',
+          },
           {
             id: 'financial-reports',
             label: 'التقارير المالية',
             icon: TrendingUp,
+            href: '/dashboard/financial-reports',
           },
         ],
       },
@@ -360,6 +449,37 @@ export function Sidebar({
     []
   );
 
+  // دالة لتصفية عناصر القائمة
+  const filterMenuItems = useCallback((items: MenuItemType[]): MenuItemType[] => {
+    return items
+      .map(item => {
+        // تصفية الأطفال أولاً إذا كان العنصر لديه أطفال
+        if (item.children && item.children.length > 0) {
+          const filteredChildren = filterMenuItems(item.children);
+          // إذا لم يكن لديه أطفال مرئيين، لا تعرض العنصر
+          if (filteredChildren.length === 0) {
+            return null;
+          }
+          // تحقق من صلاحية العنصر الرئيسي
+          if (!hasPermission(item.id)) {
+            return null;
+          }
+          return {
+            ...item,
+            children: filteredChildren,
+          };
+        }
+        // للعناصر بدون أطفال، تحقق من الصلاحية مباشرة
+        if (!hasPermission(item.id)) {
+          return null;
+        }
+        return item;
+      })
+      .filter((item): item is MenuItemType => item !== null);
+  }, [hasPermission]);
+
+  const filteredMenuItems = useMemo(() => filterMenuItems(menuItems), [menuItems, filterMenuItems]);
+
   return (
     <>
       {/* Overlay for mobile */}
@@ -422,7 +542,7 @@ export function Sidebar({
 
         {/* Navigation */}
         <nav className="flex-1 p-3 sm:p-4 space-y-1 overflow-y-auto">
-          {menuItems.map((item) => (
+          {filteredMenuItems.map((item) => (
             <MenuItem
               key={item.id}
               id={item.id}
