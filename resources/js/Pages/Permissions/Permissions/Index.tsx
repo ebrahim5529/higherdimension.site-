@@ -1,5 +1,5 @@
 /** @jsxImportSource react */
-import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { showToast } from '@/hooks/use-toast';
-import { Key, Plus, Edit, Trash2, Shield } from 'lucide-react';
+import { Key, Plus, Edit, Trash2, Shield, Users } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface Role {
@@ -127,6 +127,31 @@ export default function PermissionsIndex({ permissions, allRoles, stats }: Permi
     <DashboardLayout>
       <Head title="إدارة الصلاحيات" />
       <div className="w-full space-y-6 mt-2">
+        {/* روابط التنقل بين الصفحات */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            href="/dashboard/user-roles"
+            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
+          >
+            <Users className="h-4 w-4" />
+            أدوار المستخدمين
+          </Link>
+          <Link
+            href="/dashboard/roles"
+            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
+          >
+            <Shield className="h-4 w-4" />
+            الأدوار
+          </Link>
+          <Link
+            href="/dashboard/permission-groups"
+            className="px-4 py-2 bg-[rgb(30,64,175)] text-white rounded-lg hover:bg-[rgb(25,55,150)] transition-colors flex items-center gap-2"
+          >
+            <Key className="h-4 w-4" />
+            مجموعات الصلاحيات
+          </Link>
+        </div>
+
         {/* العنوان */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
