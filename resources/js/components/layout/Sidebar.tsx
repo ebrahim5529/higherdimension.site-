@@ -37,6 +37,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { router, usePage } from '@inertiajs/react';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface MenuItemType {
   id: string;
@@ -73,6 +74,7 @@ export function Sidebar({
   const userPermissions = auth?.user?.permissions || [];
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   // خريطة الصلاحيات المطلوبة لكل عنصر قائمة
   const menuPermissionsMap: Record<string, string | string[]> = {
@@ -576,7 +578,7 @@ export function Sidebar({
               if (onClose && window.innerWidth < 768) {
                 onClose();
               }
-              router.post('/logout');
+              setShowLogoutDialog(true);
             }}
             className="w-full justify-start space-x-2 sm:space-x-3 rtl:space-x-reverse text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800 h-9 sm:h-10 transition-all duration-200 hover:border-red-300 dark:hover:border-red-700"
           >
@@ -585,6 +587,24 @@ export function Sidebar({
           </Button>
         </div>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <ConfirmDialog
+        open={showLogoutDialog}
+        onOpenChange={setShowLogoutDialog}
+        onConfirm={() => {
+          router.post('/logout', {}, {
+            onSuccess: () => {
+              setShowLogoutDialog(false);
+            },
+          });
+        }}
+        title="تأكيد تسجيل الخروج"
+        description="هل أنت متأكد من رغبتك في تسجيل الخروج؟ سيتم إغلاق جلسة العمل الحالية."
+        confirmText="تسجيل الخروج"
+        cancelText="إلغاء"
+        variant="warning"
+      />
     </>
   );
 }

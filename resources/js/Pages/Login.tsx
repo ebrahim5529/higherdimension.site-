@@ -1,6 +1,6 @@
 /** @jsxImportSource react */
-import { useState, FormEvent } from 'react';
-import { router } from '@inertiajs/react';
+import { useState, FormEvent, useEffect } from 'react';
+import { router, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,13 +11,25 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react';
+import { showToast } from '@/hooks/use-toast';
 
 export default function Login() {
+  const { flash } = usePage().props as any;
   const [email, setEmail] = useState('admin@easyloman.com');
   const [password, setPassword] = useState('123456');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // عرض رسائل Flash من Laravel
+  useEffect(() => {
+    if (flash?.success) {
+      showToast.success('تم بنجاح', flash.success);
+    }
+    if (flash?.error) {
+      showToast.error('خطأ', flash.error);
+    }
+  }, [flash]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

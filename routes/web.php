@@ -161,6 +161,6 @@ Route::middleware('auth')->group(function () {
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/login');
+        return redirect('/login')->with('success', 'تم تسجيل الخروج بنجاح. نراك قريباً!');
     })->name('logout');
 });

@@ -19,6 +19,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -42,6 +43,7 @@ export function Header({ onToggleSidebar, isSidebarOpen }: HeaderProps) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -276,9 +278,7 @@ export function Header({ onToggleSidebar, isSidebarOpen }: HeaderProps) {
                   <button
                     onClick={() => {
                       setIsUserMenuOpen(false);
-                      if (window.confirm('هل أنت متأكد من تسجيل الخروج؟')) {
-                        router.post('/logout');
-                      }
+                      setShowLogoutDialog(true);
                     }}
                     className="flex items-center w-full px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rtl:text-right"
                   >
@@ -291,6 +291,24 @@ export function Header({ onToggleSidebar, isSidebarOpen }: HeaderProps) {
           </div>
         </div>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <ConfirmDialog
+        open={showLogoutDialog}
+        onOpenChange={setShowLogoutDialog}
+        onConfirm={() => {
+          router.post('/logout', {}, {
+            onSuccess: () => {
+              setShowLogoutDialog(false);
+            },
+          });
+        }}
+        title="تأكيد تسجيل الخروج"
+        description="هل أنت متأكد من رغبتك في تسجيل الخروج؟ سيتم إغلاق جلسة العمل الحالية."
+        confirmText="تسجيل الخروج"
+        cancelText="إلغاء"
+        variant="warning"
+      />
     </header>
   );
 }
