@@ -135,11 +135,23 @@ export function ContractsTable({
       {
         accessorKey: 'contractNumber',
         header: 'رقم العقد',
-        cell: ({ row }) => (
-          <div className="font-medium text-gray-900 dark:text-white">
-            {row.getValue('contractNumber')}
-          </div>
-        ),
+        cell: ({ row }) => {
+          const contractNumber = row.getValue('contractNumber') as string;
+          return (
+            <a
+              href={`/contract/sign/${contractNumber}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-[#58d2c8] hover:text-[#4AB8B3] hover:underline transition-colors cursor-pointer"
+              onClick={(e) => {
+                e.preventDefault();
+                window.open(`/contract/sign/${contractNumber}`, '_blank');
+              }}
+            >
+              {contractNumber}
+            </a>
+          );
+        },
       },
       {
         accessorKey: 'customerName',

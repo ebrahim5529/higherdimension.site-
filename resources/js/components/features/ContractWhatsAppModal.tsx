@@ -53,7 +53,10 @@ export const ContractWhatsAppModal: React.FC<ContractWhatsAppModalProps> = ({
     const contractType = contract.contract_type || 'تأجير معدات بناء';
     // استخدام الرابط الحالي ديناميكيًا بناءً على البيئة
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    const signUrl = `${baseUrl}/contract/sign/${contract.contract_number}`;
+    
+    // التأكد من أن رقم العقد صحيح ومطابق للرابط
+    const contractNumber = contract.contract_number || '';
+    const signUrl = `${baseUrl}/contract/sign/${contractNumber}`;
 
     const message = `السلام عليكم ورحمة الله وبركاته
 
@@ -63,7 +66,7 @@ export const ContractWhatsAppModal: React.FC<ContractWhatsAppModalProps> = ({
 
 
 
-تم إعداد عقد إيجار معدات بناء برقم: *${contract.contract_number}*
+تم إعداد عقد إيجار معدات بناء برقم: *${contractNumber}*
 
 
 

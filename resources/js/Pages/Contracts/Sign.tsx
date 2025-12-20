@@ -1,7 +1,7 @@
 /** @jsxImportSource react */
 import { Head, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
-import { FileText, Check, AlertCircle, User, Calendar, DollarSign, MapPin } from 'lucide-react';
+import { FileText, Check, AlertCircle, User, Calendar, DollarSign, MapPin, Printer } from 'lucide-react';
 import DigitalSignature from '@/components/features/DigitalSignature';
 import { showToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,10 @@ interface ContractData {
   contract_number: string;
   customer_name: string;
   customer_id: number;
+  customer_number?: string;
+  customer_type?: string;
+  customer_commercial_record?: string;
+  customer_id_number?: string;
   contract_date: string;
   start_date: string;
   end_date: string;
@@ -50,13 +54,30 @@ export default function SignContract({ contract }: SignContractProps) {
   const [customerSignature, setCustomerSignature] = useState<string>('');
   const [isSavingSignature, setIsSavingSignature] = useState(false);
   const [isSigned, setIsSigned] = useState(false);
+  
+  // الحصول على رقم العقد من الرابط للتأكد من التطابق
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const contractNumberFromUrl = pathname.split('/contract/sign/')[1] || '';
+  
+  // استخدام رقم العقد من الرابط إذا كان متوفراً، وإلا استخدام رقم العقد من البيانات
+  const displayContractNumber = contractNumberFromUrl || contract?.contract_number || '';
 
   useEffect(() => {
+    if (!contract) {
+      showToast.error('خطأ', 'لم يتم العثور على بيانات العقد');
+      return;
+    }
+    
+    // التحقق من أن رقم العقد يطابق الرابط
+    if (contractNumberFromUrl && contract.contract_number !== contractNumberFromUrl) {
+      console.warn(`تحذير: رقم العقد في البيانات (${contract.contract_number}) لا يطابق الرابط (${contractNumberFromUrl})`);
+    }
+    
     if (contract.customer_signature) {
       setIsSigned(true);
       setCustomerSignature(contract.customer_signature);
     }
-  }, [contract]);
+  }, [contract, contractNumberFromUrl]);
 
   // معالجة التوقيع
   const handleSignature = async (signatureData: string) => {
@@ -73,9 +94,12 @@ export default function SignContract({ contract }: SignContractProps) {
 
     setIsSigning(true);
 
+    // استخدام رقم العقد من الرابط للتأكد من التطابق
+    const contractNumberToUse = displayContractNumber || contract.contract_number;
+
     try {
       router.post(
-        `/contracts/${contract.contract_number}/sign`,
+        `/contracts/${contractNumberToUse}/sign`,
         {
           signature: customerSignature,
         },
@@ -117,34 +141,84 @@ export default function SignContract({ contract }: SignContractProps) {
     return diffDays;
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <Head title={`توقيع العقد ${contract.contract_number}`} />
-      <div className="max-w-4xl mx-auto px-4">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-[#58d2c8]/10 rounded-lg">
-                <FileText className="h-6 w-6 text-[#58d2c8]" />
+    <>
+      <Head title={`توقيع العقد ${displayContractNumber}`} />
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 10mm;
+          }
+          body {
+            margin: 0;
+            padding: 0;
+          }
+          .no-print {
+            display: none !important;
+          }
+          .print-container {
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            background: white !important;
+          }
+          .print-container * {
+            color: black !important;
+            background: white !important;
+          }
+          .print-break {
+            page-break-inside: avoid;
+          }
+          .print-page {
+            page-break-after: always;
+          }
+          .print-page:last-child {
+            page-break-after: auto;
+          }
+        }
+      `}</style>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4">
+          {/* Header */}
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6 no-print">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-[#58d2c8]/10 rounded-lg">
+                  <FileText className="h-6 w-6 text-[#58d2c8]" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">توقيع العقد</h1>
+                  <p className="text-gray-600">رقم العقد: {displayContractNumber}</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">توقيع العقد</h1>
-                <p className="text-gray-600">رقم العقد: {contract.contract_number}</p>
+
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={handlePrint}
+                  className="bg-[#58d2c8] hover:bg-[#4AB8B3] text-white flex items-center gap-2"
+                >
+                  <Printer className="h-4 w-4" />
+                  طباعة العقد
+                </Button>
+
+                {isSigned && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-lg">
+                    <Check className="h-5 w-5" />
+                    <span className="font-medium">تم التوقيع</span>
+                  </div>
+                )}
               </div>
             </div>
-
-            {isSigned && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-lg">
-                <Check className="h-5 w-5" />
-                <span className="font-medium">تم التوقيع</span>
-              </div>
-            )}
           </div>
-        </div>
 
         {/* معلومات العقد */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6 print-container print-break">
           <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <FileText className="h-5 w-5" />
             تفاصيل العقد
@@ -229,6 +303,46 @@ export default function SignContract({ contract }: SignContractProps) {
             </div>
           )}
 
+          {/* الطرف الأول والثاني */}
+          <div className="mb-6 space-y-4">
+            <div className="bg-gray-50 rounded-lg p-4">
+              <p className="font-bold text-lg text-black mb-2">الطرف الأول (المالك):</p>
+              <p className="text-black">
+                شركة البعد العالي للتجارة، س.ت: 1208502، ومقرها ولاية السيب، هاتف: ٩٣٠٩٩٩١٤.
+              </p>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <p className="font-bold text-lg text-black mb-2">الطرف الثاني (المستأجر):</p>
+              <p className="text-black">
+                {contract.customer_type === 'COMPANY' ? 'شركة / مؤسسة' : 'فرد'}:{' '}
+                {contract.customer_name}
+              </p>
+              {contract.customer_commercial_record && (
+                <p className="text-black mt-1">س.ت: {contract.customer_commercial_record}</p>
+              )}
+              {contract.customer_id_number && (
+                <p className="text-black mt-1">رقم الهوية: {contract.customer_id_number}</p>
+              )}
+              <div className="mt-2 space-y-1">
+                <p className="text-black">
+                  <span>ويمثلها في هذا العقد:</span>
+                </p>
+                <p className="text-black">
+                  <span>بصفته:</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* المقدمة */}
+          <div className="mb-6">
+            <p className="font-bold text-lg text-black mb-2">مقدمة:</p>
+            <p className="text-black">
+              الطرف الأول منشأة تمتلك عدد من المعدات، وقد أبدى الطرف الثاني رغبته في استئجار
+              عدد منها بغرض الانتفاع بها لفترة زمنية محددة، وقد اتفق الطرفان على ما يلي:
+            </p>
+          </div>
+
           {/* تفاصيل المعدات */}
           {contract.rental_details && contract.rental_details.length > 0 && (
             <div className="mb-6">
@@ -283,11 +397,77 @@ export default function SignContract({ contract }: SignContractProps) {
               </div>
             </div>
           )}
+
+          {/* ثانياً: مكان الاتفاق */}
+          <div className="mb-6">
+            <p className="font-bold text-lg text-black mb-2">ثانياً: مكان الاتفاق:</p>
+            <p className="text-black">
+              {contract.delivery_address || 'مسقط، سلطنة عمان'}
+            </p>
+          </div>
+
+          {/* ثالثاً: مدة العقد */}
+          <div className="mb-6">
+            <p className="font-bold text-lg text-black mb-2">ثالثاً: مدة العقد:</p>
+            <p className="text-black">
+              مدة هذا العقد تبدأ من تاريخ إستلام المستأجر للمعدات الموضحة في العقد، وتتجدد
+              تلقائياً لفترة مماثلة بعد انقضاء مدة العقد الأصلية في حالة عدم إرجاع المعدات
+              وعدم الإخطار، وفي هذه الحالة يحق للطرف الأول تحديد سعر إيجار جديد بعد انتهاء
+              هذا العقد.
+            </p>
+          </div>
+
+          {/* رابعاً: التزامات المستأجر */}
+          <div className="mb-6">
+            <p className="font-bold text-lg text-black mb-2">رابعاً: التزامات المستأجر:</p>
+            <ul className="list-disc list-inside space-y-2 text-black pr-4">
+              <li>
+                يلتزم المستأجر بتمكين المؤجر أو من يمثله بمعاينة المعدات المؤجرة وتفقدها
+                وصيانتها في أى وقت أو سحبها ونقلها في حال تخلف المستأجر عن سداد قيمة الإيجار
+                مقدماً أو الإخلال بشروط العقد دون أن يتحمل أي مسئولية نتيجة الضرر الناتج عن
+                سحب المعدات أو فكها من الموقع ويعد هذا الشرط بمثابة الإخطار المسبق للمستأجر.
+              </li>
+              <li>
+                يقر المستأجر بأنه قد عاين المعدات المؤجرة معاينة نافية للجهالة وقبلها
+                بحالتها الراهنة، وأنها صالحة للإستعمال.
+              </li>
+              <li>
+                إذا تسبب المستأجر في فقد المعدة أو تلفها كلياً أو جزئياً بفعله أو بفعل الغير
+                يلتزم بتعويض المالك بقيمتها حسب الشراء.
+              </li>
+              <li>
+                جميع العقود المبرمة حول الكميات المستأجرة يتم إعادة إحتساب قيمة إيجارية أخرى
+                في حالة إرجاع جزء منها بعقد جديد ولا ينطبق سعر الإيجار على أي إتفاق آخر خارج
+                عن هذا العقد، ويحدد الطرف الأول (المؤجر) القيمة الإيجارية الجديدة.
+              </li>
+              <li>
+                يحق للمالك تحديد قيمة إيجارية جديدة حسب رؤيته بعد إنتهاء هذا العقد أو التجديد
+                التلقائي ويعد هذا الشرط بمثابة الإخطار المسبق للمستأجر.
+              </li>
+              <li>
+                يقر الطرف الثاني (المستأجر) بتخويل أى شخص يعمل لديه باستلام المعدات وتسليمها.
+              </li>
+              <li>
+                لا يعتد بأى إدعاء حول إرجاع المعدات ما لم يقدم المستأجر ما يفيد ذلك كتابياً
+                موقعاً من طرف المؤجر.
+              </li>
+            </ul>
+          </div>
+
+          {/* خامساً: الفصل في النزاع */}
+          <div className="mb-6">
+            <p className="font-bold text-lg text-black mb-2">خامساً: الفصل في النزاع:</p>
+            <p className="text-black">
+              أي نزاع قد ينشأ عن تنفيذ هذا العقد أو تفسير نصوصه إن لم يتم حسمه بالتراضي يتم
+              الفصل فيه لدى الجهات القضائية والمحاكم المختصة بولاية السيب وفي حالة وجود بند
+              غير واضح يفسر لصالح المؤجر ويستمر إحتساب القيمة الإيجارية لحين إرجاع المعدات.
+            </p>
+          </div>
         </div>
 
         {/* منطقة التوقيع */}
         {!isSigned ? (
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white rounded-lg shadow-sm p-6 print-container print-break">
             <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <FileText className="h-5 w-5" />
               التوقيع على العقد
@@ -359,7 +539,7 @@ export default function SignContract({ contract }: SignContractProps) {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+          <div className="bg-white rounded-lg shadow-sm p-6 text-center print-container print-break">
             <div className="p-3 bg-green-100 rounded-full inline-block mb-4">
               <Check className="h-8 w-8 text-green-600" />
             </div>
@@ -368,21 +548,22 @@ export default function SignContract({ contract }: SignContractProps) {
           </div>
         )}
 
-        <div className="mt-8 pt-6 border-t border-black text-center text-sm text-black">
+        <div className="mt-8 pt-6 border-t border-black text-center text-sm text-black print-break">
           <p className="mb-1">
-            رقم العقد: <span className="font-semibold">{contract.contract_number}</span>
+            رقم العقد: <span className="font-semibold">{displayContractNumber}</span>
           </p>
           <p>
             تاريخ الإصدار: <span className="font-semibold">{formatDate(contract.contract_date)}</span>
           </p>
         </div>
 
-        <div className="mt-8 text-center text-sm text-gray-500">
+        <div className="mt-8 text-center text-sm text-gray-500 print-break">
           <p>شركة البعد العالي للتجارة - جميع الحقوق محفوظة</p>
           <p>هذا التوقيع الإلكتروني محمي ومؤمن</p>
         </div>
       </div>
     </div>
+    </>
   );
 }
 

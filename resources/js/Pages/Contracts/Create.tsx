@@ -112,8 +112,9 @@ export default function CreateContract({ customers }: CreateContractProps) {
     }
   }, [flash]);
 
-  // توليد رقم عقد تلقائياً
-  const contractNumber = `CON-${Date.now()}`;
+  // توليد رقم عقد تلقائياً - يتم استخدامه فقط كقيمة افتراضية
+  // سيتم استبداله برقم العقد الصحيح من الخادم بعد الإنشاء
+  const [contractNumber, setContractNumber] = useState(() => `CON-${Date.now()}`);
   const contractDate = new Date().toISOString().split('T')[0];
 
   // حساب تاريخ النهاية
@@ -293,14 +294,14 @@ export default function CreateContract({ customers }: CreateContractProps) {
   const { data, setData, post, processing, errors } = useForm({
     contract_number: contractNumber,
     contract_date: contractDate,
-    customer_id: selectedCustomer?.id || '',
+    customer_id: selectedCustomer?.id || null, // استخدام null بدلاً من سلسلة فارغة
     delivery_address: deliveryAddress,
     location_map_link: locationMapLink,
     transport_and_installation_cost: transportCost,
     total_discount: totalDiscount,
     contract_notes: '',
     rental_details: rentalDetails.map((rental) => ({
-      scaffold_id: rental.scaffoldId,
+      scaffold_id: rental.scaffoldId || null,
       item_code: rental.itemCode,
       item_description: rental.itemDescription,
       start_date: rental.startDate,
@@ -325,38 +326,56 @@ export default function CreateContract({ customers }: CreateContractProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // التحقق من اختيار العميل بشكل صريح
+    if (!selectedCustomer || !selectedCustomer.id) {
+      showToast.error('خطأ', 'يرجى اختيار العميل أولاً');
+      return;
+    }
+    
     if (!isFormValid() || !deliveryAddress) {
       showToast.error('خطأ', 'يرجى ملء جميع الحقول المطلوبة وإضافة معدة واحدة على الأقل');
       return;
     }
 
-    setData('customer_id', selectedCustomer?.id || '');
-    setData('delivery_address', deliveryAddress);
-    setData('location_map_link', locationMapLink);
-    setData('transport_and_installation_cost', transportCost);
-    setData('total_discount', totalDiscount);
-    setData('rental_details', rentalDetails.map((rental) => ({
-      scaffold_id: rental.scaffoldId,
-      item_code: rental.itemCode,
-      item_description: rental.itemDescription,
-      start_date: rental.startDate,
-      end_date: rental.endDate,
-      duration: rental.duration,
-      duration_type: rental.durationType,
-      quantity: rental.quantity,
-      daily_rate: rental.dailyRate,
-      monthly_rate: rental.monthlyRate,
-      total: rental.total,
-    })));
-    setData('payments', payments.map((payment) => ({
-      payment_method: payment.paymentMethod,
-      payment_date: payment.paymentDate,
-      amount: payment.amount,
-      check_number: payment.checkNumber || null,
-      bank_name: payment.bankName || null,
-      check_date: payment.checkDate || null,
-      check_image: payment.checkImage || null,
-    })));
+    // إعداد جميع البيانات قبل الإرسال
+    const formData = {
+      contract_number: contractNumber,
+      contract_date: contractDate,
+      customer_id: selectedCustomer.id, // تأكد من أن customer_id هو رقم وليس نص فارغ
+      delivery_address: deliveryAddress,
+      location_map_link: locationMapLink || null,
+      transport_and_installation_cost: transportCost || 0,
+      total_discount: totalDiscount || 0,
+      contract_notes: '',
+      rental_details: rentalDetails.map((rental) => ({
+        scaffold_id: rental.scaffoldId || null,
+        item_code: rental.itemCode,
+        item_description: rental.itemDescription,
+        start_date: rental.startDate,
+        end_date: rental.endDate,
+        duration: rental.duration,
+        duration_type: rental.durationType,
+        quantity: rental.quantity,
+        daily_rate: rental.dailyRate,
+        monthly_rate: rental.monthlyRate,
+        total: rental.total,
+      })),
+      payments: payments.map((payment) => ({
+        payment_method: payment.paymentMethod,
+        payment_date: payment.paymentDate,
+        amount: payment.amount,
+        check_number: payment.checkNumber || null,
+        bank_name: payment.bankName || null,
+        check_date: payment.checkDate || null,
+        check_image: payment.checkImage || null,
+      })),
+    };
+
+    // تحديث جميع البيانات دفعة واحدة
+    Object.keys(formData).forEach((key) => {
+      setData(key as any, formData[key as keyof typeof formData]);
+    });
 
     post('/contracts', {
       onSuccess: (page) => {
@@ -371,10 +390,18 @@ export default function CreateContract({ customers }: CreateContractProps) {
         const totalContractValue = rentalTotal + transportCost;
         const totalAfterDiscount = totalContractValue - totalDiscount;
         
-        if (contractData) {
+        // استخدام رقم العقد من الخادم (هذا هو الرقم الصحيح المحفوظ في قاعدة البيانات)
+        let finalContractNumber = contractNumber; // القيمة الافتراضية
+        
+        if (contractData && contractData.contract_number) {
+          // استخدام رقم العقد من الخادم - هذا هو الرقم الصحيح
+          finalContractNumber = contractData.contract_number;
+          // تحديث رقم العقد في الـ state لضمان التطابق
+          setContractNumber(finalContractNumber);
+          
           setCreatedContract({
             id: contractData.id,
-            contract_number: contractData.contract_number || contractNumber,
+            contract_number: finalContractNumber, // استخدام الرقم من الخادم
             customer_name: selectedCustomer?.name || contractData.customer_name || '',
             total_amount: contractData.total_amount || totalAfterDiscount,
             contract_date: contractData.contract_date || contractDate,
@@ -382,6 +409,8 @@ export default function CreateContract({ customers }: CreateContractProps) {
           });
         } else {
           // إذا لم تكن البيانات متوفرة، استخدم البيانات من الـ form
+          // لكن هذا لا يجب أن يحدث في الحالة الطبيعية
+          console.warn('لم يتم استلام رقم العقد من الخادم، استخدام الرقم المحلي');
           setCreatedContract({
             id: 0, // سيتم تحديثه لاحقاً
             contract_number: contractNumber,
@@ -786,10 +815,13 @@ export default function CreateContract({ customers }: CreateContractProps) {
                       />
                     </div>
 
-                    {/* تاريخ النهاية */}
+                    {/* تاريخ النهاية - محسوب تلقائياً */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         تاريخ النهاية
+                        <span className="text-xs text-gray-500 font-normal block mt-1">
+                          محسوب تلقائياً من تاريخ بداية الإيجار *
+                        </span>
                       </label>
                       <Input
                         type="date"
@@ -799,7 +831,6 @@ export default function CreateContract({ customers }: CreateContractProps) {
                         lang="en"
                         readOnly
                       />
-                      <p className="text-xs text-gray-500 mt-1">محسوب تلقائياً</p>
                     </div>
 
                     {/* الإجمالي */}

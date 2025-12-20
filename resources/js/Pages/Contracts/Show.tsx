@@ -261,7 +261,18 @@ export default function ShowContract({ contract }: ShowContractProps) {
                       </div>
                       <div>
                         <h1 className="text-3xl font-bold text-gray-900">تفاصيل العقد</h1>
-                        <p className="text-sm text-gray-600 mt-1">{contract.contractNumber}</p>
+                        <a
+                          href={`/contract/sign/${contract.contractNumber}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-[#58d2c8] hover:text-[#4AB8B3] hover:underline transition-colors cursor-pointer mt-1 block"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            window.open(`/contract/sign/${contract.contractNumber}`, '_blank');
+                          }}
+                        >
+                          {contract.contractNumber}
+                        </a>
                       </div>
                     </div>
                   </div>

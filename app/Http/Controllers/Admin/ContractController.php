@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\CompanySignature;
 use App\Models\Contract;
 use App\Models\Customer;
-use App\Models\CompanySignature;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class ContractController extends Controller
 {
@@ -23,7 +23,7 @@ class ContractController extends Controller
                 // حساب المبلغ المدفوع والمتبقي
                 $paidAmount = $contract->payments()->sum('amount') ?? 0;
                 $remainingAmount = max(0, $contract->amount - $paidAmount);
-                
+
                 // تحديد حالة الدفع
                 $paymentStatus = 'غير مدفوعة';
                 if ($remainingAmount == 0 && $contract->amount > 0) {
@@ -68,12 +68,12 @@ class ContractController extends Controller
         $expiredContracts = Contract::where('status', 'EXPIRED')->count();
         $cancelledContracts = Contract::where('status', 'CANCELLED')->count();
         $totalValue = Contract::sum('amount') ?? 0;
-        
+
         // حساب العقود المدفوعة وغير المدفوعة
         $paidContracts = 0;
         $pendingContracts = 0;
         $partialPaymentContracts = 0;
-        
+
         foreach ($contracts as $contract) {
             if ($contract['remainingAmount'] == 0 && $contract['amount'] > 0) {
                 $paidContracts++;
@@ -112,9 +112,9 @@ class ContractController extends Controller
             ->map(function ($contract) {
                 $paidAmount = $contract->contractPayments()->sum('amount') ?? 0;
                 $remainingAmount = max(0, $contract->amount - $paidAmount);
-                
+
                 $contractType = $contract->payment_type === 'rental' ? 'تأجير' : ($contract->payment_type === 'sale' ? 'شراء' : 'تأجير');
-                
+
                 return [
                     'id' => $contract->id,
                     'contractNumber' => $contract->contract_number,
@@ -156,9 +156,9 @@ class ContractController extends Controller
             ->map(function ($contract) {
                 $paidAmount = $contract->contractPayments()->sum('amount') ?? 0;
                 $remainingAmount = max(0, $contract->amount - $paidAmount);
-                
+
                 $contractType = $contract->payment_type === 'rental' ? 'تأجير' : ($contract->payment_type === 'sale' ? 'شراء' : 'تأجير');
-                
+
                 return [
                     'id' => $contract->id,
                     'contractNumber' => $contract->contract_number,
@@ -200,9 +200,9 @@ class ContractController extends Controller
             ->map(function ($contract) {
                 $paidAmount = $contract->contractPayments()->sum('amount') ?? 0;
                 $remainingAmount = max(0, $contract->amount - $paidAmount);
-                
+
                 $contractType = $contract->payment_type === 'rental' ? 'تأجير' : ($contract->payment_type === 'sale' ? 'شراء' : 'تأجير');
-                
+
                 return [
                     'id' => $contract->id,
                     'contractNumber' => $contract->contract_number,
@@ -239,7 +239,7 @@ class ContractController extends Controller
     public function create()
     {
         $customers = Customer::select('id', 'name', 'customer_number', 'phone')->get();
-        
+
         return Inertia::render('Contracts/Create', [
             'customers' => $customers,
         ]);
@@ -280,7 +280,7 @@ class ContractController extends Controller
         // حساب التواريخ من rental_details
         $startDate = collect($validated['rental_details'])->min('start_date');
         $endDate = collect($validated['rental_details'])->max('end_date');
-        
+
         // حساب المبلغ الإجمالي
         $rentalTotal = collect($validated['rental_details'])->sum('total');
         $totalAmount = $rentalTotal + ($validated['transport_and_installation_cost'] ?? 0) - ($validated['total_discount'] ?? 0);
@@ -288,7 +288,7 @@ class ContractController extends Controller
         // إنشاء العقد
         $contract = Contract::create([
             'contract_number' => $validated['contract_number'],
-            'title' => 'عقد تأجير - ' . $validated['contract_number'],
+            'title' => 'عقد تأجير - '.$validated['contract_number'],
             'description' => $validated['contract_notes'] ?? '',
             'amount' => $totalAmount,
             'start_date' => $startDate,
@@ -327,12 +327,12 @@ class ContractController extends Controller
             foreach ($validated['payments'] as $payment) {
                 if ($payment['amount'] > 0) {
                     $checkImagePath = null;
-                    
+
                     // رفع صورة الشيك إذا كانت موجودة
                     if (isset($payment['check_image']) && $payment['check_image']->isValid()) {
                         $checkImagePath = $payment['check_image']->store('contracts/checks', 'public');
                     }
-                    
+
                     \App\Models\ContractPayment::create([
                         'contract_id' => $contract->id,
                         'payment_method' => $payment['payment_method'],
@@ -353,7 +353,7 @@ class ContractController extends Controller
             'contract' => [
                 'id' => $contract->id,
                 'contract_number' => $contract->contract_number,
-                'customer_name' => $contract->customer->name,
+                'customer_name' => $contract->customer->name ?? 'غير معروف',
                 'total_amount' => $contract->amount,
                 'contract_date' => $contract->contract_date?->format('Y-m-d') ?? $contract->start_date?->format('Y-m-d'),
                 'contract_type' => 'تأجير معدات بناء',
@@ -367,10 +367,10 @@ class ContractController extends Controller
     public function show(string $id)
     {
         $contract = Contract::with(['customer', 'user', 'equipment', 'contractPayments', 'attachments'])->findOrFail($id);
-        
+
         $paidAmount = $contract->contractPayments()->sum('amount') ?? 0;
         $remainingAmount = max(0, $contract->amount - $paidAmount);
-        
+
         $paymentStatus = 'غير مدفوع';
         $paymentPercentage = 0;
         if ($contract->amount > 0) {
@@ -540,7 +540,7 @@ class ContractController extends Controller
                 'check_number' => $payment->check_number,
                 'bank_name' => $payment->bank_name,
                 'check_date' => $payment->check_date?->format('Y-m-d'),
-                'check_image_path' => $payment->check_image_path ? asset('storage/' . $payment->check_image_path) : null,
+                'check_image_path' => $payment->check_image_path ? asset('storage/'.$payment->check_image_path) : null,
             ];
         });
 
@@ -578,7 +578,7 @@ class ContractController extends Controller
         $contract = Contract::findOrFail($id);
 
         $validated = $request->validate([
-            'contract_number' => 'required|string|unique:contracts,contract_number,' . $id,
+            'contract_number' => 'required|string|unique:contracts,contract_number,'.$id,
             'contract_date' => 'required|date',
             'customer_id' => 'required|exists:customers,id',
             'delivery_address' => 'required|string',
@@ -652,12 +652,12 @@ class ContractController extends Controller
         if (isset($validated['payments'])) {
             foreach ($validated['payments'] as $payment) {
                 $checkImagePath = null;
-                
+
                 // رفع صورة الشيك إذا كانت موجودة
                 if (isset($payment['check_image']) && $payment['check_image']->isValid()) {
                     $checkImagePath = $payment['check_image']->store('contracts/checks', 'public');
                 }
-                
+
                 $contract->contractPayments()->create([
                     'payment_method' => $payment['payment_method'],
                     'payment_date' => $payment['payment_date'],
@@ -695,21 +695,21 @@ class ContractController extends Controller
     public function invoice(string $id)
     {
         $contract = Contract::with(['customer', 'equipment.scaffold', 'contractPayments'])->findOrFail($id);
-        
+
         $companySignature = CompanySignature::where('is_active', true)->first();
-        
+
         // حساب المبلغ الإجمالي
         $equipmentTotal = $contract->equipment()->sum('total') ?? 0;
         $transportCost = $contract->transport_and_installation_cost ?? 0;
         $discount = $contract->total_discount ?? 0;
         $totalAmount = $equipmentTotal + $transportCost - $discount;
-        
+
         // بيانات المعدات
         $equipmentData = $contract->equipment->map(function ($item) {
             $startDate = $item->start_date ? \Carbon\Carbon::parse($item->start_date) : null;
             $endDate = $item->end_date ? \Carbon\Carbon::parse($item->end_date) : null;
             $duration = $startDate && $endDate ? $startDate->diffInDays($endDate) : 0;
-            
+
             return [
                 'id' => $item->id,
                 'type' => $item->scaffold ? $item->scaffold->scaffold_number : ($item->item_description ?? 'غير محدد'),
@@ -717,7 +717,7 @@ class ContractController extends Controller
                 'start_date' => $startDate ? $startDate->format('d/m/Y') : '',
                 'end_date' => $endDate ? $endDate->format('d/m/Y') : '',
                 'duration' => $duration,
-                'duration_text' => $duration > 0 ? $duration . ' يوم' : '',
+                'duration_text' => $duration > 0 ? $duration.' يوم' : '',
                 'total' => $item->total ?? 0,
             ];
         });
@@ -754,14 +754,14 @@ class ContractController extends Controller
         $months = [
             1 => 'يناير', 2 => 'فبراير', 3 => 'مارس', 4 => 'أبريل',
             5 => 'مايو', 6 => 'يونيو', 7 => 'يوليو', 8 => 'أغسطس',
-            9 => 'سبتمبر', 10 => 'أكتوبر', 11 => 'نوفمبر', 12 => 'ديسمبر'
+            9 => 'سبتمبر', 10 => 'أكتوبر', 11 => 'نوفمبر', 12 => 'ديسمبر',
         ];
-        
+
         $carbon = \Carbon\Carbon::parse($date);
         $day = $carbon->day;
         $month = $months[$carbon->month] ?? $carbon->month;
         $year = $carbon->year;
-        
+
         return "$day $month $year";
     }
 
@@ -772,40 +772,59 @@ class ContractController extends Controller
     {
         $contract = Contract::where('contract_number', $contractNumber)
             ->with(['customer', 'equipment.scaffold'])
-            ->firstOrFail();
+            ->first();
+
+        if (! $contract) {
+            return Inertia::render('Errors/404', [
+                'message' => 'العقد المطلوب غير موجود',
+                'contractNumber' => $contractNumber,
+            ])->toResponse(request())->setStatusCode(404);
+        }
 
         // تحضير بيانات العقد
+        $customer = $contract->customer;
+
+        // التحقق من وجود المعدات
+        $rentalDetails = [];
+        if ($contract->equipment && $contract->equipment->count() > 0) {
+            $rentalDetails = $contract->equipment->map(function ($equipment) {
+                return [
+                    'id' => $equipment->id,
+                    'item_description' => $equipment->item_description ?? '',
+                    'quantity' => $equipment->quantity ?? 0,
+                    'daily_rate' => $equipment->daily_rate ?? 0,
+                    'monthly_rate' => $equipment->monthly_rate ?? 0,
+                    'duration' => $equipment->duration ?? 0,
+                    'duration_type' => $equipment->duration_type ?? 'daily',
+                    'start_date' => $equipment->start_date?->format('Y-m-d') ?? '',
+                    'end_date' => $equipment->end_date?->format('Y-m-d') ?? '',
+                    'total' => $equipment->total ?? 0,
+                ];
+            })->toArray();
+        }
+
         $contractData = [
             'id' => $contract->id,
             'contract_number' => $contract->contract_number,
-            'customer_name' => $contract->customer->name ?? 'غير معروف',
+            'customer_name' => $customer->name ?? 'غير معروف',
             'customer_id' => $contract->customer_id,
-            'contract_date' => $contract->contract_date?->format('Y-m-d') ?? $contract->start_date?->format('Y-m-d'),
-            'start_date' => $contract->start_date?->format('Y-m-d'),
-            'end_date' => $contract->end_date?->format('Y-m-d'),
-            'amount' => $contract->amount,
-            'total_after_discount' => $contract->amount - ($contract->total_discount ?? 0),
+            'customer_number' => $customer->customer_number ?? '',
+            'customer_type' => $customer->customer_type ?? 'INDIVIDUAL',
+            'customer_commercial_record' => $customer->commercial_record ?? '',
+            'customer_id_number' => $customer->id_number ?? '',
+            'contract_date' => $contract->contract_date?->format('Y-m-d') ?? $contract->start_date?->format('Y-m-d') ?? now()->format('Y-m-d'),
+            'start_date' => $contract->start_date?->format('Y-m-d') ?? now()->format('Y-m-d'),
+            'end_date' => $contract->end_date?->format('Y-m-d') ?? now()->format('Y-m-d'),
+            'amount' => $contract->amount ?? 0,
+            'total_after_discount' => ($contract->amount ?? 0) - ($contract->total_discount ?? 0),
             'total_discount' => $contract->total_discount ?? 0,
             'contract_type' => $contract->payment_type === 'CASH' ? 'بيع' : 'تأجير',
             'delivery_address' => $contract->delivery_address ?? '',
             'location_map_link' => $contract->location_map_link,
             'transport_and_installation_cost' => $contract->transport_and_installation_cost ?? 0,
             'contract_notes' => $contract->contract_notes,
-            'rental_details' => $contract->equipment->map(function ($equipment) {
-                return [
-                    'id' => $equipment->id,
-                    'item_description' => $equipment->item_description,
-                    'quantity' => $equipment->quantity,
-                    'daily_rate' => $equipment->daily_rate,
-                    'monthly_rate' => $equipment->monthly_rate,
-                    'duration' => $equipment->duration,
-                    'duration_type' => $equipment->duration_type,
-                    'start_date' => $equipment->start_date?->format('Y-m-d'),
-                    'end_date' => $equipment->end_date?->format('Y-m-d'),
-                    'total' => $equipment->total,
-                ];
-            })->toArray(),
-            'status' => $this->getStatusLabel($contract->status),
+            'rental_details' => $rentalDetails,
+            'status' => $this->getStatusLabel($contract->status ?? 'ACTIVE'),
             'customer_signature' => $contract->customer_signature,
             'signed_at' => $contract->signed_at?->format('Y-m-d H:i:s'),
         ];
@@ -901,7 +920,7 @@ class ContractController extends Controller
         $attachment = \App\Models\ContractAttachment::where('contract_id', $contract->id)
             ->findOrFail($attachmentId);
 
-        if (!\Storage::disk('public')->exists($attachment->file_path)) {
+        if (! \Storage::disk('public')->exists($attachment->file_path)) {
             abort(404, 'الملف غير موجود');
         }
 
@@ -924,7 +943,7 @@ class ContractController extends Controller
      */
     private function getPaymentMethodLabel($method)
     {
-        return match($method) {
+        return match ($method) {
             'cash' => 'نقداً',
             'check' => 'شيك',
             'credit_card' => 'بطاقة ائتمان',
@@ -933,4 +952,3 @@ class ContractController extends Controller
         };
     }
 }
-
