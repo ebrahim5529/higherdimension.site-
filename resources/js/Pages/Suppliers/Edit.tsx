@@ -22,7 +22,8 @@ import {
   ArrowLeft,
   Building,
 } from 'lucide-react';
-import { availableNationalities, supplierTypes, supplierStatuses } from '@/data/suppliersData';
+import { supplierTypes, supplierStatuses } from '@/data/suppliersData';
+import { NationalitySelector } from '@/components/features/NationalitySelector';
 
 interface SupplierData {
   id: number;
@@ -228,19 +229,13 @@ export default function EditSupplier({ supplier }: EditSupplierProps) {
 
                 {/* الجنسية */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">الجنسية</label>
-                  <select
+                  <NationalitySelector
                     value={data.nationality}
-                    onChange={(e) => setData('nationality', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white"
-                  >
-                    <option value="">اختر الجنسية</option>
-                    {availableNationalities.map((nationality) => (
-                      <option key={nationality} value={nationality}>
-                        {nationality}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) => setData('nationality', value)}
+                    disabled={processing}
+                    label="الجنسية"
+                    required={false}
+                  />
                 </div>
 
                 {/* الهاتف */}
