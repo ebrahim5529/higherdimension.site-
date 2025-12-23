@@ -340,7 +340,7 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
                         <p className="text-sm">{customer.phone || '-'}</p>
                       </div>
                     </div>
-                    {customer.phones && customer.phones.length > 0 && (
+                    {customer.phones && Array.isArray(customer.phones) && customer.phones.length > 0 && (
                       <div className="md:col-span-2">
                         <label className="text-sm font-medium text-muted-foreground mb-2 block">أرقام الهواتف الإضافية</label>
                         <div className="space-y-2">
