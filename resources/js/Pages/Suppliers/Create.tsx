@@ -23,6 +23,7 @@ import {
   Building,
 } from 'lucide-react';
 import { availableNationalities, supplierTypes, supplierStatuses } from '@/data/suppliersData';
+import { convertArabicToEnglishNumbers } from '@/lib/utils';
 
 export default function CreateSupplier() {
   const { flash } = usePage().props as any;
@@ -160,7 +161,11 @@ export default function CreateSupplier() {
                       <Input
                         type="text"
                         value={data.idNumber}
-                        onChange={(e) => setData('idNumber', e.target.value)}
+                        onChange={(e) => {
+                          const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                          e.target.value = convertedValue;
+                          setData('idNumber', convertedValue);
+                        }}
                         className="pr-10"
                         placeholder="أدخل رقم الهوية"
                       />
@@ -178,7 +183,11 @@ export default function CreateSupplier() {
                         <Input
                           type="text"
                           value={data.commercialRecord}
-                          onChange={(e) => setData('commercialRecord', e.target.value)}
+                          onChange={(e) => {
+                            const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                            e.target.value = convertedValue;
+                            setData('commercialRecord', convertedValue);
+                          }}
                           className="pr-10"
                           placeholder="أدخل السجل التجاري"
                         />
@@ -189,7 +198,11 @@ export default function CreateSupplier() {
                       <Input
                         type="text"
                         value={data.taxNumber}
-                        onChange={(e) => setData('taxNumber', e.target.value)}
+                        onChange={(e) => {
+                          const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                          e.target.value = convertedValue;
+                          setData('taxNumber', convertedValue);
+                        }}
                         placeholder="أدخل الرقم الضريبي"
                       />
                     </div>
@@ -221,7 +234,11 @@ export default function CreateSupplier() {
                     <Input
                       type="tel"
                       value={data.phone}
-                      onChange={(e) => setData('phone', e.target.value)}
+                      onChange={(e) => {
+                        const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                        e.target.value = convertedValue;
+                        setData('phone', convertedValue);
+                      }}
                       className="pr-10"
                       placeholder="أدخل رقم الهاتف"
                     />
@@ -332,7 +349,11 @@ export default function CreateSupplier() {
                   <Input
                     type="tel"
                     value={data.contactPersonPhone}
-                    onChange={(e) => setData('contactPersonPhone', e.target.value)}
+                    onChange={(e) => {
+                      const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                      e.target.value = convertedValue;
+                      setData('contactPersonPhone', convertedValue);
+                    }}
                     placeholder="أدخل هاتف الشخص المسؤول"
                   />
                 </div>
@@ -373,7 +394,11 @@ export default function CreateSupplier() {
                   <Input
                     type="text"
                     value={data.bankAccount}
-                    onChange={(e) => setData('bankAccount', e.target.value)}
+                    onChange={(e) => {
+                      const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                      e.target.value = convertedValue;
+                      setData('bankAccount', convertedValue);
+                    }}
                     placeholder="أدخل رقم الحساب"
                   />
                 </div>
@@ -382,7 +407,11 @@ export default function CreateSupplier() {
                   <Input
                     type="text"
                     value={data.iban}
-                    onChange={(e) => setData('iban', e.target.value)}
+                    onChange={(e) => {
+                      const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                      e.target.value = convertedValue;
+                      setData('iban', convertedValue);
+                    }}
                     placeholder="أدخل رقم الآيبان"
                   />
                 </div>

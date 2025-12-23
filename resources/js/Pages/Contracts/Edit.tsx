@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { showToast } from '@/hooks/use-toast';
 import { FileText, Save, ArrowLeft, Plus, Trash2, MessageSquare, Package } from 'lucide-react';
 import { ScaffoldSelector } from '@/components/features/ScaffoldSelector';
+import { convertArabicToEnglishNumbers } from '@/lib/utils';
 
 interface Customer {
   id: number;
@@ -722,10 +723,14 @@ export default function EditContract({ contract, customers }: EditContractProps)
                         {rental.durationType === 'monthly' ? 'اختر عدد الأشهر' : 'اختر عدد الأيام'} *
                       </label>
                       <Input
-                        type="number"
+                        type="text"
                         value={rental.duration}
-                        onChange={(e) => updateRentalDetail(rental.id, 'duration', Number(e.target.value))}
-                        min="1"
+                        onChange={(e) => {
+                          const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                          e.target.value = convertedValue;
+                          const value = convertedValue === '' ? 0 : Number(convertedValue) || 0;
+                          updateRentalDetail(rental.id, 'duration', value);
+                        }}
                         placeholder={rental.durationType === 'monthly' ? 'بالأشهر' : 'بالأيام'}
                         dir="ltr"
                         lang="en"
@@ -743,10 +748,16 @@ export default function EditContract({ contract, customers }: EditContractProps)
                         الكمية *
                       </label>
                       <Input
-                        type="number"
+                        type="text"
                         value={rental.quantity}
-                        onChange={(e) => updateRentalDetail(rental.id, 'quantity', Number(e.target.value))}
-                        min="1"
+                        onChange={(e) => {
+                          const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                          e.target.value = convertedValue;
+                          const value = convertedValue === '' ? 0 : Number(convertedValue) || 0;
+                          if (!isNaN(value) && value >= 0) {
+                            updateRentalDetail(rental.id, 'quantity', value);
+                          }
+                        }}
                         dir="ltr"
                         lang="en"
                         required
@@ -760,11 +771,14 @@ export default function EditContract({ contract, customers }: EditContractProps)
                         الإيجار اليومي (ر.ع)
                       </label>
                       <Input
-                        type="number"
+                        type="text"
                         value={rental.dailyRate}
-                        onChange={(e) => updateRentalDetail(rental.id, 'dailyRate', Number(e.target.value))}
-                        min="0"
-                        step="0.01"
+                        onChange={(e) => {
+                          const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                          e.target.value = convertedValue;
+                          const value = convertedValue === '' ? 0 : Number(convertedValue) || 0;
+                          updateRentalDetail(rental.id, 'dailyRate', value);
+                        }}
                         dir="ltr"
                         lang="en"
                         className="bg-white"
@@ -777,11 +791,14 @@ export default function EditContract({ contract, customers }: EditContractProps)
                         الإيجار الشهري (ر.ع)
                       </label>
                       <Input
-                        type="number"
+                        type="text"
                         value={rental.monthlyRate}
-                        onChange={(e) => updateRentalDetail(rental.id, 'monthlyRate', Number(e.target.value))}
-                        min="0"
-                        step="0.01"
+                        onChange={(e) => {
+                          const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                          e.target.value = convertedValue;
+                          const value = convertedValue === '' ? 0 : Number(convertedValue) || 0;
+                          updateRentalDetail(rental.id, 'monthlyRate', value);
+                        }}
                         dir="ltr"
                         lang="en"
                         className="bg-white"
@@ -810,7 +827,7 @@ export default function EditContract({ contract, customers }: EditContractProps)
                         الإجمالي (ر.ع)
                       </label>
                       <Input
-                        type="number"
+                        type="text"
                         value={typeof rental.total === 'number' ? rental.total.toFixed(2) : Number(rental.total || 0).toFixed(2)}
                         className="w-full bg-gray-100 font-bold text-[#58d2c8]"
                         dir="ltr"
@@ -831,11 +848,14 @@ export default function EditContract({ contract, customers }: EditContractProps)
                     قيمة النقل والتحميل والتنزيل (ر.ع)
                   </label>
                   <Input
-                    type="number"
+                    type="text"
                     value={transportCost}
-                    onChange={(e) => setTransportCost(Number(e.target.value))}
-                    min="0"
-                    step="0.01"
+                    onChange={(e) => {
+                      const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                      e.target.value = convertedValue;
+                      const value = convertedValue === '' ? 0 : Number(convertedValue) || 0;
+                      setTransportCost(value);
+                    }}
                     dir="ltr"
                     lang="en"
                     className="bg-white"
@@ -846,11 +866,14 @@ export default function EditContract({ contract, customers }: EditContractProps)
                     إجمالي الخصم (ر.ع)
                   </label>
                   <Input
-                    type="number"
+                    type="text"
                     value={totalDiscount}
-                    onChange={(e) => setTotalDiscount(Number(e.target.value))}
-                    min="0"
-                    step="0.01"
+                    onChange={(e) => {
+                      const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                      e.target.value = convertedValue;
+                      const value = convertedValue === '' ? 0 : Number(convertedValue) || 0;
+                      setTotalDiscount(value);
+                    }}
                     dir="ltr"
                     lang="en"
                     className="bg-white"
@@ -861,7 +884,7 @@ export default function EditContract({ contract, customers }: EditContractProps)
                     إجمالي العقد بعد الخصم (ر.ع)
                   </label>
                   <Input
-                    type="number"
+                    type="text"
                     value={totalAfterDiscount.toFixed(2)}
                     className="w-full bg-gray-100 font-bold text-[#58d2c8] text-lg"
                     dir="ltr"
@@ -939,9 +962,14 @@ export default function EditContract({ contract, customers }: EditContractProps)
                         المبلغ (ر.ع)
                       </label>
                       <Input
-                        type="number"
+                        type="text"
                         value={payment.amount}
-                        onChange={(e) => updatePayment(payment.id, 'amount', Number(e.target.value))}
+                        onChange={(e) => {
+                          const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                          e.target.value = convertedValue;
+                          const value = convertedValue === '' ? 0 : Number(convertedValue) || 0;
+                          updatePayment(payment.id, 'amount', value);
+                        }}
                         min="0"
                         step="0.01"
                         dir="ltr"
@@ -1053,7 +1081,7 @@ export default function EditContract({ contract, customers }: EditContractProps)
                     إجمالي المدفوعات (ر.ع)
                   </label>
                   <Input
-                    type="number"
+                    type="text"
                     value={totalPayments.toFixed(2)}
                     className="w-full bg-gray-100 font-bold text-green-600"
                     dir="ltr"
@@ -1066,7 +1094,7 @@ export default function EditContract({ contract, customers }: EditContractProps)
                     المبلغ المتبقي (ر.ع)
                   </label>
                   <Input
-                    type="number"
+                    type="text"
                     value={remainingAmount.toFixed(2)}
                     className={`w-full bg-gray-100 font-bold ${remainingAmount > 0 ? 'text-orange-600' : 'text-green-600'}`}
                     dir="ltr"

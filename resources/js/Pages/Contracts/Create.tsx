@@ -8,14 +8,17 @@ import { Input } from '@/components/ui/input';
 import { showToast } from '@/hooks/use-toast';
 import { FileText, Save, ArrowLeft, Plus, Trash2, MessageSquare, Package } from 'lucide-react';
 import { ScaffoldSelector } from '@/components/features/ScaffoldSelector';
+import { NationalitySelector } from '@/components/features/NationalitySelector';
 import { ContractWhatsAppModal } from '@/components/features/ContractWhatsAppModal';
 import { ContractPreviewModal } from '@/components/features/ContractPreviewModal';
+import { convertArabicToEnglishNumbers } from '@/lib/utils';
 
 interface Customer {
   id: number;
   name: string;
   customer_number: string;
   phone?: string;
+  nationality?: string;
 }
 
 interface Scaffold {
@@ -65,6 +68,14 @@ export default function CreateContract({ customers }: CreateContractProps) {
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  // حساب تاريخ النهاية الأولي
+  const initialStartDate = new Date().toISOString().split('T')[0];
+  const initialEndDate = (() => {
+    const start = new Date(initialStartDate);
+    start.setMonth(start.getMonth() + 1); // شهر واحد افتراضي
+    return start.toISOString().split('T')[0];
+  })();
+
   const [rentalDetails, setRentalDetails] = useState<RentalDetail[]>([
     {
       id: Date.now().toString(),
@@ -72,8 +83,8 @@ export default function CreateContract({ customers }: CreateContractProps) {
       scaffold: null,
       itemCode: '',
       itemDescription: '',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: '',
+      startDate: initialStartDate,
+      endDate: initialEndDate, // حساب تاريخ النهاية الأولي
       duration: 1,
       durationType: 'monthly',
       quantity: 1,
@@ -193,24 +204,23 @@ export default function CreateContract({ customers }: CreateContractProps) {
 
   // إضافة معدة جديدة
   const handleAddRentalItem = () => {
-    setRentalDetails((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        scaffoldId: undefined,
-        scaffold: null,
-        itemCode: '',
-        itemDescription: '',
-        startDate: new Date().toISOString().split('T')[0],
-        endDate: '',
-        duration: 1,
-        durationType: 'monthly',
-        quantity: 1,
-        dailyRate: 0,
-        monthlyRate: 0,
-        total: 0,
-      },
-    ]);
+    const startDate = new Date().toISOString().split('T')[0];
+    const newRental: RentalDetail = {
+      id: Date.now().toString(),
+      scaffoldId: undefined,
+      scaffold: null,
+      itemCode: '',
+      itemDescription: '',
+      startDate: startDate,
+      endDate: calculateEndDate(startDate, 1, 'monthly'), // حساب تاريخ النهاية تلقائياً
+      duration: 1,
+      durationType: 'monthly',
+      quantity: 1,
+      dailyRate: 0,
+      monthlyRate: 0,
+      total: 0,
+    };
+    setRentalDetails((prev) => [...prev, newRental]);
   };
 
   // حذف معدة
@@ -290,6 +300,7 @@ export default function CreateContract({ customers }: CreateContractProps) {
 
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [locationMapLink, setLocationMapLink] = useState('');
+  const [nationality, setNationality] = useState('');
 
   const { data, setData, post, processing, errors } = useForm({
     contract_number: contractNumber,
@@ -297,6 +308,7 @@ export default function CreateContract({ customers }: CreateContractProps) {
     customer_id: selectedCustomer?.id || null, // استخدام null بدلاً من سلسلة فارغة
     delivery_address: deliveryAddress,
     location_map_link: locationMapLink,
+    nationality: nationality,
     transport_and_installation_cost: transportCost,
     total_discount: totalDiscount,
     contract_notes: '',
@@ -324,12 +336,49 @@ export default function CreateContract({ customers }: CreateContractProps) {
     })),
   });
 
+  // تحديث الجنسية في useForm عند تغييرها
+  useEffect(() => {
+    setData('nationality', nationality);
+  }, [nationality, setData]);
+
+  // تحديث customer_id في useForm عند اختيار أو تغيير العميل
+  useEffect(() => {
+    if (selectedCustomer && selectedCustomer.id) {
+      setData('customer_id', selectedCustomer.id);
+    } else {
+      setData('customer_id', null);
+    }
+  }, [selectedCustomer, setData]);
+
+  // تحديث الجنسية عند اختيار عميل (إذا كان له جنسية)
+  useEffect(() => {
+    if (selectedCustomer && (selectedCustomer as any).nationality) {
+      setNationality((selectedCustomer as any).nationality);
+    }
+  }, [selectedCustomer]);
+
+  // حساب تاريخ النهاية تلقائياً للجميع المعدات عند تحميل الصفحة أو تغيير الحقول
+  useEffect(() => {
+    setRentalDetails((prev) =>
+      prev.map((rental) => {
+        // إذا كان تاريخ النهاية فارغاً ولكن تاريخ البدء والمدة موجودان، احسبه
+        if (!rental.endDate && rental.startDate && rental.duration > 0) {
+          return {
+            ...rental,
+            endDate: calculateEndDate(rental.startDate, rental.duration, rental.durationType),
+          };
+        }
+        return rental;
+      })
+    );
+  }, []); // يعمل مرة واحدة عند تحميل المكون
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     // التحقق من اختيار العميل بشكل صريح
     if (!selectedCustomer || !selectedCustomer.id) {
-      showToast.error('خطأ', 'يرجى اختيار العميل أولاً');
+      showToast.error('خطأ في الإنشاء العميل', 'يرجى اختيار العميل أولاً');
       return;
     }
     
@@ -338,16 +387,17 @@ export default function CreateContract({ customers }: CreateContractProps) {
       return;
     }
 
-    // إعداد جميع البيانات قبل الإرسال
+    // إعداد جميع البيانات قبل الإرسال - التأكد من أن customer_id موجود
     const formData = {
       contract_number: contractNumber,
       contract_date: contractDate,
-      customer_id: selectedCustomer.id, // تأكد من أن customer_id هو رقم وليس نص فارغ
+      customer_id: selectedCustomer.id, // تأكد من أن customer_id هو رقم
       delivery_address: deliveryAddress,
       location_map_link: locationMapLink || null,
+      nationality: nationality || null,
       transport_and_installation_cost: transportCost || 0,
       total_discount: totalDiscount || 0,
-      contract_notes: '',
+      contract_notes: data.contract_notes || '',
       rental_details: rentalDetails.map((rental) => ({
         scaffold_id: rental.scaffoldId || null,
         item_code: rental.itemCode,
@@ -372,12 +422,14 @@ export default function CreateContract({ customers }: CreateContractProps) {
       })),
     };
 
-    // تحديث جميع البيانات دفعة واحدة
+    // تحديث جميع البيانات دفعة واحدة قبل الإرسال
     Object.keys(formData).forEach((key) => {
       setData(key as any, formData[key as keyof typeof formData]);
     });
 
+    // إرسال البيانات - useForm يستخدم البيانات من data تلقائياً
     post('/contracts', {
+      preserveScroll: true,
       onSuccess: (page) => {
         showToast.success('تم الإنشاء بنجاح', 'تم إضافة العقد بنجاح');
         
@@ -424,9 +476,6 @@ export default function CreateContract({ customers }: CreateContractProps) {
         setWhatsappModalOpen(true);
       },
       onError: (errors) => {
-        // عرض رسائل خطأ محددة لكل حقل
-        const errorMessages: string[] = [];
-        
         // رسائل الأخطاء بالعربية
         const errorLabels: Record<string, string> = {
           'customer_id': 'العميل',
@@ -459,39 +508,140 @@ export default function CreateContract({ customers }: CreateContractProps) {
           'check_image': 'صورة الشيك',
         };
 
-        // دالة لاستخراج رسائل الخطأ
-        const extractErrors = (obj: any, prefix = ''): void => {
+        // دالة لترجمة رسائل الخطأ من الإنجليزية إلى العربية
+        const translateErrorMessage = (message: string): string => {
+          // رسائل Laravel الشائعة
+          if (message.includes('field is required') || message.includes('is required')) {
+            return 'هذا الحقل مطلوب';
+          }
+          if (message.includes('must be a valid date') || message.includes('valid date')) {
+            return 'يرجى إدخال تاريخ صحيح';
+          }
+          if (message.includes('must be a valid number') || message.includes('must be numeric')) {
+            return 'يرجى إدخال رقم صحيح';
+          }
+          if (message.includes('must be unique')) {
+            return 'هذه القيمة مستخدمة مسبقاً';
+          }
+          if (message.includes('is invalid') || message.includes('invalid')) {
+            return 'القيمة غير صحيحة';
+          }
+          if (message.includes('must be at least')) {
+            const match = message.match(/must be at least (\d+)/);
+            if (match) {
+              return `يجب أن تكون القيمة على الأقل ${match[1]}`;
+            }
+            return 'القيمة أقل من الحد الأدنى المطلوب';
+          }
+          if (message.includes('must exist')) {
+            return 'القيمة المختارة غير موجودة';
+          }
+          if (message.includes('must be an array')) {
+            return 'يجب أن يكون الحقل قائمة';
+          }
+          if (message.includes('must have at least')) {
+            return 'يجب إضافة عنصر واحد على الأقل';
+          }
+
+          // إذا كانت الرسالة تحتوي على نص إنجليزي، نحاول ترجمتها
+          if (message.includes('The ') || message.includes('field') || message.includes('must')) {
+            return 'يرجى التحقق من صحة البيانات المدخلة';
+          }
+
+          // إذا كانت الرسالة بالفعل بالعربية أو لا تحتوي على مصطلحات إنجليزية
+          return message;
+        };
+
+        // دالة لاستخراج رسائل الخطأ بشكل واضح
+        const extractErrors = (obj: any, parentKey = ''): string[] => {
+          const errorMessages: string[] = [];
+
           Object.keys(obj).forEach((key) => {
-            const fullKey = prefix ? `${prefix}.${key}` : key;
             const value = obj[key];
+            const fullKey = parentKey ? `${parentKey}.${key}` : key;
             
             if (Array.isArray(value)) {
-              // إذا كانت مصفوفة، فهي رسائل خطأ
-              value.forEach((msg) => {
-                const label = errorLabels[key] || errorLabels[fullKey] || key;
-                errorMessages.push(`${label}: ${msg}`);
+              // إذا كانت مصفوفة، فهي رسائل خطأ أو مصفوفة من الأخطاء المتداخلة
+              value.forEach((item, idx) => {
+                if (typeof item === 'string') {
+                  // رسالة خطأ مباشرة
+                  let label = errorLabels[key] || key;
+                  
+                  // معالجة الحقول المتداخلة في rental_details
+                  const rentalMatch = fullKey.match(/^rental_details\.(\d+)$/);
+                  if (rentalMatch) {
+                    const rentalIndex = parseInt(rentalMatch[1]) + 1;
+                    label = `تفاصيل الإيجار (المعدة رقم ${rentalIndex})`;
+                  } else {
+                    const nestedMatch = fullKey.match(/^rental_details\.(\d+)\.(.+)$/);
+                    if (nestedMatch) {
+                      const rentalIndex = parseInt(nestedMatch[1]) + 1;
+                      const fieldName = errorLabels[nestedMatch[2]] || nestedMatch[2];
+                      label = `${fieldName} (المعدة رقم ${rentalIndex})`;
+                    }
+                  }
+                  
+                  const translatedMessage = translateErrorMessage(item);
+                  errorMessages.push(`${label}: ${translatedMessage}`);
+                } else if (item && typeof item === 'object') {
+                  // كائن أخطاء متداخل - rental_details.0.end_date
+                  const nestedErrors = extractErrors(item, fullKey);
+                  errorMessages.push(...nestedErrors);
+                }
               });
             } else if (typeof value === 'string') {
-              // إذا كانت نص، فهي رسالة خطأ واحدة
-              const label = errorLabels[key] || errorLabels[fullKey] || key;
-              errorMessages.push(`${label}: ${value}`);
+              // رسالة خطأ مباشرة
+              let label = errorLabels[key] || errorLabels[fullKey] || key;
+              
+              // معالجة الحقول المتداخلة
+              const nestedMatch = fullKey.match(/^rental_details\.(\d+)\.(.+)$/);
+              if (nestedMatch) {
+                const rentalIndex = parseInt(nestedMatch[1]) + 1;
+                const fieldName = errorLabels[nestedMatch[2]] || nestedMatch[2];
+                label = `${fieldName} (المعدة رقم ${rentalIndex})`;
+              } else {
+                // استخدام التسمية من errorLabels إذا كانت متوفرة
+                label = errorLabels[key] || errorLabels[fullKey] || key;
+              }
+              
+              const translatedMessage = translateErrorMessage(value);
+              errorMessages.push(`${label}: ${translatedMessage}`);
             } else if (value && typeof value === 'object') {
-              // إذا كانت كائن، فهي أخطاء متداخلة
-              extractErrors(value, fullKey);
+              // كائن أخطاء متداخل
+              const nestedErrors = extractErrors(value, fullKey);
+              errorMessages.push(...nestedErrors);
             }
           });
+
+          return errorMessages;
         };
 
         // استخراج جميع رسائل الخطأ
-        extractErrors(errors);
+        const errorMessages = extractErrors(errors);
 
         // عرض رسالة الخطأ الأولى أو رسالة عامة
         if (errorMessages.length > 0) {
-          showToast.error('خطأ في الإنشاء', errorMessages[0]);
+          // عرض أول رسالة خطأ بشكل واضح
+          const firstError = errorMessages[0];
+          
+          // إذا كانت الرسالة تحتوي على ":"، نعرضها كما هي، وإلا نضيف "يرجى التحقق من"
+          let displayMessage = firstError;
+          if (!firstError.includes(':')) {
+            displayMessage = `يرجى التحقق من ${firstError}`;
+          }
+          
+          showToast.error('خطأ في البيانات', displayMessage);
+          
+          // إذا كان هناك أكثر من خطأ، عرض عدد الأخطاء في ال console
+          if (errorMessages.length > 1) {
+            console.log(`عدد الأخطاء: ${errorMessages.length}`);
+            console.log('تفاصيل الأخطاء:', errorMessages);
+          }
         } else if (errors.message) {
-          showToast.error('خطأ في الإنشاء', errors.message);
+          const translatedMessage = translateErrorMessage(errors.message);
+          showToast.error('خطأ في البيانات', translatedMessage);
         } else {
-          showToast.error('خطأ في الإنشاء', 'يرجى التحقق من البيانات المدخلة');
+          showToast.error('خطأ في البيانات', 'يرجى التحقق من جميع الحقول المطلوبة وإعادة المحاولة');
         }
       },
     });
@@ -634,6 +784,17 @@ export default function CreateContract({ customers }: CreateContractProps) {
                 </div>
               </div>
 
+              {/* الجنسية */}
+              <div>
+                <NationalitySelector
+                  value={nationality}
+                  onChange={setNationality}
+                  disabled={processing}
+                  label="الجنسية"
+                  required={false}
+                />
+              </div>
+
               {/* عنوان الموقع */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -749,10 +910,14 @@ export default function CreateContract({ customers }: CreateContractProps) {
                         {rental.durationType === 'monthly' ? 'اختر عدد الأشهر' : 'اختر عدد الأيام'} *
                       </label>
                       <Input
-                        type="number"
+                        type="text"
                         value={rental.duration}
-                        onChange={(e) => updateRentalDetail(rental.id, 'duration', Number(e.target.value))}
-                        min="1"
+                        onChange={(e) => {
+                          const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                          e.target.value = convertedValue;
+                          const value = convertedValue === '' ? 0 : Number(convertedValue) || 0;
+                          updateRentalDetail(rental.id, 'duration', value);
+                        }}
                         placeholder={rental.durationType === 'monthly' ? 'بالأشهر' : 'بالأيام'}
                         dir="ltr"
                         lang="en"
@@ -767,18 +932,30 @@ export default function CreateContract({ customers }: CreateContractProps) {
                     {/* الكمية */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        الكمية *
+                        الكمية <span className="text-red-500">*</span>
                       </label>
                       <Input
-                        type="number"
-                        value={rental.quantity}
-                        onChange={(e) => updateRentalDetail(rental.id, 'quantity', Number(e.target.value))}
-                        min="1"
+                        type="text"
+                        value={rental.quantity || ''}
+                        onChange={(e) => {
+                          const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                          e.target.value = convertedValue;
+                          const value = convertedValue === '' ? 0 : Number(convertedValue) || 0;
+                          if (!isNaN(value) && value >= 0) {
+                            updateRentalDetail(rental.id, 'quantity', value);
+                          }
+                        }}
                         dir="ltr"
                         lang="en"
                         required
                         className="bg-white"
+                        placeholder="أدخل الكمية"
                       />
+                      {errors[`rental_details.${index}.quantity`] && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors[`rental_details.${index}.quantity`]}
+                        </p>
+                      )}
                     </div>
 
                     {/* الإيجار اليومي */}
@@ -787,14 +964,18 @@ export default function CreateContract({ customers }: CreateContractProps) {
                         الإيجار اليومي (ر.ع)
                       </label>
                       <Input
-                        type="number"
+                        type="text"
                         value={rental.dailyRate}
-                        onChange={(e) => updateRentalDetail(rental.id, 'dailyRate', Number(e.target.value))}
-                        min="0"
-                        step="0.01"
+                        onChange={(e) => {
+                          const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                          e.target.value = convertedValue;
+                          const value = convertedValue === '' ? 0 : Number(convertedValue) || 0;
+                          updateRentalDetail(rental.id, 'dailyRate', value);
+                        }}
                         dir="ltr"
                         lang="en"
                         className="bg-white"
+                        placeholder="0"
                       />
                     </div>
 
@@ -804,14 +985,18 @@ export default function CreateContract({ customers }: CreateContractProps) {
                         الإيجار الشهري (ر.ع)
                       </label>
                       <Input
-                        type="number"
+                        type="text"
                         value={rental.monthlyRate}
-                        onChange={(e) => updateRentalDetail(rental.id, 'monthlyRate', Number(e.target.value))}
-                        min="0"
-                        step="0.01"
+                        onChange={(e) => {
+                          const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                          e.target.value = convertedValue;
+                          const value = convertedValue === '' ? 0 : Number(convertedValue) || 0;
+                          updateRentalDetail(rental.id, 'monthlyRate', value);
+                        }}
                         dir="ltr"
                         lang="en"
                         className="bg-white"
+                        placeholder="0"
                       />
                     </div>
 
@@ -825,12 +1010,18 @@ export default function CreateContract({ customers }: CreateContractProps) {
                       </label>
                       <Input
                         type="date"
-                        value={rental.endDate}
+                        value={rental.endDate || ''}
                         className="w-full bg-gray-100"
                         dir="ltr"
                         lang="en"
                         readOnly
+                        placeholder={rental.endDate ? '' : 'سيتم حسابه تلقائياً'}
                       />
+                      {!rental.endDate && rental.startDate && rental.duration > 0 && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          سيتم حساب التاريخ تلقائياً عند تحديد تاريخ البدء والمدة
+                        </p>
+                      )}
                     </div>
 
                     {/* الإجمالي */}
@@ -839,7 +1030,7 @@ export default function CreateContract({ customers }: CreateContractProps) {
                         الإجمالي (ر.ع)
                       </label>
                       <Input
-                        type="number"
+                        type="text"
                         value={rental.total.toFixed(2)}
                         className="w-full bg-gray-100 font-bold text-[#58d2c8]"
                         dir="ltr"
@@ -860,14 +1051,18 @@ export default function CreateContract({ customers }: CreateContractProps) {
                     قيمة النقل والتحميل والتنزيل (ر.ع)
                   </label>
                   <Input
-                    type="number"
+                    type="text"
                     value={transportCost}
-                    onChange={(e) => setTransportCost(Number(e.target.value))}
-                    min="0"
-                    step="0.01"
+                    onChange={(e) => {
+                      const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                      e.target.value = convertedValue;
+                      const value = convertedValue === '' ? 0 : Number(convertedValue) || 0;
+                      setTransportCost(value);
+                    }}
                     dir="ltr"
                     lang="en"
                     className="bg-white"
+                    placeholder="0"
                   />
                 </div>
                 <div>
@@ -875,14 +1070,18 @@ export default function CreateContract({ customers }: CreateContractProps) {
                     إجمالي الخصم (ر.ع)
                   </label>
                   <Input
-                    type="number"
+                    type="text"
                     value={totalDiscount}
-                    onChange={(e) => setTotalDiscount(Number(e.target.value))}
-                    min="0"
-                    step="0.01"
+                    onChange={(e) => {
+                      const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                      e.target.value = convertedValue;
+                      const value = convertedValue === '' ? 0 : Number(convertedValue) || 0;
+                      setTotalDiscount(value);
+                    }}
                     dir="ltr"
                     lang="en"
                     className="bg-white"
+                    placeholder="0"
                   />
                 </div>
                 <div>
@@ -890,7 +1089,7 @@ export default function CreateContract({ customers }: CreateContractProps) {
                     إجمالي العقد بعد الخصم (ر.ع)
                   </label>
                   <Input
-                    type="number"
+                    type="text"
                     value={totalAfterDiscount.toFixed(2)}
                     className="w-full bg-gray-100 font-bold text-[#58d2c8] text-lg"
                     dir="ltr"
@@ -968,14 +1167,18 @@ export default function CreateContract({ customers }: CreateContractProps) {
                         المبلغ (ر.ع)
                       </label>
                       <Input
-                        type="number"
+                        type="text"
                         value={payment.amount}
-                        onChange={(e) => updatePayment(payment.id, 'amount', Number(e.target.value))}
-                        min="0"
-                        step="0.01"
+                        onChange={(e) => {
+                          const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                          e.target.value = convertedValue;
+                          const value = convertedValue === '' ? 0 : Number(convertedValue) || 0;
+                          updatePayment(payment.id, 'amount', value);
+                        }}
                         dir="ltr"
                         lang="en"
                         className="bg-white"
+                        placeholder="0"
                       />
                     </div>
 

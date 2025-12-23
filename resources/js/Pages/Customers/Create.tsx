@@ -27,6 +27,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { availableNationalities, customerTypes, customerStatuses } from '@/data/customersData';
+import { NationalitySelector } from '@/components/features/NationalitySelector';
+import { convertArabicToEnglishNumbers } from '@/lib/utils';
 
 interface PhoneNumber {
   number: string;
@@ -250,7 +252,7 @@ export default function CreateCustomer() {
                 {/* نوع العميل */}
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    نوع العميل <span className="text-red-500">*</span>
+                    نوع العميل
                   </label>
                   <div className="flex gap-2">
                     {customerTypes.map((type) => (
@@ -286,7 +288,11 @@ export default function CreateCustomer() {
                     <Input
                       type="text"
                       value={data.idNumber}
-                      onChange={(e) => setData('idNumber', e.target.value)}
+                      onChange={(e) => {
+                        const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                        e.target.value = convertedValue;
+                        setData('idNumber', convertedValue);
+                      }}
                       className="pr-10"
                       placeholder="أدخل رقم الهوية"
                     />
@@ -302,7 +308,11 @@ export default function CreateCustomer() {
                       <Input
                         type="text"
                         value={data.commercialRecord}
-                        onChange={(e) => setData('commercialRecord', e.target.value)}
+                        onChange={(e) => {
+                          const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                          e.target.value = convertedValue;
+                          setData('commercialRecord', convertedValue);
+                        }}
                         className="pr-10"
                         placeholder="أدخل السجل التجاري"
                       />
@@ -312,19 +322,16 @@ export default function CreateCustomer() {
 
                 {/* الجنسية */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">الجنسية</label>
-                  <select
+                  <NationalitySelector
                     value={data.nationality}
-                    onChange={(e) => setData('nationality', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white"
-                  >
-                    <option value="">اختر الجنسية</option>
-                    {availableNationalities.map((nationality) => (
-                      <option key={nationality} value={nationality}>
-                        {nationality}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) => setData('nationality', value)}
+                    disabled={processing}
+                    label="الجنسية"
+                    required={false}
+                  />
+                  {errors.nationality && (
+                    <p className="text-red-500 text-xs mt-1">{errors.nationality}</p>
+                  )}
                 </div>
 
                 {/* الهاتف الرئيسي */}
@@ -335,7 +342,11 @@ export default function CreateCustomer() {
                     <Input
                       type="tel"
                       value={data.phone}
-                      onChange={(e) => setData('phone', e.target.value)}
+                      onChange={(e) => {
+                        const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                        e.target.value = convertedValue;
+                        setData('phone', convertedValue);
+                      }}
                       className="pr-10"
                       placeholder="أدخل رقم الهاتف الرئيسي"
                     />
@@ -366,7 +377,11 @@ export default function CreateCustomer() {
                         <Input
                           type="tel"
                           value={phone.number}
-                          onChange={(e) => updatePhone(index, 'number', e.target.value)}
+                          onChange={(e) => {
+                            const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                            e.target.value = convertedValue;
+                            updatePhone(index, 'number', convertedValue);
+                          }}
                           placeholder="رقم الهاتف"
                         />
                       </div>
@@ -502,7 +517,7 @@ export default function CreateCustomer() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UserCheck className="h-5 w-5" />
-                معلومات الضامن {showGuarantorData ? '(مطلوب للعملاء غير العمانيين)' : '(اختياري)'}
+                معلومات الضامن (اختياري)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -511,7 +526,7 @@ export default function CreateCustomer() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      اسم الضامن <span className="text-red-500">*</span>
+                      اسم الضامن
                     </label>
                     <Input
                       type="text"
@@ -527,12 +542,16 @@ export default function CreateCustomer() {
 
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      هاتف الضامن <span className="text-red-500">*</span>
+                      هاتف الضامن
                     </label>
                     <Input
                       type="tel"
                       value={data.guarantorData.phone}
-                      onChange={(e) => setData('guarantorData', { ...data.guarantorData, phone: e.target.value })}
+                      onChange={(e) => {
+                        const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                        e.target.value = convertedValue;
+                        setData('guarantorData', { ...data.guarantorData, phone: convertedValue });
+                      }}
                       placeholder="أدخل هاتف الضامن"
                       className={errors['guarantorData.phone'] ? 'border-red-500' : ''}
                     />
@@ -543,12 +562,16 @@ export default function CreateCustomer() {
 
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      رقم هوية الضامن <span className="text-red-500">*</span>
+                      رقم هوية الضامن
                     </label>
                     <Input
                       type="text"
                       value={data.guarantorData.idNumber}
-                      onChange={(e) => setData('guarantorData', { ...data.guarantorData, idNumber: e.target.value })}
+                      onChange={(e) => {
+                        const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                        e.target.value = convertedValue;
+                        setData('guarantorData', { ...data.guarantorData, idNumber: convertedValue });
+                      }}
                       placeholder="أدخل رقم هوية الضامن"
                       className={errors['guarantorData.idNumber'] ? 'border-red-500' : ''}
                     />
@@ -558,25 +581,13 @@ export default function CreateCustomer() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-1">
-                      جنسية الضامن <span className="text-red-500">*</span>
-                    </label>
-                    <select
+                    <NationalitySelector
                       value={data.guarantorData.nationality}
-                      onChange={(e) => setData('guarantorData', { ...data.guarantorData, nationality: e.target.value })}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white ${
-                        errors['guarantorData.nationality'] 
-                          ? 'border-red-500' 
-                          : 'border-gray-300 dark:border-gray-600'
-                      }`}
-                    >
-                      <option value="">اختر جنسية الضامن</option>
-                      {availableNationalities.map((nationality) => (
-                        <option key={nationality} value={nationality}>
-                          {nationality}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(value) => setData('guarantorData', { ...data.guarantorData, nationality: value })}
+                      disabled={processing}
+                      label="جنسية الضامن"
+                      required={false}
+                    />
                     {errors['guarantorData.nationality'] && (
                       <p className="text-red-500 text-xs mt-1">{errors['guarantorData.nationality']}</p>
                     )}
@@ -584,7 +595,7 @@ export default function CreateCustomer() {
 
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      صلة القرابة <span className="text-red-500">*</span>
+                      صلة القرابة
                     </label>
                     <Input
                       type="text"
@@ -610,7 +621,7 @@ export default function CreateCustomer() {
 
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium mb-1">
-                      عنوان الضامن <span className="text-red-500">*</span>
+                      عنوان الضامن
                     </label>
                     <textarea
                       value={data.guarantorData.address}
@@ -654,7 +665,11 @@ export default function CreateCustomer() {
                     <Input
                       type="text"
                       value={data.guarantorId}
-                      onChange={(e) => setData('guarantorId', e.target.value)}
+                      onChange={(e) => {
+                        const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                        e.target.value = convertedValue;
+                        setData('guarantorId', convertedValue);
+                      }}
                       placeholder="أدخل رقم هوية الضامن"
                     />
                   </div>
