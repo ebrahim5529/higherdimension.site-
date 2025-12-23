@@ -387,10 +387,15 @@ class ContractController extends Controller
             $contractType = 'بيع';
         }
 
-        // حساب المدة بالأيام
+        // حساب المدة بالأيام (الفرق بين التواريخ - 1)
         $duration = 0;
         if ($contract->start_date && $contract->end_date) {
-            $duration = $contract->start_date->diffInDays($contract->end_date);
+            // استخدام diffInDays للحصول على الفرق بين التواريخ ثم طرح 1
+            $duration = abs($contract->start_date->diffInDays($contract->end_date)) - 1;
+            // التأكد من أن المدة لا تكون سالبة
+            if ($duration < 0) {
+                $duration = 0;
+            }
         }
 
         // حساب الأيام المتبقية والمنقضية
@@ -402,14 +407,16 @@ class ContractController extends Controller
 
         if ($contract->start_date && $contract->end_date) {
             if ($now < $contract->start_date) {
-                $daysRemaining = $contract->start_date->diffInDays($now);
+                $daysRemaining = (int) abs(floor($contract->start_date->diffInDays($now)));
             } elseif ($now > $contract->end_date) {
-                $daysElapsed = $contract->start_date->diffInDays($contract->end_date);
+                $daysElapsed = (int) abs(floor($contract->start_date->diffInDays($contract->end_date)));
                 $progressPercentage = 100;
             } else {
-                $daysElapsed = $contract->start_date->diffInDays($now);
-                $daysRemaining = $now->diffInDays($contract->end_date);
-                $progressPercentage = round(($daysElapsed / $duration) * 100, 2);
+                // حساب الأيام المنقضية (من تاريخ البدء إلى اليوم الحالي)
+                $daysElapsed = (int) abs(floor($contract->start_date->diffInDays($now)));
+                // حساب الأيام المتبقية (من اليوم الحالي إلى تاريخ النهاية)
+                $daysRemaining = (int) abs(floor($now->diffInDays($contract->end_date)));
+                $progressPercentage = $duration > 0 ? round(($daysElapsed / $duration) * 100, 2) : 0;
             }
 
             if ($duration > 0) {
