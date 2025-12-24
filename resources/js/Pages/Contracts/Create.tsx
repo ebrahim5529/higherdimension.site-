@@ -206,19 +206,19 @@ export default function CreateContract({ customers }: CreateContractProps) {
   const handleAddRentalItem = () => {
     const startDate = new Date().toISOString().split('T')[0];
     const newRental: RentalDetail = {
-      id: Date.now().toString(),
-      scaffoldId: undefined,
-      scaffold: null,
-      itemCode: '',
-      itemDescription: '',
+        id: Date.now().toString(),
+        scaffoldId: undefined,
+        scaffold: null,
+        itemCode: '',
+        itemDescription: '',
       startDate: startDate,
       endDate: calculateEndDate(startDate, 1, 'monthly'), // حساب تاريخ النهاية تلقائياً
-      duration: 1,
-      durationType: 'monthly',
-      quantity: 1,
-      dailyRate: 0,
-      monthlyRate: 0,
-      total: 0,
+        duration: 1,
+        durationType: 'monthly',
+        quantity: 1,
+        dailyRate: 0,
+        monthlyRate: 0,
+        total: 0,
     };
     setRentalDetails((prev) => [...prev, newRental]);
   };
