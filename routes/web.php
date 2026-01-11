@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\ResetPasswordController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -14,6 +16,13 @@ Route::get('/', function () {
 // Login routes
 Route::get('/login', [LoginController::class, 'show'])->middleware('guest')->name('login');
 Route::post('/login', [LoginController::class, 'store'])->middleware('guest');
+
+// Forgot password routes
+Route::get('/forgot-password', [ForgotPasswordController::class, 'show'])->middleware('guest')->name('password.request');
+Route::post('/forgot-password', [ForgotPasswordController::class, 'store'])->middleware('guest')->name('password.email');
+
+Route::get('/reset-password/{token}', [ResetPasswordController::class, 'show'])->middleware('guest')->name('password.reset');
+Route::post('/reset-password', [ResetPasswordController::class, 'store'])->middleware('guest')->name('password.update');
 
 // Public routes (no authentication required)
 Route::get('/contract/sign/{contractNumber}', [\App\Http\Controllers\Admin\ContractController::class, 'sign'])->name('contracts.sign');
@@ -137,6 +146,9 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:access-permissions')->group(function () {
         Route::get('/dashboard/user-roles', [\App\Http\Controllers\Admin\UserRoleController::class, 'index'])->name('user-roles.index');
         Route::post('/user-roles', [\App\Http\Controllers\Admin\UserRoleController::class, 'store'])->name('user-roles.store');
+        Route::get('/user-roles/{user}', [\App\Http\Controllers\Admin\UserRoleController::class, 'show'])->name('user-roles.show');
+        Route::put('/user-roles/{user}', [\App\Http\Controllers\Admin\UserRoleController::class, 'update'])->name('user-roles.update');
+        Route::delete('/user-roles/{user}', [\App\Http\Controllers\Admin\UserRoleController::class, 'destroy'])->name('user-roles.destroy');
         Route::put('/user-roles/{user}/roles', [\App\Http\Controllers\Admin\UserRoleController::class, 'updateRoles'])->name('user-roles.update-roles');
         Route::put('/user-roles/{user}/permissions', [\App\Http\Controllers\Admin\UserRoleController::class, 'updatePermissions'])->name('user-roles.update-permissions');
 
@@ -155,6 +167,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/profile', [\App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile', [\App\Http\Controllers\ProfileController::class, 'updateProfile'])->name('profile.update');
     Route::put('/profile/password', [\App\Http\Controllers\ProfileController::class, 'changePassword'])->name('profile.password.update');
+
+    Route::middleware('permission:manage-electronic-signature')->group(function () {
+        Route::get('/dashboard/electronic-signature', [\App\Http\Controllers\Admin\ElectronicSignatureController::class, 'index'])->name('settings.electronic-signature');
+        Route::post('/dashboard/electronic-signature', [\App\Http\Controllers\Admin\ElectronicSignatureController::class, 'store'])->name('settings.electronic-signature.store');
+    });
+
+    Route::middleware('permission:access-settings')->group(function () {
+        Route::get('/dashboard/smtp-settings', [\App\Http\Controllers\Admin\SmtpSettingsController::class, 'index'])->name('settings.smtp');
+        Route::post('/dashboard/smtp-settings', [\App\Http\Controllers\Admin\SmtpSettingsController::class, 'update'])->name('settings.smtp.update');
+        Route::post('/dashboard/smtp-settings/test', [\App\Http\Controllers\Admin\SmtpSettingsController::class, 'test'])->name('settings.smtp.test');
+    });
 
     Route::post('/logout', function (Request $request) {
         Auth::logout();

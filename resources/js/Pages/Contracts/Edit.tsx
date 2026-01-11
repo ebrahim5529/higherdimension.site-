@@ -65,6 +65,7 @@ interface Contract {
   transport_and_installation_cost: number;
   total_discount: number;
   contract_notes?: string | null;
+  status: string;
   equipment: Array<{
     id: number;
     scaffold_id?: number | null;
@@ -119,29 +120,29 @@ export default function EditContract({ contract, customers }: EditContractProps)
   const [payments, setPayments] = useState<PaymentDetail[]>(
     contract.payments.length > 0
       ? contract.payments.map((payment: any) => ({
-          id: `payment-${payment.id}`,
-          paymentMethod: payment.payment_method as any,
-          paymentDate: payment.payment_date,
-          amount: Number(payment.amount) || 0,
-          checkNumber: payment.check_number || '',
-          bankName: payment.bank_name || '',
-          checkDate: payment.check_date || '',
-          checkImage: null,
-          checkImagePath: payment.check_image_path || null,
-        }))
+        id: `payment-${payment.id}`,
+        paymentMethod: payment.payment_method as any,
+        paymentDate: payment.payment_date,
+        amount: Number(payment.amount) || 0,
+        checkNumber: payment.check_number || '',
+        bankName: payment.bank_name || '',
+        checkDate: payment.check_date || '',
+        checkImage: null,
+        checkImagePath: payment.check_image_path || null,
+      }))
       : [
-          {
-            id: Date.now().toString(),
-            paymentMethod: 'cash',
-            paymentDate: new Date().toISOString().split('T')[0],
-            amount: 0,
-            checkNumber: '',
-            bankName: '',
-            checkDate: '',
-            checkImage: null,
-            checkImagePath: null,
-          },
-        ]
+        {
+          id: Date.now().toString(),
+          paymentMethod: 'cash',
+          paymentDate: new Date().toISOString().split('T')[0],
+          amount: 0,
+          checkNumber: '',
+          bankName: '',
+          checkDate: '',
+          checkImage: null,
+          checkImagePath: null,
+        },
+      ]
   );
   const [transportCost, setTransportCost] = useState(Number(contract.transport_and_installation_cost) || 0);
   const [totalDiscount, setTotalDiscount] = useState(Number(contract.total_discount) || 0);
@@ -355,6 +356,7 @@ export default function EditContract({ contract, customers }: EditContractProps)
       payment_date: payment.paymentDate,
       amount: payment.amount,
     })),
+    status: contract.status || 'ACTIVE',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -400,7 +402,7 @@ export default function EditContract({ contract, customers }: EditContractProps)
       onError: (errors) => {
         // عرض رسائل خطأ محددة لكل حقل
         const errorMessages: string[] = [];
-        
+
         // رسائل الأخطاء بالعربية
         const errorLabels: Record<string, string> = {
           'customer_id': 'العميل',
@@ -438,7 +440,7 @@ export default function EditContract({ contract, customers }: EditContractProps)
           Object.keys(obj).forEach((key) => {
             const fullKey = prefix ? `${prefix}.${key}` : key;
             const value = obj[key];
-            
+
             if (Array.isArray(value)) {
               // إذا كانت مصفوفة، فهي رسائل خطأ
               value.forEach((msg) => {
@@ -606,6 +608,28 @@ export default function EditContract({ contract, customers }: EditContractProps)
                     </>
                   )}
                 </div>
+              </div>
+
+              {/* حالة العقد */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  حالة العقد *
+                </label>
+                <select
+                  value={data.status}
+                  onChange={(e) => setData('status', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#58d2c8] focus:border-transparent bg-white"
+                  required
+                >
+                  <option value="ACTIVE">نشط</option>
+                  <option value="OPEN">مفتوحة</option>
+                  <option value="CLOSED">مغلقة</option>
+                  <option value="RENTAL_CLOSED">إيجار مغلقة</option>
+                  <option value="CLOSED_NOT_RECEIVED">مغلقة - البضاعة غير مستلمة</option>
+                  <option value="EXPIRED">منتهي</option>
+                  <option value="CANCELLED">ملغي</option>
+                  <option value="COMPLETED">مكتمل</option>
+                </select>
               </div>
 
               {/* عنوان الموقع */}

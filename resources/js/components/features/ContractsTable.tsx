@@ -37,6 +37,7 @@ interface Contract {
   id: number;
   contractNumber: string;
   customerName: string;
+  customerPhone: string;
   type: 'تأجير' | 'بيع';
   amount: number;
   totalAfterDiscount: number;
@@ -77,27 +78,22 @@ export function ContractsTable({
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'نشط':
+      case 'مفتوحة':
         return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
+      case 'مغلقة':
+      case 'إيجار مغلقة':
+      case 'مكتمل':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
+      case 'مغلقة - البضاعة غير مستلمة':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400';
       case 'منتهي':
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
       case 'ملغي':
         return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'تأجير':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
-      case 'بيع':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -121,14 +117,14 @@ export function ContractsTable({
     return data.filter((contract) => {
       const matchesSearch =
         contract.customerName.toLowerCase().includes(globalFilter.toLowerCase()) ||
-        contract.contractNumber.toLowerCase().includes(globalFilter.toLowerCase());
+        contract.contractNumber.toLowerCase().includes(globalFilter.toLowerCase()) ||
+        contract.status.toLowerCase().includes(globalFilter.toLowerCase());
 
       const matchesStatus = statusFilter === 'all' || contract.status === statusFilter;
-      const matchesType = typeFilter === 'all' || contract.type === typeFilter;
 
-      return matchesSearch && matchesStatus && matchesType;
+      return matchesSearch && matchesStatus;
     });
-  }, [data, globalFilter, statusFilter, typeFilter]);
+  }, [data, globalFilter, statusFilter]);
 
   const columns: ColumnDef<Contract>[] = useMemo(
     () => [
@@ -166,18 +162,15 @@ export function ContractsTable({
         ),
       },
       {
-        accessorKey: 'type',
-        header: 'النوع',
-        cell: ({ row }) => {
-          const type = row.getValue('type') as string;
-          return (
-            <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor(type)}`}
-            >
-              {type}
+        accessorKey: 'customerPhone',
+        header: 'رقم الجوال',
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-900 dark:text-white">
+              {row.getValue('customerPhone') || '-'}
             </span>
-          );
-        },
+          </div>
+        ),
       },
       {
         accessorKey: 'totalAfterDiscount',
@@ -207,11 +200,10 @@ export function ContractsTable({
           const amount = Number(row.getValue('remainingAmount'));
           return (
             <span
-              className={`font-medium ${
-                amount > 0
-                  ? 'text-orange-600 dark:text-orange-400'
-                  : 'text-green-600 dark:text-green-400'
-              }`}
+              className={`font-medium ${amount > 0
+                ? 'text-orange-600 dark:text-orange-400'
+                : 'text-green-600 dark:text-green-400'
+                }`}
             >
               {amount.toFixed(2)} ر.ع
             </span>
@@ -369,26 +361,17 @@ export function ContractsTable({
             options={[
               { value: 'all', label: 'جميع الحالات' },
               { value: 'نشط', label: 'نشط' },
+              { value: 'مفتوحة', label: 'مفتوحة' },
+              { value: 'مغلقة', label: 'مغلقة' },
+              { value: 'إيجار مغلقة', label: 'إيجار مغلقة' },
+              { value: 'مغلقة - البضاعة غير مستلمة', label: 'مغلقة - البضاعة غير مستلمة' },
               { value: 'منتهي', label: 'منتهي' },
               { value: 'ملغي', label: 'ملغي' },
+              { value: 'مكتمل', label: 'مكتمل' },
             ]}
             value={statusFilter}
             onValueChange={(value) => setStatusFilter(value)}
             placeholder="الحالة"
-            searchPlaceholder="ابحث..."
-            emptyText="لا توجد نتائج"
-            className="w-full sm:w-[180px]"
-          />
-
-          <Combobox
-            options={[
-              { value: 'all', label: 'جميع الأنواع' },
-              { value: 'تأجير', label: 'تأجير' },
-              { value: 'بيع', label: 'بيع' },
-            ]}
-            value={typeFilter}
-            onValueChange={(value) => setTypeFilter(value)}
-            placeholder="النوع"
             searchPlaceholder="ابحث..."
             emptyText="لا توجد نتائج"
             className="w-full sm:w-[180px]"

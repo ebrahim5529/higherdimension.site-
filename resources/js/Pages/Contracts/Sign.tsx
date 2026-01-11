@@ -1,7 +1,7 @@
 /** @jsxImportSource react */
 import { Head, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
-import { FileText, Check, AlertCircle, User, Calendar, DollarSign, MapPin, Printer } from 'lucide-react';
+import { FileText, Check, AlertCircle, MapPin, Printer } from 'lucide-react';
 import DigitalSignature from '@/components/features/DigitalSignature';
 import { showToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -47,9 +47,16 @@ interface ContractData {
 
 interface SignContractProps {
   contract: ContractData;
+  companySignature?: {
+    id: number;
+    company_name: string;
+    signer_name: string;
+    signer_title: string;
+    signature_url: string | null;
+  } | null;
 }
 
-export default function SignContract({ contract }: SignContractProps) {
+export default function SignContract({ contract, companySignature }: SignContractProps) {
   const [isSigning, setIsSigning] = useState(false);
   const [customerSignature, setCustomerSignature] = useState<string>('');
   const [isSavingSignature, setIsSavingSignature] = useState(false);
@@ -152,11 +159,22 @@ export default function SignContract({ contract }: SignContractProps) {
         @media print {
           @page {
             size: A4;
-            margin: 10mm;
+            margin: 5mm;
           }
           body {
             margin: 0;
             padding: 0;
+            font-size: 11px !important;
+          }
+          .print-only {
+            display: block !important;
+          }
+          .screen-only {
+            display: none !important;
+          }
+          .print-scale {
+            zoom: 0.95;
+            transform-origin: top left;
           }
           .no-print {
             display: none !important;
@@ -164,13 +182,24 @@ export default function SignContract({ contract }: SignContractProps) {
           .print-container {
             max-width: 100% !important;
             margin: 0 !important;
-            padding: 0 !important;
+            padding: 4px !important;
             box-shadow: none !important;
             background: white !important;
           }
           .print-container * {
             color: black !important;
             background: white !important;
+          }
+          .print-two-columns {
+            column-count: 2;
+            column-gap: 12px;
+          }
+          .print-two-columns li {
+            break-inside: avoid;
+            margin-bottom: 2px;
+          }
+          .signature-pad {
+            display: none !important;
           }
           .print-break {
             page-break-inside: avoid;
@@ -180,6 +209,33 @@ export default function SignContract({ contract }: SignContractProps) {
           }
           .print-page:last-child {
             page-break-after: auto;
+          }
+          h1 { font-size: 16px !important; }
+          h2 { font-size: 13px !important; }
+          h3 { font-size: 12px !important; }
+          p { font-size: 10px !important; line-height: 1.25 !important; }
+          .text-xl { font-size: 13px !important; }
+          .text-lg { font-size: 12px !important; }
+          .text-sm { font-size: 9px !important; }
+          .p-6 { padding: 4px !important; }
+          .p-4 { padding: 2px !important; }
+          .p-3 { padding: 1px !important; }
+          .mb-6 { margin-bottom: 4px !important; }
+          .mb-4 { margin-bottom: 2px !important; }
+          .mb-2 { margin-bottom: 1px !important; }
+          .mt-2 { margin-top: 1px !important; }
+          .gap-6 { gap: 4px !important; }
+          .gap-4 { gap: 2px !important; }
+          .gap-2 { gap: 1px !important; }
+          .grid-cols-2 { grid-template-columns: 1fr 1fr !important; }
+          table { font-size: 9px !important; }
+          th, td { padding: 1px !important; }
+          .border-2 { border-width: 1px !important; }
+          .border-b-2 { border-bottom-width: 1px !important; }
+        }
+        @media screen {
+          .print-only {
+            display: none;
           }
         }
       `}</style>
@@ -217,91 +273,68 @@ export default function SignContract({ contract }: SignContractProps) {
             </div>
           </div>
 
-        {/* معلومات العقد */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6 print-container print-break">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            تفاصيل العقد
-          </h2>
+        <div className="print-scale">
+          {/* معلومات العقد */}
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6 print-container print-break">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              تفاصيل العقد
+            </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <User className="h-5 w-5 text-gray-400" />
-                <div>
-                  <p className="text-sm text-gray-600">اسم العميل</p>
-                  <p className="font-medium text-gray-900">{contract.customer_name}</p>
-                </div>
-              </div>
+            <div className="overflow-x-auto mb-6">
+              <table className="w-full border border-black">
+                <tbody>
+                  <tr>
+                    <td className="border border-black p-1 align-top">
+                      <div className="text-xs text-gray-600">اسم العميل</div>
+                      <div className="font-medium text-gray-900">{contract.customer_name}</div>
+                    </td>
+                    <td className="border border-black p-1 align-top">
+                      <div className="text-xs text-gray-600">تاريخ العقد</div>
+                      <div className="font-medium text-gray-900">{formatDate(contract.contract_date)}</div>
+                    </td>
+                    <td className="border border-black p-1 align-top">
+                      <div className="text-xs text-gray-600">مدة الإيجار</div>
+                      <div className="font-medium text-gray-900">
+                        من {formatDate(contract.start_date)} إلى {formatDate(contract.end_date)}
+                      </div>
+                    </td>
+                    <td className="border border-black p-1 align-top">
+                      <div className="text-xs text-gray-600">القيمة الإجمالية</div>
+                      <div className="font-medium text-gray-900">{contract.amount.toLocaleString()} ر.ع</div>
+                    </td>
+                  </tr>
 
-              <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5 text-gray-400" />
-                <div>
-                  <p className="text-sm text-gray-600">تاريخ العقد</p>
-                  <p className="font-medium text-gray-900">{formatDate(contract.contract_date)}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5 text-gray-400" />
-                <div>
-                  <p className="text-sm text-gray-600">مدة الإيجار</p>
-                  <p className="font-medium text-gray-900">
-                    من {formatDate(contract.start_date)} إلى {formatDate(contract.end_date)}
-                  </p>
-                </div>
-              </div>
+                  <tr>
+                    <td className="border border-black p-1 align-top">
+                      <div className="text-xs text-gray-600">نوع العقد</div>
+                      <div className="font-medium text-gray-900">{contract.contract_type}</div>
+                    </td>
+                    <td className="border border-black p-1 align-top">
+                      <div className="text-xs text-gray-600">بعد الخصم</div>
+                      <div className="font-medium text-gray-900">{contract.total_after_discount.toLocaleString()} ر.ع</div>
+                    </td>
+                    <td className="border border-black p-1 align-top" colSpan={2}>
+                      <div className="text-xs text-gray-600">عنوان التسليم</div>
+                      <div className="font-medium text-gray-900">{contract.delivery_address || '-'}</div>
+                      {contract.location_map_link && (
+                        <a
+                          href={contract.location_map_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#58d2c8] hover:text-[#4AB8B3] text-xs mt-1 inline-block screen-only"
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            <MapPin className="h-3.5 w-3.5" />
+                            عرض على الخريطة
+                          </span>
+                        </a>
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <DollarSign className="h-5 w-5 text-gray-400" />
-                <div>
-                  <p className="text-sm text-gray-600">القيمة الإجمالية</p>
-                  <p className="font-medium text-gray-900">{contract.amount.toLocaleString()} ر.ع</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-gray-400" />
-                <div>
-                  <p className="text-sm text-gray-600">نوع العقد</p>
-                  <p className="font-medium text-gray-900">{contract.contract_type}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <DollarSign className="h-5 w-5 text-gray-400" />
-                <div>
-                  <p className="text-sm text-gray-600">بعد الخصم</p>
-                  <p className="font-medium text-gray-900">
-                    {contract.total_after_discount.toLocaleString()} ر.ع
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* عنوان التسليم */}
-          {contract.delivery_address && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">عنوان التسليم</h3>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-gray-900">{contract.delivery_address}</p>
-                {contract.location_map_link && (
-                  <a
-                    href={contract.location_map_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[#58d2c8] hover:text-[#4AB8B3] text-sm mt-2 inline-block flex items-center gap-1"
-                  >
-                    <MapPin className="h-4 w-4" />
-                    عرض على الخريطة
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* الطرف الأول والثاني */}
           <div className="mb-6 space-y-4">
@@ -420,7 +453,7 @@ export default function SignContract({ contract }: SignContractProps) {
           {/* رابعاً: التزامات المستأجر */}
           <div className="mb-6">
             <p className="font-bold text-lg text-black mb-2">رابعاً: التزامات المستأجر:</p>
-            <ul className="list-disc list-inside space-y-2 text-black pr-4">
+            <ul className="list-disc list-inside space-y-2 text-black pr-4 print-two-columns">
               <li>
                 يلتزم المستأجر بتمكين المؤجر أو من يمثله بمعاينة المعدات المؤجرة وتفقدها
                 وصيانتها في أى وقت أو سحبها ونقلها في حال تخلف المستأجر عن سداد قيمة الإيجار
@@ -474,7 +507,7 @@ export default function SignContract({ contract }: SignContractProps) {
             </h2>
 
             <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 screen-only">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
                   <div>
@@ -490,15 +523,25 @@ export default function SignContract({ contract }: SignContractProps) {
               <div className="grid grid-cols-2 gap-8 mt-12 pt-8 border-t-2 border-black">
                 <div className="text-center">
                   <div className="mb-8">
-                    <div className="border-b-2 border-black w-48 mx-auto mb-2 h-16"></div>
+                    {companySignature?.signature_url ? (
+                      <div className="border border-black rounded-sm w-48 mx-auto h-16 flex items-center justify-center bg-white">
+                        <img
+                          src={companySignature.signature_url}
+                          alt="توقيع الشركة"
+                          className="max-h-14 max-w-[180px] object-contain"
+                        />
+                      </div>
+                    ) : (
+                      <div className="border-b-2 border-black w-48 mx-auto mb-2 h-16"></div>
+                    )}
                   </div>
                   <p className="font-bold text-lg text-black">توقيع الطرف الأول (المؤجر)</p>
-                  <p className="text-sm text-black mt-2">شركة البعد العالي للتجارة</p>
+                  <p className="text-sm text-black mt-2">{companySignature?.company_name || 'شركة البعد العالي للتجارة'}</p>
                 </div>
 
                 <div className="text-center">
                   <div className="mb-8">
-                    <div className="border-2 border-dashed border-[#58d2c8] rounded-lg p-4 bg-gray-50">
+                    <div className="border-2 border-dashed border-[#58d2c8] rounded-lg p-4 bg-gray-50 signature-pad">
                       <div className="text-center mb-4">
                         <h3 className="text-lg font-medium text-gray-900">توقيع العميل</h3>
                         <p className="text-sm text-gray-600">اضغط واسحب للتوقيع في المنطقة أدناه</p>
@@ -516,6 +559,9 @@ export default function SignContract({ contract }: SignContractProps) {
                           strokeWidth={2}
                         />
                       </div>
+                    </div>
+                    <div className="print-only">
+                      <div className="border-b border-black w-48 mx-auto h-10"></div>
                     </div>
                   </div>
                   <p className="font-bold text-lg text-black">توقيع الطرف الثاني (المستأجر)</p>
@@ -539,12 +585,84 @@ export default function SignContract({ contract }: SignContractProps) {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm p-6 text-center print-container print-break">
-            <div className="p-3 bg-green-100 rounded-full inline-block mb-4">
-              <Check className="h-8 w-8 text-green-600" />
+          <div className="bg-white rounded-lg shadow-sm p-6 print-container print-break">
+            <div className="text-center screen-only">
+              <div className="p-3 bg-green-100 rounded-full inline-block mb-4">
+                <Check className="h-8 w-8 text-green-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">تم التوقيع بنجاح!</h2>
+              <p className="text-gray-600 mb-6">شكراً لتوقيعك على العقد</p>
+
+              <div className="grid grid-cols-2 gap-6 pt-6 border-t border-black">
+                <div className="text-center">
+                  {companySignature?.signature_url ? (
+                    <div className="border border-black rounded-sm w-48 mx-auto h-16 flex items-center justify-center bg-white">
+                      <img
+                        src={companySignature.signature_url}
+                        alt="توقيع الشركة"
+                        className="max-h-14 max-w-[180px] object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <div className="border-b border-black w-48 mx-auto h-10"></div>
+                  )}
+                  <p className="font-bold text-black mt-2">توقيع الطرف الأول (المؤجر)</p>
+                  <p className="text-black">{companySignature?.company_name || 'شركة البعد العالي للتجارة'}</p>
+                </div>
+
+                <div className="text-center">
+                  <div className="border border-black rounded-sm w-48 mx-auto h-16 flex items-center justify-center bg-white">
+                    {(customerSignature || contract.customer_signature) ? (
+                      <img
+                        src={(customerSignature || contract.customer_signature) as string}
+                        alt="توقيع العميل"
+                        className="max-h-14 max-w-[180px] object-contain"
+                      />
+                    ) : (
+                      <div className="border-b border-black w-40"></div>
+                    )}
+                  </div>
+                  <p className="font-bold text-black mt-2">توقيع الطرف الثاني (المستأجر)</p>
+                  <p className="text-black">{contract.customer_name}</p>
+                </div>
+              </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">تم التوقيع بنجاح!</h2>
-            <p className="text-gray-600 mb-6">شكراً لتوقيعك على العقد</p>
+
+            <div className="print-only">
+              <div className="grid grid-cols-2 gap-6 pt-2 border-t border-black">
+                <div className="text-center">
+                  {companySignature?.signature_url ? (
+                    <div className="border border-black rounded-sm w-48 mx-auto h-12 flex items-center justify-center bg-white">
+                      <img
+                        src={companySignature.signature_url}
+                        alt="توقيع الشركة"
+                        className="max-h-10 max-w-[180px] object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <div className="border-b border-black w-48 mx-auto h-10"></div>
+                  )}
+                  <p className="font-bold text-black mt-2">توقيع الطرف الأول (المؤجر)</p>
+                  <p className="text-black">{companySignature?.company_name || 'شركة البعد العالي للتجارة'}</p>
+                </div>
+
+                <div className="text-center">
+                  <div className="border border-black rounded-sm w-48 mx-auto h-12 flex items-center justify-center">
+                    {(customerSignature || contract.customer_signature) ? (
+                      <img
+                        src={(customerSignature || contract.customer_signature) as string}
+                        alt="توقيع العميل"
+                        className="max-h-10 max-w-[180px] object-contain"
+                      />
+                    ) : (
+                      <div className="border-b border-black w-40"></div>
+                    )}
+                  </div>
+                  <p className="font-bold text-black mt-2">توقيع الطرف الثاني (المستأجر)</p>
+                  <p className="text-black">{contract.customer_name}</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -560,6 +678,7 @@ export default function SignContract({ contract }: SignContractProps) {
         <div className="mt-8 text-center text-sm text-gray-500 print-break">
           <p>شركة البعد العالي للتجارة - جميع الحقوق محفوظة</p>
           <p>هذا التوقيع الإلكتروني محمي ومؤمن</p>
+        </div>
         </div>
       </div>
     </div>

@@ -26,6 +26,10 @@ class LoginController extends Controller
         $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
+        ], [
+            'email.required' => 'يرجى إدخال البريد الإلكتروني',
+            'email.email' => 'يرجى إدخال بريد إلكتروني صحيح',
+            'password.required' => 'يرجى إدخال كلمة المرور',
         ]);
 
         if (
@@ -40,7 +44,7 @@ class LoginController extends Controller
         }
 
         throw ValidationException::withMessages([
-            'email' => __('auth.failed'),
+            'email' => 'بيانات الدخول غير صحيحة',
         ]);
     }
 }

@@ -15,8 +15,8 @@ import { showToast } from '@/hooks/use-toast';
 
 export default function Login() {
   const { flash } = usePage().props as any;
-  const [email, setEmail] = useState('admin@easyloman.com');
-  const [password, setPassword] = useState('123456');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -48,7 +48,7 @@ export default function Login() {
         },
         onError: (errors) => {
           setError(
-            errors.email || errors.password || 'فشل في تسجيل الدخول. تحقق من بياناتك.'
+            errors.email || errors.password || 'تعذر تسجيل الدخول. تحقق من البيانات وحاول مرة أخرى.'
           );
           setIsLoading(false);
         },

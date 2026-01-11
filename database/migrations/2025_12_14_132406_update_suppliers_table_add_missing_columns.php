@@ -77,13 +77,30 @@ return new class extends Migration
         // إضافة unique constraint بعد ملء البيانات
         if (Schema::hasColumn('suppliers', 'supplier_number')) {
             // التحقق من وجود الـ unique key قبل إضافته
-            $indexes = \DB::select("SHOW INDEXES FROM suppliers WHERE Key_name = 'suppliers_supplier_number_unique'");
-            if (empty($indexes)) {
-                \DB::statement('ALTER TABLE suppliers MODIFY supplier_number VARCHAR(255) NOT NULL');
-                \DB::statement('ALTER TABLE suppliers ADD UNIQUE KEY suppliers_supplier_number_unique (supplier_number)');
+            $connection = Schema::getConnection();
+            $driver = $connection->getDriverName();
+
+            $indexExists = false;
+            if ($driver === 'mysql') {
+                $indexes = \DB::select("SHOW INDEXES FROM suppliers WHERE Key_name = 'suppliers_supplier_number_unique'");
+                $indexExists = ! empty($indexes);
+            } elseif ($driver === 'sqlite') {
+                $indexes = \DB::select("SELECT name FROM sqlite_master WHERE type='index' AND name='suppliers_supplier_number_unique'");
+                $indexExists = ! empty($indexes);
+            }
+
+            if (! $indexExists) {
+                if ($driver === 'mysql') {
+                    \DB::statement('ALTER TABLE suppliers MODIFY supplier_number VARCHAR(255) NOT NULL');
+                    \DB::statement('ALTER TABLE suppliers ADD UNIQUE KEY suppliers_supplier_number_unique (supplier_number)');
+                } elseif ($driver === 'sqlite') {
+                    \DB::statement('CREATE UNIQUE INDEX suppliers_supplier_number_unique ON suppliers (supplier_number)');
+                }
             } else {
                 // إذا كان موجوداً، فقط تأكد من أنه NOT NULL
-                \DB::statement('ALTER TABLE suppliers MODIFY supplier_number VARCHAR(255) NOT NULL');
+                if ($driver === 'mysql') {
+                    \DB::statement('ALTER TABLE suppliers MODIFY supplier_number VARCHAR(255) NOT NULL');
+                }
             }
         }
     }

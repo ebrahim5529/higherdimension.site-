@@ -9,6 +9,7 @@ interface DashboardLayoutProps {
 }
 
 interface PageProps {
+  [key: string]: any;
   auth?: {
     user?: any;
   };
@@ -55,6 +56,7 @@ export default function DashboardLayout({
       '/dashboard/purchase-management': 'purchase-management',
       '/dashboard/invoices': 'invoices',
       '/dashboard/financial-reports': 'financial-reports',
+      '/dashboard/smtp-settings': 'smtp-settings',
       '/dashboard/employee-management': 'employee-management',
       '/employees': 'employee-management',
       '/employees/salaries': 'salaries',

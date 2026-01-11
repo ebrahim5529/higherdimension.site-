@@ -6,5 +6,15 @@
         "cursor",
         "vscode"
     ],
-    "guidelines": []
+	"guidelines": [
+		"Foundation: Laravel 12, PHP 8.2, declare(strict_types=1) in PHP files.",
+		"Code style: Use Pint; run `vendor/bin/pint` before finalizing changes.",
+		"Architecture: Follow existing Laravel MVC + Inertia structure; reuse components; avoid duplication.",
+		"Frontend: React 19, TypeScript, Tailwind v3; RTL/Arabic support; use RTL utilities.",
+		"Validation & Routing: Use Form Requests for validation; Inertia::render for server routes.",
+		"Boost tooling: Use Boost commands when needed; consult docs via `search-docs`.",
+		"CI/CD: Integrate Pint in CI and ensure `pint` runs on push.",
+		"Security: Validate inputs via Form Requests; Eloquent relations; avoid raw queries.",
+		"Localization: Arabic (RTL) support; translations loaded via Laravel localization."
+	]
 }

@@ -278,13 +278,17 @@ class CustomerController extends Controller
             'totalValue' => $customer->contracts->sum('amount') ?? 0,
         ];
 
+        $allContractPayments = $customer->contracts->flatMap(function ($contract) {
+            return $contract->contractPayments;
+        });
+
         // حساب إحصائيات المدفوعات
         $paymentsSummary = [
-            'total' => $customer->payments->count(),
-            'paid' => $customer->payments->where('status', 'PAID')->count(),
-            'pending' => $customer->payments->where('status', 'PENDING')->count(),
-            'overdue' => $customer->payments->where('status', 'OVERDUE')->count(),
-            'totalAmount' => $customer->payments->sum('amount') ?? 0,
+            'total' => $allContractPayments->count(),
+            'paid' => $allContractPayments->count(),
+            'pending' => 0,
+            'overdue' => 0,
+            'totalAmount' => $allContractPayments->sum('amount') ?? 0,
         ];
 
         // استخراج بيانات الضامن من attachments إذا كانت موجودة

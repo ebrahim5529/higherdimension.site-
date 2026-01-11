@@ -33,6 +33,7 @@ import {
   PenTool,
   Building2,
   Eye,
+  Mail,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -54,6 +55,7 @@ interface SidebarProps {
 }
 
 interface PageProps {
+  [key: string]: any;
   auth?: {
     user?: {
       id: number;
@@ -127,6 +129,7 @@ export function Sidebar({
     'payment-reports': 'view-payment-reports',
     'settings': 'access-settings',
     'electronic-signature': 'manage-electronic-signature',
+    'smtp-settings': 'access-settings',
   };
 
   // دالة للتحقق من الصلاحيات
@@ -444,6 +447,12 @@ export function Sidebar({
             label: 'التوقيع الإلكتروني',
             icon: PenTool,
             href: '/dashboard/electronic-signature',
+          },
+          {
+            id: 'smtp-settings',
+            label: 'إعدادات SMTP',
+            icon: Mail,
+            href: '/dashboard/smtp-settings',
           },
         ],
       },

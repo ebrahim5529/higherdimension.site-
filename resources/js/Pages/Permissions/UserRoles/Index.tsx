@@ -23,8 +23,9 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { showToast } from '@/hooks/use-toast';
-import { Users, Shield, Key, Edit, Plus, ArrowLeft } from 'lucide-react';
+import { Users, Shield, Key, Edit, Plus, Eye, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface Role {
   id: number;
@@ -58,12 +59,104 @@ interface UserRolesIndexProps {
   };
 }
 
+const PERMISSION_LABELS_AR: Record<string, string> = {
+  'access-main-dashboard': 'الوصول للوحة التحكم الرئيسية',
+  'access-dashboard-reports': 'الوصول لتقارير لوحة التحكم',
+  'access-dashboard-interactive': 'الوصول للوحة التحكم التفاعلية',
+  'access-financial-reports': 'الوصول للتقارير المالية',
+  'access-operations-reports': 'الوصول لتقارير التشغيل',
+  'access-customer-reports': 'الوصول لتقارير العملاء',
+  'access-customers': 'الوصول لإدارة العملاء',
+  'manage-customers': 'إدارة العملاء',
+  'view-customer-contracts': 'عرض عقود العملاء',
+  'manage-customer-claims': 'إدارة مطالبات العملاء',
+  'access-suppliers': 'الوصول لإدارة الموردين',
+  'manage-suppliers': 'إدارة الموردين',
+  'view-supplier-invoices': 'عرض فواتير الموردين',
+  'manage-supplier-purchases': 'إدارة مشتريات الموردين',
+  'access-inventory': 'الوصول لإدارة المخزون',
+  'manage-inventory': 'إدارة المخزون',
+  'purchase-equipment': 'شراء المعدات',
+  'manage-purchases': 'إدارة المشتريات',
+  'access-contracts': 'الوصول لإدارة العقود',
+  'manage-contracts': 'إدارة العقود',
+  'view-active-contracts': 'عرض العقود النشطة',
+  'view-expired-contracts': 'عرض العقود المنتهية',
+  'view-cancelled-contracts': 'عرض العقود الملغاة',
+  'access-operations': 'الوصول لإدارة التشغيل',
+  'manage-delivery-orders': 'إدارة أوامر التسليم',
+  'track-shipping': 'تتبع الشحن',
+  'manage-delivery-receipt': 'إدارة سند التسليم',
+  'manage-return-inspection': 'إدارة فحص المرتجعات',
+  'access-financial': 'الوصول لإدارة المالية',
+  'manage-payment-transactions': 'إدارة معاملات الدفع',
+  'manage-invoices': 'إدارة الفواتير',
+  'view-financial-reports': 'عرض التقارير المالية',
+  'access-employees': 'الوصول لإدارة الموظفين',
+  'manage-employees': 'إدارة الموظفين',
+  'manage-salaries': 'إدارة الرواتب',
+  'manage-incentives': 'إدارة الحوافز',
+  'manage-attendance': 'إدارة الحضور',
+  'manage-departments': 'إدارة الأقسام',
+  'manage-leaves': 'إدارة الإجازات',
+  'access-permissions': 'الوصول لإدارة الصلاحيات',
+  'manage-user-roles': 'إدارة أدوار المستخدمين',
+  'manage-permission-groups': 'إدارة مجموعات الصلاحيات',
+  'manage-roles': 'إدارة الأدوار',
+  'access-payments': 'الوصول لإدارة المدفوعات',
+  'view-all-payments': 'عرض جميع المدفوعات',
+  'view-late-payments': 'عرض المدفوعات المتأخرة',
+  'view-payment-reports': 'عرض تقارير المدفوعات',
+  'access-settings': 'الوصول للإعدادات',
+  'manage-electronic-signature': 'إدارة التوقيع الإلكتروني',
+};
+
+function permissionLabelAr(name: string): string {
+  if (PERMISSION_LABELS_AR[name]) return PERMISSION_LABELS_AR[name];
+
+  const parts = (name || '').split('-');
+  const verb = parts.shift() || '';
+  const rest = parts.join('-');
+
+  const verbAr: Record<string, string> = {
+    access: 'الوصول',
+    manage: 'إدارة',
+    view: 'عرض',
+    track: 'تتبع',
+  };
+
+  const subjectAr: Record<string, string> = {
+    'main-dashboard': 'لوحة التحكم الرئيسية',
+    dashboard: 'لوحة التحكم',
+    reports: 'التقارير',
+    customers: 'العملاء',
+    suppliers: 'الموردين',
+    inventory: 'المخزون',
+    contracts: 'العقود',
+    operations: 'التشغيل',
+    financial: 'المالية',
+    employees: 'الموظفين',
+    permissions: 'الصلاحيات',
+    settings: 'الإعدادات',
+    payments: 'المدفوعات',
+  };
+
+  const subject = subjectAr[rest] || rest.replace(/-/g, ' ');
+  const v = verbAr[verb] || verb;
+
+  return `${v} ${subject}`.trim();
+}
+
 export default function UserRolesIndex({ users, allRoles, allPermissions, stats }: UserRolesIndexProps) {
-  const { flash } = usePage().props as any;
+  const { flash, auth } = usePage().props as any;
   const [rolesDialogOpen, setRolesDialogOpen] = useState(false);
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
   const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false);
+  const [viewUserDialogOpen, setViewUserDialogOpen] = useState(false);
+  const [editUserDialogOpen, setEditUserDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const createUserForm = useForm({
     name: '',
@@ -81,15 +174,94 @@ export default function UserRolesIndex({ users, allRoles, allPermissions, stats 
     permissions: [] as number[],
   });
 
+  const editUserForm = useForm({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+  });
+
+  const handleViewUser = async (user: User) => {
+    try {
+      const res = await fetch(`/user-roles/${user.id}`, {
+        headers: {
+          Accept: 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+      });
+
+      if (!res.ok) {
+        setSelectedUser(user);
+      } else {
+        const data = await res.json();
+        setSelectedUser(data);
+      }
+    } catch (e) {
+      setSelectedUser(user);
+    }
+
+    setViewUserDialogOpen(true);
+  };
+
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user);
+    editUserForm.setData({
+      name: user.name || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      password: '',
+    });
+    setEditUserDialogOpen(true);
+  };
+
+  const handleUpdateUser = () => {
+    if (!selectedUser) return;
+    editUserForm.put(`/user-roles/${selectedUser.id}`, {
+      onSuccess: () => {
+        setEditUserDialogOpen(false);
+        setSelectedUser(null);
+        editUserForm.reset();
+      },
+    });
+  };
+
+  const handleAskDeleteUser = (user: User) => {
+    setSelectedUser(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+    setIsDeleting(true);
+    return new Promise<void>((resolve, reject) => {
+      router.delete(`/user-roles/${selectedUser.id}`, {
+        onFinish: () => {
+          setIsDeleting(false);
+          resolve();
+        },
+        onError: () => {
+          setIsDeleting(false);
+          reject();
+        },
+      });
+    });
+  };
+
   useEffect(() => {
     if (flash?.success) {
       showToast.success('نجح', flash.success);
       setRolesDialogOpen(false);
       setPermissionsDialogOpen(false);
       setCreateUserDialogOpen(false);
+      setViewUserDialogOpen(false);
+      setEditUserDialogOpen(false);
+      setDeleteDialogOpen(false);
       rolesForm.reset();
       permissionsForm.reset();
       createUserForm.reset();
+      editUserForm.reset();
+      setSelectedUser(null);
     }
     if (flash?.error) {
       showToast.error('خطأ', flash.error);
@@ -383,7 +555,7 @@ export default function UserRolesIndex({ users, allRoles, allPermissions, stats 
                                 key={permission.id}
                                 className="px-2 py-1 text-xs bg-green-100 dark:bg-green-900 rounded"
                               >
-                                {permission.name}
+                                {permissionLabelAr(permission.name)}
                               </span>
                             ))
                           ) : (
@@ -414,6 +586,34 @@ export default function UserRolesIndex({ users, allRoles, allPermissions, stats 
                             <Key className="h-4 w-4" />
                             صلاحيات
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewUser(user)}
+                            title="عرض"
+                            aria-label="عرض"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditUser(user)}
+                            title="تعديل"
+                            aria-label="تعديل"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleAskDeleteUser(user)}
+                            disabled={auth?.user?.id === user.id}
+                            title="حذف"
+                            aria-label="حذف"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -423,6 +623,134 @@ export default function UserRolesIndex({ users, allRoles, allPermissions, stats 
             </Table>
           </CardContent>
         </Card>
+
+        <Dialog open={viewUserDialogOpen} onOpenChange={setViewUserDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>عرض المستخدم</DialogTitle>
+              <DialogDescription>تفاصيل المستخدم والصلاحيات</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="text-sm">
+                <span className="font-medium">الاسم:</span> {selectedUser?.name}
+              </div>
+              <div className="text-sm">
+                <span className="font-medium">البريد:</span> {selectedUser?.email}
+              </div>
+              <div className="text-sm">
+                <span className="font-medium">الهاتف:</span> {selectedUser?.phone || '-'}
+              </div>
+              <div>
+                <div className="text-sm font-medium mb-2">الأدوار</div>
+                <div className="flex flex-wrap gap-1">
+                  {selectedUser?.roles?.length ? (
+                    selectedUser.roles.map((r) => (
+                      <span key={r.id} className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 rounded">
+                        {r.name}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-muted-foreground text-sm">لا توجد أدوار</span>
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="text-sm font-medium mb-2">الصلاحيات</div>
+                <div className="flex flex-wrap gap-1 max-h-40 overflow-y-auto border rounded p-2">
+                  {selectedUser?.permissions?.length ? (
+                    selectedUser.permissions.map((p) => (
+                      <span key={p.id} className="px-2 py-1 text-xs bg-green-100 dark:bg-green-900 rounded">
+                        {permissionLabelAr(p.name)}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-muted-foreground text-sm">لا توجد صلاحيات</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setViewUserDialogOpen(false)}>إغلاق</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={editUserDialogOpen} onOpenChange={setEditUserDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>تعديل المستخدم</DialogTitle>
+              <DialogDescription>تعديل بيانات المستخدم الأساسية</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">الاسم</label>
+                <Input
+                  value={editUserForm.data.name}
+                  onChange={(e) => editUserForm.setData('name', e.target.value)}
+                  placeholder="اسم المستخدم"
+                />
+                {editUserForm.errors.name && (
+                  <p className="text-sm text-red-500 mt-1">{editUserForm.errors.name}</p>
+                )}
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">البريد الإلكتروني</label>
+                <Input
+                  type="email"
+                  value={editUserForm.data.email}
+                  onChange={(e) => editUserForm.setData('email', e.target.value)}
+                  placeholder="example@email.com"
+                />
+                {editUserForm.errors.email && (
+                  <p className="text-sm text-red-500 mt-1">{editUserForm.errors.email}</p>
+                )}
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">رقم الهاتف</label>
+                <Input
+                  value={editUserForm.data.phone}
+                  onChange={(e) => editUserForm.setData('phone', e.target.value)}
+                  placeholder="رقم الهاتف (اختياري)"
+                />
+                {editUserForm.errors.phone && (
+                  <p className="text-sm text-red-500 mt-1">{editUserForm.errors.phone}</p>
+                )}
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">كلمة المرور (اختياري)</label>
+                <Input
+                  type="password"
+                  value={editUserForm.data.password}
+                  onChange={(e) => editUserForm.setData('password', e.target.value)}
+                  placeholder="اتركه فارغاً إذا لا تريد التغيير"
+                />
+                {editUserForm.errors.password && (
+                  <p className="text-sm text-red-500 mt-1">{editUserForm.errors.password}</p>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditUserDialogOpen(false)}>
+                إلغاء
+              </Button>
+              <Button onClick={handleUpdateUser} disabled={editUserForm.processing}>
+                {editUserForm.processing ? 'جاري الحفظ...' : 'حفظ'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <ConfirmDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onConfirm={handleDeleteUser}
+          title="حذف المستخدم"
+          description={`هل أنت متأكد من حذف المستخدم: ${selectedUser?.name || ''} ؟`}
+          confirmText="حذف"
+          cancelText="إلغاء"
+          variant="danger"
+          isLoading={isDeleting}
+        />
 
         {/* Edit Roles Dialog */}
         <Dialog open={rolesDialogOpen} onOpenChange={setRolesDialogOpen}>

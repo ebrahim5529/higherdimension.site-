@@ -8,6 +8,7 @@ use App\Models\Contract;
 use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class ContractController extends Controller
@@ -44,6 +45,7 @@ class ContractController extends Controller
                     'title' => $contract->title,
                     'description' => $contract->description,
                     'customerName' => $contract->customer->name ?? 'غير معروف',
+                    'customerPhone' => $contract->customer->phone ?? '',
                     'customerId' => $contract->customer_id,
                     'type' => $contractType,
                     'amount' => $contract->amount,
@@ -275,6 +277,9 @@ class ContractController extends Controller
             'payments.*.payment_method' => 'required|in:cash,check,credit_card,bank_transfer',
             'payments.*.payment_date' => 'required|date',
             'payments.*.amount' => 'required|numeric|min:0',
+        ], [
+            // Arabic validation messages
+            'required' => 'هذا الحقل الزامي',
         ]);
 
         // حساب التواريخ من rental_details
@@ -613,6 +618,7 @@ class ContractController extends Controller
             'payments.*.bank_name' => 'nullable|string',
             'payments.*.check_date' => 'nullable|date',
             'payments.*.check_image' => 'nullable|file|image|max:5120',
+            'status' => 'nullable|string|in:ACTIVE,OPEN,CLOSED,RENTAL_CLOSED,CLOSED_NOT_RECEIVED,EXPIRED,CANCELLED,COMPLETED',
         ]);
 
         // حساب المبلغ الإجمالي
@@ -633,7 +639,7 @@ class ContractController extends Controller
             'total_discount' => $discount,
             'contract_notes' => $validated['contract_notes'] ?? null,
             'amount' => $totalAmount,
-            'status' => $contract->status, // الحفاظ على الحالة الحالية
+            'status' => $request->status ?? $contract->status,
         ]);
 
         // حذف المعدات القديمة وإضافة الجديدة
@@ -836,8 +842,22 @@ class ContractController extends Controller
             'signed_at' => $contract->signed_at?->format('Y-m-d H:i:s'),
         ];
 
+        $companySignature = CompanySignature::where('is_active', true)->latest('id')->first();
+
+        $companySignatureData = null;
+        if ($companySignature) {
+            $companySignatureData = [
+                'id' => $companySignature->id,
+                'company_name' => $companySignature->company_name,
+                'signer_name' => $companySignature->signer_name,
+                'signer_title' => $companySignature->signer_title,
+                'signature_url' => $companySignature->signature_path ? asset(Storage::url($companySignature->signature_path)) : null,
+            ];
+        }
+
         return Inertia::render('Contracts/Sign', [
             'contract' => $contractData,
+            'companySignature' => $companySignatureData,
         ]);
     }
 
@@ -938,6 +958,10 @@ class ContractController extends Controller
     {
         return match ($status) {
             'ACTIVE' => 'نشط',
+            'OPEN' => 'مفتوحة',
+            'CLOSED' => 'مغلقة',
+            'RENTAL_CLOSED' => 'إيجار مغلقة',
+            'CLOSED_NOT_RECEIVED' => 'مغلقة - البضاعة غير مستلمة',
             'EXPIRED' => 'منتهي',
             'CANCELLED' => 'ملغي',
             'COMPLETED' => 'مكتمل',

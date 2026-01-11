@@ -38,7 +38,7 @@ import {
   Plus,
   Image as ImageIcon,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { showToast } from '@/hooks/use-toast';
 
 interface PhoneNumber {
@@ -126,6 +126,7 @@ interface CustomerShowProps {
 
 export default function CustomerShow({ customer }: CustomerShowProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'contracts' | 'payments' | 'notes'>('overview');
+  const tabBeforePrintRef = useRef<'overview' | 'contracts' | 'payments' | 'notes' | null>(null);
 
   const formatDate = (date: string | Date) => {
     return new Date(date).toLocaleDateString('ar-SA', {
@@ -182,16 +183,51 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
   };
 
   const paymentsSummary = customer.paymentsSummary || {
-    total: customer.payments?.length || 0,
-    paid: customer.payments?.filter((p: any) => p.status === 'PAID').length || 0,
-    pending: customer.payments?.filter((p: any) => p.status === 'PENDING').length || 0,
-    overdue: customer.payments?.filter((p: any) => p.status === 'OVERDUE').length || 0,
-    totalAmount: customer.payments?.reduce((sum: number, p: any) => sum + (p.amount || 0), 0) || 0,
+    total: customer.contractPayments?.length || 0,
+    paid: customer.contractPayments?.length || 0,
+    pending: 0,
+    overdue: 0,
+    totalAmount: customer.contractPayments?.reduce((sum: number, p: any) => sum + (p.amount || 0), 0) || 0,
   };
+
+  const printablePayments = (customer.contractPayments || [])
+    .slice()
+    .sort((a: any, b: any) => String(b.paymentDate || '').localeCompare(String(a.paymentDate || '')));
+
+  const totalPaidFromContractPayments = (customer.contractPayments || []).reduce(
+    (sum: number, p: any) => sum + Number(p.amount || 0),
+    0
+  );
+  const totalContractsValue = Number(contractsSummary.totalValue || 0);
+  const remainingAmountForCustomer = Math.max(0, totalContractsValue - totalPaidFromContractPayments);
 
   const handlePrint = () => {
     window.print();
   };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const onBeforePrint = () => {
+      tabBeforePrintRef.current = activeTab;
+      setActiveTab('overview');
+    };
+
+    const onAfterPrint = () => {
+      if (tabBeforePrintRef.current) {
+        setActiveTab(tabBeforePrintRef.current);
+      }
+      tabBeforePrintRef.current = null;
+    };
+
+    window.addEventListener('beforeprint', onBeforePrint);
+    window.addEventListener('afterprint', onAfterPrint);
+
+    return () => {
+      window.removeEventListener('beforeprint', onBeforePrint);
+      window.removeEventListener('afterprint', onAfterPrint);
+    };
+  }, [activeTab]);
 
   const handleExport = () => {
     alert('سيتم تصدير ملف العميل');
@@ -200,45 +236,266 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
   return (
     <DashboardLayout>
       <Head title={`${customer.name} - تفاصيل العميل`} />
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 8mm;
+          }
+
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            font-size: 11px;
+          }
+
+          header,
+          aside,
+          .fixed.inset-y-0.right-0.z-50,
+          .fixed.inset-0.z-40 {
+            display: none !important;
+          }
+
+          .no-print {
+            display: none !important;
+          }
+
+          .print-only {
+            display: block !important;
+          }
+
+          .customer-screen {
+            display: none !important;
+          }
+
+          .print-report {
+            display: block !important;
+          }
+
+          .print-container {
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
+          .print-container .shadow,
+          .print-container .shadow-sm,
+          .print-container .shadow-md,
+          .print-container .shadow-lg {
+            box-shadow: none !important;
+          }
+
+          .print-break {
+            page-break-inside: avoid;
+          }
+
+          .print-table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+
+          .print-table td,
+          .print-table th {
+            border: 1px solid #000;
+            padding: 4px;
+            vertical-align: top;
+          }
+        }
+
+        @media screen {
+          .print-only {
+            display: none;
+          }
+
+          .print-report {
+            display: none;
+          }
+        }
+      `}</style>
       <div className="space-y-6 mt-2 -mx-1 sm:-mx-2 lg:-mx-3 xl:-mx-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => router.visit('/customers')}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                {customer.customer_type === 'COMPANY' ? (
-                  <Building2 className="h-6 w-6" />
-                ) : (
-                  <User className="h-6 w-6" />
-                )}
-                {customer.name}
-              </h1>
-              <p className="text-muted-foreground">
-                رقم العميل: {customer.customer_number}
-              </p>
+        <div className="print-report print-container">
+          <div className="border border-black rounded-md p-3 mb-3">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="text-lg font-bold text-black">تقرير بيانات العميل</div>
+                <div className="text-sm text-black">{customer.name}</div>
+                <div className="text-xs text-black">رقم العميل: {customer.customer_number}</div>
+              </div>
+              <div className="text-xs text-black">تاريخ الطباعة: {new Date().toLocaleDateString('ar-SA')}</div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handlePrint}>
-              <Printer className="h-4 w-4" />
-              طباعة
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="h-4 w-4" />
-              تصدير
-            </Button>
-            <Button onClick={() => router.visit(`/customers/${customer.id}/edit`)}>
-              <Edit className="h-4 w-4" />
-              تعديل
-            </Button>
-          </div>
+
+          <table className="print-table">
+            <tbody>
+              <tr>
+                <th className="w-1/4">الاسم</th>
+                <td className="w-1/4">{customer.name}</td>
+                <th className="w-1/4">رقم العميل</th>
+                <td className="w-1/4">{customer.customer_number}</td>
+              </tr>
+              <tr>
+                <th>نوع العميل</th>
+                <td>{customer.customer_type === 'COMPANY' ? 'شركة' : 'فرد'}</td>
+                <th>الحالة</th>
+                <td>{customer.status === 'ACTIVE' ? 'نشط' : 'غير نشط'}</td>
+              </tr>
+              <tr>
+                <th>الهاتف</th>
+                <td>{customer.phone || '-'}</td>
+                <th>البريد الإلكتروني</th>
+                <td>{customer.email || '-'}</td>
+              </tr>
+              <tr>
+                <th>الجنسية</th>
+                <td>{customer.nationality || '-'}</td>
+                <th>تاريخ التسجيل</th>
+                <td>{customer.registration_date ? formatDate(customer.registration_date) : '-'}</td>
+              </tr>
+              <tr>
+                <th>العنوان</th>
+                <td colSpan={3}>{customer.address || '-'}</td>
+              </tr>
+              {customer.customer_type === 'INDIVIDUAL' ? (
+                <tr>
+                  <th>رقم الهوية</th>
+                  <td colSpan={3}>{customer.id_number || '-'}</td>
+                </tr>
+              ) : (
+                <tr>
+                  <th>السجل التجاري</th>
+                  <td colSpan={3}>{customer.commercial_record || '-'}</td>
+                </tr>
+              )}
+              {(customer.guarantorData || customer.guarantor_name || customer.guarantor_phone || customer.guarantor_id) && (
+                <>
+                  <tr>
+                    <th className="font-bold" colSpan={4}>معلومات الضامن</th>
+                  </tr>
+                  <tr>
+                    <th>اسم الضامن</th>
+                    <td>{customer.guarantorData?.name || customer.guarantor_name || '-'}</td>
+                    <th>هاتف الضامن</th>
+                    <td>{customer.guarantorData?.phone || customer.guarantor_phone || '-'}</td>
+                  </tr>
+                  <tr>
+                    <th>رقم هوية الضامن</th>
+                    <td colSpan={3}>{customer.guarantorData?.idNumber || customer.guarantor_id || '-'}</td>
+                  </tr>
+                </>
+              )}
+              <tr>
+                <th className="font-bold" colSpan={4}>ملخص العقود</th>
+              </tr>
+              <tr>
+                <th>إجمالي العقود</th>
+                <td>{contractsSummary.total}</td>
+                <th>إجمالي القيمة</th>
+                <td>{formatCurrency(contractsSummary.totalValue)}</td>
+              </tr>
+              <tr>
+                <th>عقود نشطة</th>
+                <td>{contractsSummary.active}</td>
+                <th>عقود مكتملة</th>
+                <td>{contractsSummary.completed}</td>
+              </tr>
+              <tr>
+                <th>عقود ملغاة</th>
+                <td colSpan={3}>{contractsSummary.cancelled}</td>
+              </tr>
+              <tr>
+                <th className="font-bold" colSpan={4}>ملخص المدفوعات</th>
+              </tr>
+              <tr>
+                <th>إجمالي المدفوعات</th>
+                <td>{paymentsSummary.total}</td>
+                <th>إجمالي المبلغ</th>
+                <td>{formatCurrency(paymentsSummary.totalAmount)}</td>
+              </tr>
+              <tr>
+                <th>مدفوعة</th>
+                <td>{paymentsSummary.paid}</td>
+                <th>معلقة</th>
+                <td>{paymentsSummary.pending}</td>
+              </tr>
+              <tr>
+                <th>متأخرة</th>
+                <td colSpan={3}>{paymentsSummary.overdue}</td>
+              </tr>
+
+              <tr>
+                <th className="font-bold" colSpan={4}>تفاصيل مدفوعات العميل</th>
+              </tr>
+              <tr>
+                <th>رقم العقد</th>
+                <th>تاريخ الدفع</th>
+                <th>طريقة الدفع</th>
+                <th>المبلغ</th>
+              </tr>
+              {printablePayments.length > 0 ? (
+                printablePayments.map((p: any) => (
+                  <tr key={`p-${p.id}`}>
+                    <td>{p.contractNumber || '-'}</td>
+                    <td>{p.paymentDate || '-'}</td>
+                    <td>{p.paymentMethod || '-'}</td>
+                    <td>{formatCurrency(Number(p.amount || 0))}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4}>لا توجد مدفوعات</td>
+                </tr>
+              )}
+
+              <tr>
+                <th colSpan={3}>الإجمالي المدفوع</th>
+                <td>{formatCurrency(totalPaidFromContractPayments)}</td>
+              </tr>
+              <tr>
+                <th colSpan={3}>المتبقي</th>
+                <td>{formatCurrency(remainingAmountForCustomer)}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
+        <div className="customer-screen">
+          {/* Header */}
+          <div className="flex items-center justify-between no-print">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" onClick={() => router.visit('/customers')}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold flex items-center gap-2">
+                  {customer.customer_type === 'COMPANY' ? (
+                    <Building2 className="h-6 w-6" />
+                  ) : (
+                    <User className="h-6 w-6" />
+                  )}
+                  {customer.name}
+                </h1>
+                <p className="text-muted-foreground">رقم العميل: {customer.customer_number}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handlePrint}>
+                <Printer className="h-4 w-4" />
+                طباعة
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="h-4 w-4" />
+                تصدير
+              </Button>
+              <Button onClick={() => router.visit(`/customers/${customer.id}/edit`)}>
+                <Edit className="h-4 w-4" />
+                تعديل
+              </Button>
+            </div>
+          </div>
+
         {/* Status and Rating */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 no-print">
           <span
             className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${getStatusColor(
               customer.status
@@ -262,7 +519,7 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
         </div>
 
         {/* Tabs */}
-        <div className="border-b">
+        <div className="border-b no-print">
           <nav className="flex space-x-8">
             {[
               { id: 'overview', label: 'نظرة عامة', icon: Eye },
@@ -903,6 +1160,7 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
             </CardContent>
           </Card>
         )}
+        </div>
       </div>
     </DashboardLayout>
   );

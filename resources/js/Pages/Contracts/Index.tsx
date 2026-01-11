@@ -14,6 +14,7 @@ interface Contract {
   id: number;
   contractNumber: string;
   customerName: string;
+  customerPhone: string;
   type: 'تأجير' | 'بيع';
   amount: number;
   totalAfterDiscount: number;

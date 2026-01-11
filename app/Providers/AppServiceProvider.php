@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\AppSetting;
+use Illuminate\Mail\MailManager;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -35,6 +37,31 @@ class AppServiceProvider extends ServiceProvider
         } else {
             // Use standard build directory
             Vite::useBuildDirectory('build');
+        }
+
+        $host = (string) AppSetting::getValue('mail_host', '');
+        if ($host !== '') {
+            $encryption = AppSetting::getValue('mail_encryption', 'tls');
+            if ($encryption === '') {
+                $encryption = null;
+            }
+
+            config([
+                'mail.default' => 'smtp',
+                'mail.mailers.smtp.transport' => 'smtp',
+                'mail.mailers.smtp.host' => $host,
+                'mail.mailers.smtp.port' => (int) AppSetting::getValue('mail_port', 587),
+                'mail.mailers.smtp.encryption' => $encryption,
+                'mail.mailers.smtp.username' => (string) AppSetting::getValue('mail_username', ''),
+                'mail.mailers.smtp.password' => (string) AppSetting::getValue('mail_password', ''),
+                'mail.from.address' => (string) AppSetting::getValue('mail_from_address', config('mail.from.address')),
+                'mail.from.name' => (string) AppSetting::getValue('mail_from_name', config('mail.from.name')),
+            ]);
+
+            try {
+                $this->app->make(MailManager::class)->forgetMailers();
+            } catch (\Throwable $e) {
+            }
         }
     }
 }
