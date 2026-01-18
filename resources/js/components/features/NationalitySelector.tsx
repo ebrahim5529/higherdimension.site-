@@ -45,6 +45,7 @@ export function NationalitySelector({
   const selectedNationality = value || '';
 
   const handleSelect = (nationality: string) => {
+    console.log('NationalitySelector: handleSelect called with:', nationality);
     onChange(nationality);
     setShowDropdown(false);
     setSearchQuery('');

@@ -467,6 +467,8 @@ class CustomerController extends Controller
 
         // تحويل camelCase إلى snake_case إذا كان موجوداً (نفس أسلوب SupplierController)
         $requestData = $request->all();
+
+        \Log::info('Customer update request data:', $requestData);
         if (isset($requestData['customerType'])) {
             $requestData['customer_type'] = $requestData['customerType'];
         }
@@ -601,6 +603,8 @@ class CustomerController extends Controller
         unset($validated['guarantorData']);
 
         $customer->update($validated);
+
+        \Log::info('Customer updated successfully. New nationality:', $customer->fresh()->nationality);
 
         return redirect()->route('customers.show', $id)
             ->with('success', 'تم تحديث العميل بنجاح');

@@ -226,19 +226,22 @@ export default function EditCustomer({ customer }: EditCustomerProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    console.log('EditCustomer: handleSubmit called with data:', data);
+
     // التأكد من أن name موجود قبل الإرسال
     if (!data.name || data.name.trim() === '') {
       showToast.error('خطأ', 'اسم العميل مطلوب');
       return;
     }
-    
+
     put(`/customers/${customer.id}`, {
       onSuccess: () => {
         showToast.success('تم التحديث بنجاح', 'تم تحديث بيانات العميل بنجاح');
         router.visit(`/customers/${customer.id}`);
       },
       onError: (errors) => {
+        console.log('EditCustomer: onError called with:', errors);
         if (errors.message) {
           showToast.error('خطأ في التحديث', errors.message);
         } else {

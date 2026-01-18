@@ -87,7 +87,7 @@ export const MenuItem = memo(function MenuItem({
       )}
       title={isCollapsed ? label : undefined}
     >
-      <div className="flex items-center space-x-3 rtl:space-x-reverse">
+      <div className="flex items-center space-x-2 rtl:space-x-reverse">
         <Icon
           className={cn(
             'flex-shrink-0 transition-colors duration-200',
