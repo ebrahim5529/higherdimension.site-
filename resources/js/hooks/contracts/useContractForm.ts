@@ -152,6 +152,7 @@ export function useContractForm(customers: Customer[]) {
             quantity: 1,
             dailyRate: 0,
             monthlyRate: 0,
+            discount: 0,
             total: 0,
         };
         setRentalDetails((prev) => [...prev, newRental]);

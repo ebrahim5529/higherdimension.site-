@@ -34,6 +34,7 @@ interface PageProps {
       role?: string;
     };
   };
+  [key: string]: any;
 }
 
 export function Header({ onToggleSidebar, isSidebarOpen }: HeaderProps) {

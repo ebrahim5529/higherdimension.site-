@@ -39,6 +39,7 @@ interface CustomerTableData {
   id: string;
   customerNumber: string;
   name: string;
+  nationality?: string;
   customerType: 'INDIVIDUAL' | 'COMPANY';
   status: 'ACTIVE' | 'INACTIVE';
   registrationDate: Date | string;
@@ -92,16 +93,22 @@ export function CustomersTable({
           const type = row.getValue('customerType') as string;
           return (
             <span
-              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                type === 'COMPANY'
-                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                  : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-              }`}
+              className={`px-2 py-1 rounded-full text-xs font-medium ${type === 'COMPANY'
+                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                }`}
             >
               {type === 'COMPANY' ? 'شركة' : 'فرد'}
             </span>
           );
         },
+      },
+      {
+        accessorKey: 'nationality',
+        header: 'الجنسية',
+        cell: ({ row }) => (
+          <span className="text-sm">{row.getValue('nationality') || '-'}</span>
+        ),
       },
       {
         accessorKey: 'status',
@@ -110,11 +117,10 @@ export function CustomersTable({
           const status = row.getValue('status') as string;
           return (
             <span
-              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                status === 'ACTIVE'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-              }`}
+              className={`px-2 py-1 rounded-full text-xs font-medium ${status === 'ACTIVE'
+                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                }`}
             >
               {status === 'ACTIVE' ? 'نشط' : 'غير نشط'}
             </span>

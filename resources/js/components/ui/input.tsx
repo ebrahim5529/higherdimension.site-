@@ -5,6 +5,20 @@ import { cn } from "@/lib/utils";
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, ...props }, ref) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      let value = e.target.value;
+
+      // Convert Arabic numerals to English if present
+      if (value && /[\u0660-\u0669]/.test(value)) {
+        value = value.replace(/[٠-٩]/g, d => '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)]);
+        e.target.value = value;
+      }
+
+      if (props.onChange) {
+        props.onChange(e);
+      }
+    };
+
     return (
       <input
         type={type}
@@ -14,6 +28,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
         )}
         ref={ref}
         {...props}
+        onChange={handleChange}
       />
     );
   },

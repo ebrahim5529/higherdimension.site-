@@ -41,6 +41,7 @@ interface RentalDetail {
   quantity: number;
   dailyRate: number;
   monthlyRate: number;
+  discount: number;
   total: number;
 }
 
@@ -87,6 +88,7 @@ interface Contract {
     quantity: number;
     daily_rate: number;
     monthly_rate: number;
+    discount?: number;
     total: number;
   }>;
   payments: Array<{
@@ -265,6 +267,7 @@ export default function EditContract({ contract, customers }: EditContractProps)
         quantity: 1,
         dailyRate: 0,
         monthlyRate: 0,
+        discount: 0,
         total: 0,
       },
     ]);
@@ -647,19 +650,19 @@ export default function EditContract({ contract, customers }: EditContractProps)
                 </select>
               </div>
 
-                {/* عنوان الموقع */}
-                <div className="md:col-span-2">
-                  <AddressSelector
-                    value={deliveryAddressDetails}
-                    onChange={(addressData) => {
-                      setDeliveryAddressDetails(addressData);
-                      setDeliveryAddress(addressData.fullAddress || '');
-                    }}
-                    label="عنوان الموقع (موقع تنزيل المعدات)"
-                    required={true}
-                    disabled={processing}
-                  />
-                </div>
+              {/* عنوان الموقع */}
+              <div className="md:col-span-2">
+                <AddressSelector
+                  value={deliveryAddressDetails}
+                  onChange={(addressData) => {
+                    setDeliveryAddressDetails(addressData);
+                    setDeliveryAddress(addressData.fullAddress || '');
+                  }}
+                  label="عنوان الموقع (موقع تنزيل المعدات)"
+                  required={true}
+                  disabled={processing}
+                />
+              </div>
 
               {/* رابط الموقع قوقل ماب */}
               <div>

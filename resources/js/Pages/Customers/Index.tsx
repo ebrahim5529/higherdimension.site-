@@ -65,6 +65,7 @@ export default function CustomersIndex({ customers, stats }: CustomersIndexProps
     customerNumber: customer.customerNumber,
     name: customer.name,
     customerType: customer.customerType,
+    nationality: customer.nationality,
     status: customer.status,
     registrationDate: new Date(customer.registrationDate),
     email: customer.email,
