@@ -9,12 +9,28 @@ export function useContractForm(customers: Customer[]) {
     const [customerSearchQuery, setCustomerSearchQuery] = useState('');
     const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+
+    // دالة اختيار العميل مع تحديث الجنسية تلقائياً
+    const handleSelectCustomer = (customer: Customer | null) => {
+        setSelectedCustomer(customer);
+        // تحديث الجنسية تلقائياً من بيانات العميل
+        if (customer?.nationality) {
+            setNationality(customer.nationality);
+        }
+    };
     const [contractNumber, setContractNumber] = useState(() => `CON-${Date.now()}`);
     const [transportCost, setTransportCost] = useState(0);
     const [totalDiscount, setTotalDiscount] = useState(0);
     const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
     const [previewModalOpen, setPreviewModalOpen] = useState(false);
     const [deliveryAddress, setDeliveryAddress] = useState('');
+    const [deliveryAddressDetails, setDeliveryAddressDetails] = useState<{
+        governorate?: string;
+        wilayat?: string;
+        region?: string;
+        details?: string;
+        fullAddress?: string;
+    }>({});
     const [locationMapLink, setLocationMapLink] = useState('');
     const [nationality, setNationality] = useState('');
     const [createdContract, setCreatedContract] = useState<any>(null);
@@ -49,6 +65,7 @@ export function useContractForm(customers: Customer[]) {
             quantity: 1,
             dailyRate: 0,
             monthlyRate: 0,
+            discount: rental.discount !== undefined ? rental.discount : 0,
             total: 0,
         },
     ]);
@@ -63,11 +80,13 @@ export function useContractForm(customers: Customer[]) {
     ]);
 
     const calculateRentalTotal = (rental: RentalDetail): number => {
+        let baseTotal: number;
         if (rental.durationType === 'daily') {
-            return rental.quantity * rental.dailyRate * rental.duration;
+            baseTotal = rental.quantity * rental.dailyRate * rental.duration;
         } else {
-            return rental.quantity * rental.monthlyRate * rental.duration;
+            baseTotal = rental.quantity * rental.monthlyRate * rental.duration;
         }
+        return baseTotal - rental.discount;
     };
 
     const updateRentalDetail = (id: string, field: keyof RentalDetail, value: any) => {
@@ -82,7 +101,7 @@ export function useContractForm(customers: Customer[]) {
                             field === 'durationType' ? value : updated.durationType
                         );
                     }
-                    if (field === 'quantity' || field === 'dailyRate' || field === 'monthlyRate' || field === 'duration' || field === 'durationType') {
+                    if (field === 'quantity' || field === 'dailyRate' || field === 'monthlyRate' || field === 'duration' || field === 'durationType' || field === 'discount') {
                         updated.total = calculateRentalTotal(updated);
                     }
                     return updated;
@@ -104,10 +123,12 @@ export function useContractForm(customers: Customer[]) {
                         itemDescription: scaffold.description_ar || scaffold.description_en || '',
                         dailyRate: scaffold.daily_rental_price || 0,
                         monthlyRate: scaffold.monthly_rental_price || 0,
+                        discount: rental.discount || 0,
                         total: calculateRentalTotal({
                             ...rental,
                             dailyRate: scaffold.daily_rental_price || 0,
                             monthlyRate: scaffold.monthly_rental_price || 0,
+                            discount: rental.discount || 0,
                         }),
                     };
                 }
@@ -208,6 +229,7 @@ export function useContractForm(customers: Customer[]) {
         contract_date: contractDate,
         customer_id: selectedCustomer?.id || null,
         delivery_address: deliveryAddress,
+        delivery_address_details: deliveryAddressDetails,
         location_map_link: locationMapLink,
         nationality: nationality,
         transport_and_installation_cost: transportCost,
@@ -217,6 +239,11 @@ export function useContractForm(customers: Customer[]) {
         payments: payments,
     });
 
+    // تحديث البيانات عند تغيير الجنسية
+    useEffect(() => {
+        setData('nationality', nationality);
+    }, [nationality, setData]);
+
     useEffect(() => {
         setData((prev: any) => ({
             ...prev,
@@ -224,6 +251,7 @@ export function useContractForm(customers: Customer[]) {
             contract_date: contractDate,
             customer_id: selectedCustomer?.id || null,
             delivery_address: deliveryAddress,
+            delivery_address_details: deliveryAddressDetails,
             location_map_link: locationMapLink,
             nationality: nationality,
             transport_and_installation_cost: transportCost,
@@ -264,11 +292,7 @@ export function useContractForm(customers: Customer[]) {
         payments,
     ]);
 
-    useEffect(() => {
-        if (selectedCustomer && (selectedCustomer as any).nationality) {
-            setNationality((selectedCustomer as any).nationality);
-        }
-    }, [selectedCustomer]);
+    // إزالة useEffect المكرر - الجنسية تُحدث في handleSelectCustomer
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -393,6 +417,7 @@ export function useContractForm(customers: Customer[]) {
             whatsappModalOpen,
             previewModalOpen,
             deliveryAddress,
+            deliveryAddressDetails,
             locationMapLink,
             nationality,
             createdContract,
@@ -407,13 +432,14 @@ export function useContractForm(customers: Customer[]) {
         actions: {
             setCustomerSearchQuery,
             setShowCustomerDropdown,
-            setSelectedCustomer,
+            setSelectedCustomer: handleSelectCustomer,
             setContractNumber,
             setTransportCost,
             setTotalDiscount,
             setWhatsappModalOpen,
             setPreviewModalOpen,
             setDeliveryAddress,
+            setDeliveryAddressDetails,
             setLocationMapLink,
             setNationality,
             setContractDate: (val: string) => setData('contract_date' as any, val),

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { showToast } from '@/hooks/use-toast';
 import { FileText, Save, ArrowLeft, Plus, Trash2, MessageSquare, Package } from 'lucide-react';
 import { ScaffoldSelector } from '@/components/features/ScaffoldSelector';
+import { AddressSelector } from '@/components/features/AddressSelector';
 import { convertArabicToEnglishNumbers } from '@/lib/utils';
 
 interface Customer {
@@ -61,6 +62,13 @@ interface Contract {
   contract_date: string;
   customer_id: number;
   delivery_address: string;
+  delivery_address_details?: {
+    governorate?: string;
+    wilayat?: string;
+    region?: string;
+    details?: string;
+    fullAddress?: string;
+  };
   location_map_link?: string | null;
   transport_and_installation_cost: number;
   total_discount: number;
@@ -114,6 +122,7 @@ export default function EditContract({ contract, customers }: EditContractProps)
       quantity: Number(item.quantity) || 1,
       dailyRate: Number(item.daily_rate) || 0,
       monthlyRate: Number(item.monthly_rate) || 0,
+      discount: Number(item.discount) || 0,
       total: Number(item.total) || 0,
     }))
   );
@@ -147,6 +156,13 @@ export default function EditContract({ contract, customers }: EditContractProps)
   const [transportCost, setTransportCost] = useState(Number(contract.transport_and_installation_cost) || 0);
   const [totalDiscount, setTotalDiscount] = useState(Number(contract.total_discount) || 0);
   const [deliveryAddress, setDeliveryAddress] = useState(contract.delivery_address || '');
+  const [deliveryAddressDetails, setDeliveryAddressDetails] = useState<{
+    governorate?: string;
+    wilayat?: string;
+    region?: string;
+    details?: string;
+    fullAddress?: string;
+  }>(contract.delivery_address_details || {});
   const [locationMapLink, setLocationMapLink] = useState(contract.location_map_link || '');
 
   useEffect(() => {
@@ -334,6 +350,7 @@ export default function EditContract({ contract, customers }: EditContractProps)
     contract_date: contract.contract_date,
     customer_id: selectedCustomer?.id || '',
     delivery_address: deliveryAddress,
+    delivery_address_details: deliveryAddressDetails,
     location_map_link: locationMapLink,
     transport_and_installation_cost: transportCost,
     total_discount: totalDiscount,
@@ -349,6 +366,7 @@ export default function EditContract({ contract, customers }: EditContractProps)
       quantity: rental.quantity,
       daily_rate: rental.dailyRate,
       monthly_rate: rental.monthlyRate,
+      discount: rental.discount || 0,
       total: rental.total,
     })),
     payments: payments.map((payment) => ({
@@ -368,6 +386,7 @@ export default function EditContract({ contract, customers }: EditContractProps)
 
     setData('customer_id', selectedCustomer?.id || '');
     setData('delivery_address', deliveryAddress);
+    setData('delivery_address_details', deliveryAddressDetails);
     setData('location_map_link', locationMapLink);
     setData('transport_and_installation_cost', transportCost);
     setData('total_discount', totalDiscount);
@@ -382,6 +401,7 @@ export default function EditContract({ contract, customers }: EditContractProps)
       quantity: rental.quantity,
       daily_rate: rental.dailyRate,
       monthly_rate: rental.monthlyRate,
+      discount: rental.discount || 0,
       total: rental.total,
     })));
     setData('payments', payments.map((payment) => ({
@@ -621,35 +641,28 @@ export default function EditContract({ contract, customers }: EditContractProps)
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#58d2c8] focus:border-transparent bg-white"
                   required
                 >
-                  <option value="ACTIVE">نشط</option>
-                  <option value="OPEN">مفتوحة</option>
-                  <option value="CLOSED">مغلقة</option>
-                  <option value="RENTAL_CLOSED">إيجار مغلقة</option>
-                  <option value="CLOSED_NOT_RECEIVED">مغلقة - البضاعة غير مستلمة</option>
-                  <option value="EXPIRED">منتهي</option>
-                  <option value="CANCELLED">ملغي</option>
-                  <option value="COMPLETED">مكتمل</option>
+                  <option value="ACTIVE">عقود مفتوحة</option>
+                  <option value="CLOSED">عقود مغلقة</option>
+                  <option value="CLOSED_NOT_RECEIVED">عقود مغلقة ولم يتم استلام الأصناف</option>
                 </select>
               </div>
 
-              {/* عنوان الموقع */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  عنوان الموقع (موقع تنزيل المعدات) *
-                </label>
-                <Input
-                  type="text"
-                  value={deliveryAddress}
-                  onChange={(e) => setDeliveryAddress(e.target.value)}
-                  placeholder="أدخل عنوان موقع تنزيل المعدات"
-                  dir="ltr"
-                  lang="en"
-                  required
-                />
-              </div>
+                {/* عنوان الموقع */}
+                <div className="md:col-span-2">
+                  <AddressSelector
+                    value={deliveryAddressDetails}
+                    onChange={(addressData) => {
+                      setDeliveryAddressDetails(addressData);
+                      setDeliveryAddress(addressData.fullAddress || '');
+                    }}
+                    label="عنوان الموقع (موقع تنزيل المعدات)"
+                    required={true}
+                    disabled={processing}
+                  />
+                </div>
 
               {/* رابط الموقع قوقل ماب */}
-              <div className="md:col-span-2">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   رابط الموقع قوقل ماب
                 </label>

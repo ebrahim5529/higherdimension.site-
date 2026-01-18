@@ -57,7 +57,7 @@ export function RentalsSection({
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               {/* المعدة */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -214,13 +214,47 @@ export function RentalsSection({
                 )}
               </div>
 
+              {/* الخصم */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  الخصم (ر.ع)
+                </label>
+                <Input
+                  type="text"
+                  value={rental.discount !== undefined && rental.discount !== null ? rental.discount.toString() : ''}
+                  onChange={(e) => {
+                    const convertedValue = convertArabicToEnglishNumbers(e.target.value);
+                    e.target.value = convertedValue;
+
+                    // السماح بالقيم الفارغة والصفر والكسور
+                    if (convertedValue === '') {
+                      onUpdateRentalDetail(rental.id, 'discount', 0);
+                      return;
+                    }
+
+                    const value = parseFloat(convertedValue);
+                    if (!isNaN(value) && isFinite(value) && value >= 0) {
+                      onUpdateRentalDetail(rental.id, 'discount', value);
+                    }
+                  }}
+                  dir="ltr"
+                  lang="en"
+                  className={`bg-white ${errors[`rental_details.${index}.discount`] ? 'border-red-500' : ''}`}
+                  placeholder="0.00"
+                />
+                {errors[`rental_details.${index}.discount`] && (
+                  <div className="text-red-500 text-xs mt-1">{errors[`rental_details.${index}.discount`]}</div>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  خصم على هذه المعدة فقط
+                </p>
+              </div>
+
               {/* تاريخ النهاية - محسوب تلقائياً */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   تاريخ النهاية
-                  <span className="text-xs text-gray-500 font-normal block mt-1">
-                    محسوب تلقائياً من تاريخ بداية الإيجار *
-                  </span>
+                 
                 </label>
                 <Input
                   type="date"

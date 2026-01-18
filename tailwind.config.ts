@@ -34,10 +34,11 @@ export default {
         'wide': '1536px',
       },
       fontFamily: {
-        arabic: ['Almarai', 'Tajawal', 'Arial', 'sans-serif'],
+        arabic: ['Noto Sans Arabic', 'Almarai', 'Tajawal', 'Arial', 'sans-serif'],
         almarai: ['Almarai', 'Tajawal', 'Arial', 'sans-serif'],
         cairo: ['Cairo', 'sans-serif'],
         english: ['Inter', 'sans-serif'],
+        noto: ['Noto Sans Arabic', 'Arial', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",

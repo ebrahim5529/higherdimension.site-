@@ -48,6 +48,7 @@ export default function CreateContract({ customers }: CreateContractProps) {
             filteredCustomers={state.filteredCustomers}
             nationality={state.nationality}
             deliveryAddress={state.deliveryAddress}
+            deliveryAddressDetails={state.deliveryAddressDetails}
             locationMapLink={state.locationMapLink}
             processing={state.processing}
             errors={state.errors}
@@ -58,6 +59,7 @@ export default function CreateContract({ customers }: CreateContractProps) {
               setContractNumber: actions.setContractNumber,
               setNationality: actions.setNationality,
               setDeliveryAddress: actions.setDeliveryAddress,
+              setDeliveryAddressDetails: actions.setDeliveryAddressDetails,
               setLocationMapLink: actions.setLocationMapLink,
               setContractDate: actions.setContractDate,
               clearErrors: (field?: string) => actions.clearErrors(field as any),

@@ -29,6 +29,7 @@ export interface RentalDetail {
   quantity: number;
   dailyRate: number;
   monthlyRate: number;
+  discount: number;
   total: number;
 }
 

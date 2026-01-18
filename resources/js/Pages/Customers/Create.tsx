@@ -6,6 +6,8 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { showToast } from '@/hooks/use-toast';
 import {
   User,
@@ -28,6 +30,7 @@ import {
 } from 'lucide-react';
 import { availableNationalities, customerTypes, customerStatuses } from '@/data/customersData';
 import { NationalitySelector } from '@/components/features/NationalitySelector';
+import { AddressSelector } from '@/components/features/AddressSelector';
 import { convertArabicToEnglishNumbers } from '@/lib/utils';
 
 interface PhoneNumber {
@@ -46,6 +49,7 @@ export default function CreateCustomer() {
     guarantorIdCardCopy?: string;
     commercialRecordCopy?: string;
   }>({});
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // عرض رسائل Flash من Laravel
   useEffect(() => {
@@ -63,6 +67,13 @@ export default function CreateCustomer() {
     phone: '',
     phones: [] as PhoneNumber[],
     address: '',
+    addressDetails: {
+      governorate: '',
+      wilayat: '',
+      region: '',
+      details: '',
+      fullAddress: '',
+    },
     nationality: '',
     customerType: 'INDIVIDUAL' as 'INDIVIDUAL' | 'COMPANY',
     idNumber: '',
@@ -83,7 +94,7 @@ export default function CreateCustomer() {
     },
     notes: '',
     warnings: '',
-    rating: '',
+    rating: '3', // القيمة الافتراضية: جيد
     idCardCopy: null as File | null,
     guarantorIdCardCopy: null as File | null,
     commercialRecordCopy: null as File | null,
@@ -169,15 +180,25 @@ export default function CreateCustomer() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // التحقق من صحة النماذج من جانب العميل
+    if (!validateForm()) {
+      showToast.error('خطأ في التحقق', 'يرجى تصحيح الأخطاء الموجودة في النموذج');
+      return;
+    }
+
     post('/customers', {
       forceFormData: true,
       onSuccess: () => {
         showToast.success('تم الإنشاء بنجاح', 'تم إنشاء العميل بنجاح');
         router.visit('/customers');
       },
-      onError: (errors) => {
-        if (errors.message) {
-          showToast.error('خطأ في الإنشاء', errors.message);
+      onError: (serverErrors) => {
+        // دمج أخطاء الخادم مع أخطاء العميل
+        setValidationErrors(prev => ({ ...prev, ...serverErrors }));
+
+        if (serverErrors.message) {
+          showToast.error('خطأ في الإنشاء', serverErrors.message);
         } else {
           showToast.error('خطأ في الإنشاء', 'يرجى التحقق من البيانات المدخلة');
         }
@@ -203,6 +224,40 @@ export default function CreateCustomer() {
       });
     };
   }, [previewUrls]);
+
+  // دالة التحقق من صحة النماذج
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    // التحقق من الاسم
+    if (!data.name.trim()) {
+      errors.name = 'اسم العميل مطلوب';
+    }
+
+    // التحقق من رقم الهوية
+    if (!data.idNumber.trim()) {
+      errors.idNumber = 'رقم الهوية مطلوب';
+    }
+
+    // التحقق من رقم الهاتف الرئيسي
+    if (!data.phone.trim()) {
+      errors.phone = 'رقم الهاتف الرئيسي مطلوب';
+    }
+
+    // التحقق من وجود رقم هاتف إضافي واحد على الأقل
+    const hasValidAdditionalPhone = phones.some(phone => phone.number.trim() !== '');
+    if (!hasValidAdditionalPhone) {
+      errors.additionalPhone = 'يجب إضافة رقم هاتف إضافي واحد على الأقل';
+    }
+
+    // التحقق من العنوان (يجب اختيار المحافظة على الأقل)
+    if (!data.addressDetails.governorate) {
+      errors.address = 'يجب اختيار المحافظة في العنوان';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   return (
     <DashboardLayout>
@@ -242,11 +297,23 @@ export default function CreateCustomer() {
                   <Input
                     type="text"
                     value={data.name}
-                    onChange={(e) => setData('name', e.target.value)}
+                    onChange={(e) => {
+                      setData('name', e.target.value);
+                      // إزالة خطأ التحقق عند الكتابة
+                      if (validationErrors.name) {
+                        setValidationErrors(prev => {
+                          const newErrors = { ...prev };
+                          delete newErrors.name;
+                          return newErrors;
+                        });
+                      }
+                    }}
                     placeholder="أدخل اسم العميل"
-                    className={errors.name ? 'border-red-500' : ''}
+                    className={(errors.name || validationErrors.name) ? 'border-red-500' : ''}
                   />
-                  {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                  {(errors.name || validationErrors.name) && (
+                    <p className="text-red-500 text-xs mt-1">{errors.name || validationErrors.name}</p>
+                  )}
                 </div>
 
                 {/* نوع العميل */}
@@ -282,7 +349,9 @@ export default function CreateCustomer() {
 
                 {/* رقم الهوية */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">رقم الهوية</label>
+                  <label className="block text-sm font-medium mb-1">
+                    رقم الهوية <span className="text-red-500">*</span>
+                  </label>
                   <div className="relative">
                     <CreditCard className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
@@ -292,11 +361,22 @@ export default function CreateCustomer() {
                         const convertedValue = convertArabicToEnglishNumbers(e.target.value);
                         e.target.value = convertedValue;
                         setData('idNumber', convertedValue);
+                        // إزالة خطأ التحقق عند الكتابة
+                        if (validationErrors.idNumber) {
+                          setValidationErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors.idNumber;
+                            return newErrors;
+                          });
+                        }
                       }}
-                      className="pr-10"
+                      className={`pr-10 ${(errors.idNumber || validationErrors.idNumber) ? 'border-red-500' : ''}`}
                       placeholder="أدخل رقم الهوية"
                     />
                   </div>
+                  {(errors.idNumber || validationErrors.idNumber) && (
+                    <p className="text-red-500 text-xs mt-1">{errors.idNumber || validationErrors.idNumber}</p>
+                  )}
                 </div>
 
                 {/* السجل التجاري */}
@@ -336,7 +416,9 @@ export default function CreateCustomer() {
 
                 {/* الهاتف الرئيسي */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">رقم الهاتف الرئيسي</label>
+                  <label className="block text-sm font-medium mb-1">
+                    رقم الهاتف الرئيسي <span className="text-red-500">*</span>
+                  </label>
                   <div className="relative">
                     <Phone className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
@@ -346,17 +428,30 @@ export default function CreateCustomer() {
                         const convertedValue = convertArabicToEnglishNumbers(e.target.value);
                         e.target.value = convertedValue;
                         setData('phone', convertedValue);
+                        // إزالة خطأ التحقق عند الكتابة
+                        if (validationErrors.phone) {
+                          setValidationErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors.phone;
+                            return newErrors;
+                          });
+                        }
                       }}
-                      className="pr-10"
+                      className={`pr-10 ${(errors.phone || validationErrors.phone) ? 'border-red-500' : ''}`}
                       placeholder="أدخل رقم الهاتف الرئيسي"
                     />
                   </div>
+                  {(errors.phone || validationErrors.phone) && (
+                    <p className="text-red-500 text-xs mt-1">{errors.phone || validationErrors.phone}</p>
+                  )}
                 </div>
 
                 {/* أرقام الهواتف الإضافية */}
                 <div className="md:col-span-2">
                   <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-medium">أرقام هواتف إضافية (اختياري)</label>
+                    <label className="block text-sm font-medium">
+                      رقم هاتف إضافي <span className="text-red-500">*</span>
+                    </label>
                     {phones.length < 3 && (
                       <Button
                         type="button"
@@ -370,6 +465,9 @@ export default function CreateCustomer() {
                       </Button>
                     )}
                   </div>
+                  {(errors.additionalPhone || validationErrors.additionalPhone) && (
+                    <p className="text-red-500 text-xs mb-2">{errors.additionalPhone || validationErrors.additionalPhone}</p>
+                  )}
 
                   {phones.map((phone, index) => (
                     <div key={index} className="flex items-center gap-2 mb-2">
@@ -453,61 +551,33 @@ export default function CreateCustomer() {
 
                 {/* العنوان */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-1">العنوان</label>
-                  <div className="relative">
-                    <MapPin className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
-                    <textarea
-                      value={data.address}
-                      onChange={(e) => setData('address', e.target.value)}
-                      rows={3}
-                      className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white"
-                      placeholder="أدخل العنوان الكامل"
-                    />
-                  </div>
-                </div>
-
-                {/* حالة العميل */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">حالة العميل</label>
-                  <select
-                    value={data.status}
-                    onChange={(e) => setData('status', e.target.value as 'ACTIVE' | 'INACTIVE')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white ${
-                      errors.status 
-                        ? 'border-red-500' 
-                        : 'border-gray-300 dark:border-gray-600'
-                    }`}
-                  >
-                    {customerStatuses.map((status) => (
-                      <option key={status.value} value={status.value}>
-                        {status.label}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.status && (
-                    <p className="text-red-500 text-xs mt-1">{errors.status}</p>
+                  <AddressSelector
+                    value={data.addressDetails}
+                    onChange={(addressData) => {
+                      setData('addressDetails', addressData);
+                      setData('address', addressData.fullAddress || '');
+                      // إزالة خطأ التحقق عند اختيار العنوان
+                      if (validationErrors.address) {
+                        setValidationErrors(prev => {
+                          const newErrors = { ...prev };
+                          delete newErrors.address;
+                          return newErrors;
+                        });
+                      }
+                    }}
+                    label="العنوان"
+                    required={true}
+                    disabled={processing}
+                    error={errors.address || validationErrors.address}
+                  />
+                  {(errors.address || validationErrors.address) && (
+                    <p className="text-red-500 text-xs mt-1">{errors.address || validationErrors.address}</p>
                   )}
                 </div>
 
-                {/* التقييم */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">التقييم</label>
-                  <div className="flex items-center gap-2">
-                    <Star className="h-4 w-4 text-yellow-500" />
-                    <select
-                      value={data.rating}
-                      onChange={(e) => setData('rating', e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white"
-                    >
-                      <option value="">اختر التقييم</option>
-                      <option value="1">1 - ضعيف</option>
-                      <option value="2">2 - مقبول</option>
-                      <option value="3">3 - جيد</option>
-                      <option value="4">4 - جيد جداً</option>
-                      <option value="5">5 - ممتاز</option>
-                    </select>
-                  </div>
-                </div>
+                {/* الحقول المخفية - القيم الافتراضية */}
+                {/* حالة العميل: ACTIVE (جديد) - مخفي */}
+                {/* التقييم: 3 (جيد) - مخفي */}
               </div>
             </CardContent>
           </Card>

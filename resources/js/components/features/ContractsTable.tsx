@@ -81,22 +81,101 @@ export function ContractsTable({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'نشط':
-      case 'مفتوحة':
+      case 'عقود مفتوحة':
         return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
-      case 'مغلقة':
-      case 'إيجار مغلقة':
-      case 'مكتمل':
+      case 'عقود مغلقة':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
-      case 'مغلقة - البضاعة غير مستلمة':
+      case 'عقود مغلقة ولم يتم استلام الأصناف':
         return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400';
-      case 'منتهي':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
-      case 'ملغي':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  // تقسيم البيانات إلى 3 مجموعات
+  const openContracts = data.filter(contract => contract.status === 'عقود مفتوحة');
+  const closedNotReceivedContracts = data.filter(contract => contract.status === 'عقود مغلقة ولم يتم استلام الأصناف');
+  const closedContracts = data.filter(contract => contract.status === 'عقود مغلقة');
+
+  // دالة لإنشاء جدول منفصل
+  const renderContractTable = (contracts: Contract[], title: string, bgColor: string, borderColor: string) => {
+    if (contracts.length === 0) return null;
+
+    const table = useReactTable({
+      data: contracts,
+      columns,
+      getCoreRowModel: getCoreRowModel(),
+      getFilteredRowModel: getFilteredRowModel(),
+      getSortedRowModel: getSortedRowModel(),
+      getPaginationRowModel: getPaginationRowModel(),
+      onSortingChange: setSorting,
+      onColumnFiltersChange: setColumnFilters,
+      onGlobalFilterChange: setGlobalFilter,
+      state: {
+        sorting,
+        columnFilters,
+        globalFilter,
+      },
+    });
+
+    return (
+      <Card key={title} className={`mb-6 ${borderColor}`}>
+        <CardHeader className={`${bgColor} border-b`}>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            {title} ({contracts.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-800">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                      >
+                        {header.isPlaceholder ? null : (
+                          <div
+                            className="cursor-pointer select-none flex items-center gap-1"
+                            onClick={header.column.getToggleSortingHandler()}
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {{
+                              asc: <ChevronRight className="h-4 w-4 rotate-90" />,
+                              desc: <ChevronRight className="h-4 w-4 -rotate-90" />,
+                            }[header.column.getIsSorted() as string] ?? null}
+                          </div>
+                        )}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                {table.getRowModel().rows.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td
+                        key={cell.id}
+                        className="py-3 px-2 sm:px-4"
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    );
   };
 
   const getPaymentStatusColor = (status: string) => {
@@ -125,6 +204,7 @@ export function ContractsTable({
       return matchesSearch && matchesStatus;
     });
   }, [data, globalFilter, statusFilter]);
+
 
   const columns: ColumnDef<Contract>[] = useMemo(
     () => [
@@ -328,159 +408,69 @@ export function ContractsTable({
   });
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <CardTitle className="text-xl font-semibold text-gray-900 dark:text-white">
-            جدول العقود
-          </CardTitle>
-          <Button
-            onClick={onAddContract}
-            className="flex items-center gap-2 bg-[#58d2c8] hover:bg-[#4AB8B3]"
-          >
-            <Plus className="h-4 w-4" />
-            إضافة عقد جديد
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div className="relative flex-1">
+    <div className="space-y-6">
+      {/* Header with search */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <CardTitle className="text-xl font-semibold text-gray-900 dark:text-white">
+              العقود
+            </CardTitle>
+            <Button
+              onClick={onAddContract}
+              className="flex items-center gap-2 bg-[#58d2c8] hover:bg-[#4AB8B3]"
+            >
+              <Plus className="h-4 w-4" />
+              إضافة عقد جديد
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Search */}
+          <div className="relative">
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="البحث في العقود..."
+              placeholder="البحث في جميع العقود..."
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="w-full pr-10 pl-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#58d2c8] focus:border-transparent"
             />
           </div>
+        </CardContent>
+      </Card>
 
-          <Combobox
-            options={[
-              { value: 'all', label: 'جميع الحالات' },
-              { value: 'نشط', label: 'نشط' },
-              { value: 'مفتوحة', label: 'مفتوحة' },
-              { value: 'مغلقة', label: 'مغلقة' },
-              { value: 'إيجار مغلقة', label: 'إيجار مغلقة' },
-              { value: 'مغلقة - البضاعة غير مستلمة', label: 'مغلقة - البضاعة غير مستلمة' },
-              { value: 'منتهي', label: 'منتهي' },
-              { value: 'ملغي', label: 'ملغي' },
-              { value: 'مكتمل', label: 'مكتمل' },
-            ]}
-            value={statusFilter}
-            onValueChange={(value) => setStatusFilter(value)}
-            placeholder="الحالة"
-            searchPlaceholder="ابحث..."
-            emptyText="لا توجد نتائج"
-            className="w-full sm:w-[180px]"
-          />
-        </div>
+      {/* جدول العقود المفتوحة */}
+      {renderContractTable(openContracts, 'عقود مفتوحة', 'bg-green-50 dark:bg-green-900/10', 'border-green-200 dark:border-green-800')}
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1200px]">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700">
-                {table.getHeaderGroups().map((headerGroup) =>
-                  headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="text-right py-3 px-2 sm:px-4 font-medium text-gray-900 dark:text-white text-sm"
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </th>
-                  ))
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={columns.length} className="text-center py-8">
-                    <div className="flex items-center justify-center">
-                      <div className="w-8 h-8 border-4 border-[#58d2c8] border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  </td>
-                </tr>
-              ) : table.getRowModel().rows.length === 0 ? (
-                <tr>
-                  <td colSpan={columns.length} className="text-center py-8">
-                    <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                      لا توجد عقود
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">
-                      لم يتم العثور على عقود تطابق معايير البحث
-                    </p>
-                    <Button
-                      onClick={onAddContract}
-                      className="bg-[#58d2c8] hover:bg-[#4AB8B3]"
-                    >
-                      <Plus className="h-4 w-4 ml-2" />
-                      إضافة عقد جديد
-                    </Button>
-                  </td>
-                </tr>
-              ) : (
-                table.getRowModel().rows.map((row) => (
-                  <tr
-                    key={row.id}
-                    className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        className="py-3 px-2 sm:px-4"
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+      {/* جدول العقود المغلقة ولم يتم استلام الأصناف */}
+      {renderContractTable(closedNotReceivedContracts, 'عقود مغلقة ولم يتم استلام الأصناف', 'bg-orange-50 dark:bg-orange-900/10', 'border-orange-200 dark:border-orange-800')}
 
-        {/* Pagination */}
-        {!isLoading && table.getRowModel().rows.length > 0 && (
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              عرض {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} إلى{' '}
-              {Math.min(
-                (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-                filteredData.length
-              )}{' '}
-              من {filteredData.length} عقد
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                <ChevronRight className="h-4 w-4" />
-                السابق
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                التالي
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      {/* جدول العقود المغلقة */}
+      {renderContractTable(closedContracts, 'عقود مغلقة', 'bg-blue-50 dark:bg-blue-900/10', 'border-blue-200 dark:border-blue-800')}
+
+      {/* رسالة إذا لم تكن هناك عقود */}
+      {data.length === 0 && !isLoading && (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              لا توجد عقود
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              لم يتم العثور على أي عقود في النظام
+            </p>
+            <Button
+              onClick={onAddContract}
+              className="bg-[#58d2c8] hover:bg-[#4AB8B3]"
+            >
+              <Plus className="h-4 w-4 ml-2" />
+              إضافة عقد جديد
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }
 

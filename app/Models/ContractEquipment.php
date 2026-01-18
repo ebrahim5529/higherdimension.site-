@@ -24,6 +24,7 @@ class ContractEquipment extends Model
         'quantity',
         'daily_rate',
         'monthly_rate',
+        'discount',
         'total',
     ];
 
@@ -32,6 +33,7 @@ class ContractEquipment extends Model
         'end_date' => 'date',
         'daily_rate' => 'decimal:2',
         'monthly_rate' => 'decimal:2',
+        'discount' => 'decimal:2',
         'total' => 'decimal:2',
     ];
 

@@ -20,14 +20,18 @@ export function ContractTotals({
 }: ContractTotalsProps) {
     const handleTransportChange = (val: string) => {
         const convertedValue = convertArabicToEnglishNumbers(val);
-        const value = convertedValue === '' ? 0 : Number(convertedValue) || 0;
-        actions.setTransportCost(value);
+        const value = convertedValue === '' ? 0 : parseFloat(convertedValue) || 0;
+        if (!isNaN(value) && isFinite(value) && value >= 0) {
+            actions.setTransportCost(value);
+        }
     };
 
     const handleDiscountChange = (val: string) => {
         const convertedValue = convertArabicToEnglishNumbers(val);
-        const value = convertedValue === '' ? 0 : Number(convertedValue) || 0;
-        actions.setTotalDiscount(value);
+        const value = convertedValue === '' ? 0 : parseFloat(convertedValue) || 0;
+        if (!isNaN(value) && isFinite(value) && value >= 0) {
+            actions.setTotalDiscount(value);
+        }
     };
 
     return (
@@ -39,12 +43,12 @@ export function ContractTotals({
                     </label>
                     <Input
                         type="text"
-                        value={transportCost}
+                        value={transportCost !== undefined && transportCost !== null ? transportCost.toString() : ''}
                         onChange={(e) => handleTransportChange(e.target.value)}
                         dir="ltr"
                         lang="en"
                         className="bg-white"
-                        placeholder="0"
+                        placeholder="0.00"
                     />
                 </div>
                 <div>
@@ -53,12 +57,12 @@ export function ContractTotals({
                     </label>
                     <Input
                         type="text"
-                        value={totalDiscount}
+                        value={totalDiscount !== undefined && totalDiscount !== null ? totalDiscount.toString() : ''}
                         onChange={(e) => handleDiscountChange(e.target.value)}
                         dir="ltr"
                         lang="en"
                         className="bg-white"
-                        placeholder="0"
+                        placeholder="0.00"
                     />
                 </div>
                 <div>

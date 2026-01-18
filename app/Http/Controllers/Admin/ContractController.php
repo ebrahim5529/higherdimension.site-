@@ -240,7 +240,7 @@ class ContractController extends Controller
      */
     public function create()
     {
-        $customers = Customer::select('id', 'name', 'customer_number', 'phone')->get();
+        $customers = Customer::select('id', 'name', 'customer_number', 'phone', 'nationality')->get();
 
         return Inertia::render('Contracts/Create', [
             'customers' => $customers,
@@ -257,6 +257,7 @@ class ContractController extends Controller
             'contract_date' => 'required|date',
             'customer_id' => 'required|exists:customers,id',
             'delivery_address' => 'required|string',
+            'delivery_address_details' => 'nullable|array',
             'location_map_link' => 'nullable|url',
             'transport_and_installation_cost' => 'nullable|numeric|min:0',
             'total_discount' => 'nullable|numeric|min:0',
@@ -272,6 +273,7 @@ class ContractController extends Controller
             'rental_details.*.quantity' => 'required|integer|min:1',
             'rental_details.*.daily_rate' => 'required|numeric|min:0',
             'rental_details.*.monthly_rate' => 'required|numeric|min:0',
+            'rental_details.*.discount' => 'nullable|numeric|min:0',
             'rental_details.*.total' => 'required|numeric|min:0',
             'payments' => 'nullable|array',
             'payments.*.payment_method' => 'required|in:cash,check,credit_card,bank_transfer',
@@ -301,6 +303,7 @@ class ContractController extends Controller
             'status' => 'ACTIVE',
             'payment_type' => 'INSTALLMENT',
             'delivery_address' => $validated['delivery_address'],
+            'delivery_address_details' => $validated['delivery_address_details'] ?? null,
             'location_map_link' => $validated['location_map_link'] ?? null,
             'transport_and_installation_cost' => $validated['transport_and_installation_cost'] ?? 0,
             'total_discount' => $validated['total_discount'] ?? 0,
@@ -323,6 +326,7 @@ class ContractController extends Controller
                 'quantity' => $rentalDetail['quantity'],
                 'daily_rate' => $rentalDetail['daily_rate'],
                 'monthly_rate' => $rentalDetail['monthly_rate'],
+                'discount' => $rentalDetail['discount'] ?? 0,
                 'total' => $rentalDetail['total'],
             ]);
         }
@@ -466,6 +470,7 @@ class ContractController extends Controller
                 'updatedDateAr' => $contract->updated_at ? $this->formatDateArabic($contract->updated_at) : '',
                 'duration' => $duration,
                 'deliveryAddress' => $contract->delivery_address ?? '',
+                'deliveryAddressDetails' => $contract->delivery_address_details,
                 'locationMapLink' => $contract->location_map_link,
                 'equipmentCount' => $equipmentCount,
                 'daysRemaining' => $daysRemaining,
@@ -513,7 +518,7 @@ class ContractController extends Controller
     public function edit(string $id)
     {
         $contract = Contract::with(['customer', 'equipment.scaffold', 'contractPayments'])->findOrFail($id);
-        $customers = Customer::select('id', 'name', 'customer_number', 'phone')->get();
+        $customers = Customer::select('id', 'name', 'customer_number', 'phone', 'nationality')->get();
 
         // تحويل المعدات إلى الصيغة المطلوبة
         $equipment = $contract->equipment->map(function ($item) {
@@ -538,6 +543,7 @@ class ContractController extends Controller
                 'quantity' => $item->quantity,
                 'daily_rate' => $item->daily_rate,
                 'monthly_rate' => $item->monthly_rate,
+                'discount' => $item->discount ?? 0,
                 'total' => $item->total,
             ];
         });
@@ -566,11 +572,12 @@ class ContractController extends Controller
                 'amount' => $contract->amount,
                 'start_date' => $contract->start_date?->format('Y-m-d'),
                 'end_date' => $contract->end_date?->format('Y-m-d'),
-                'status' => $contract->status,
+                'status' => $this->convertStatusToNewFormat($contract->status),
                 'payment_type' => $contract->payment_type,
                 'installment_count' => $contract->installment_count,
                 'customer_id' => $contract->customer_id,
                 'delivery_address' => $contract->delivery_address,
+                'delivery_address_details' => $contract->delivery_address_details,
                 'location_map_link' => $contract->location_map_link,
                 'transport_and_installation_cost' => $contract->transport_and_installation_cost ?? 0,
                 'total_discount' => $contract->total_discount ?? 0,
@@ -594,6 +601,7 @@ class ContractController extends Controller
             'contract_date' => 'required|date',
             'customer_id' => 'required|exists:customers,id',
             'delivery_address' => 'required|string',
+            'delivery_address_details' => 'nullable|array',
             'location_map_link' => 'nullable|url',
             'transport_and_installation_cost' => 'nullable|numeric|min:0',
             'total_discount' => 'nullable|numeric|min:0',
@@ -609,6 +617,7 @@ class ContractController extends Controller
             'rental_details.*.quantity' => 'required|integer|min:1',
             'rental_details.*.daily_rate' => 'required|numeric|min:0',
             'rental_details.*.monthly_rate' => 'required|numeric|min:0',
+            'rental_details.*.discount' => 'nullable|numeric|min:0',
             'rental_details.*.total' => 'required|numeric|min:0',
             'payments' => 'nullable|array',
             'payments.*.payment_method' => 'required|in:cash,check,credit_card,bank_transfer',
@@ -618,7 +627,7 @@ class ContractController extends Controller
             'payments.*.bank_name' => 'nullable|string',
             'payments.*.check_date' => 'nullable|date',
             'payments.*.check_image' => 'nullable|file|image|max:5120',
-            'status' => 'nullable|string|in:ACTIVE,OPEN,CLOSED,RENTAL_CLOSED,CLOSED_NOT_RECEIVED,EXPIRED,CANCELLED,COMPLETED',
+            'status' => 'nullable|string|in:ACTIVE,CLOSED,CLOSED_NOT_RECEIVED',
         ]);
 
         // حساب المبلغ الإجمالي
@@ -634,6 +643,7 @@ class ContractController extends Controller
             'end_date' => collect($validated['rental_details'])->max('end_date'),
             'customer_id' => $validated['customer_id'],
             'delivery_address' => $validated['delivery_address'],
+            'delivery_address_details' => $validated['delivery_address_details'] ?? null,
             'location_map_link' => $validated['location_map_link'] ?? null,
             'transport_and_installation_cost' => $transportCost,
             'total_discount' => $discount,
@@ -656,6 +666,7 @@ class ContractController extends Controller
                 'quantity' => $rental['quantity'],
                 'daily_rate' => $rental['daily_rate'],
                 'monthly_rate' => $rental['monthly_rate'],
+                'discount' => $rental['discount'] ?? 0,
                 'total' => $rental['total'],
             ]);
         }
@@ -957,15 +968,22 @@ class ContractController extends Controller
     private function getStatusLabel(string $status): string
     {
         return match ($status) {
-            'ACTIVE' => 'نشط',
-            'OPEN' => 'مفتوحة',
-            'CLOSED' => 'مغلقة',
-            'RENTAL_CLOSED' => 'إيجار مغلقة',
-            'CLOSED_NOT_RECEIVED' => 'مغلقة - البضاعة غير مستلمة',
-            'EXPIRED' => 'منتهي',
-            'CANCELLED' => 'ملغي',
-            'COMPLETED' => 'مكتمل',
-            default => $status,
+            'ACTIVE', 'OPEN' => 'عقود مفتوحة',
+            'CLOSED', 'COMPLETED', 'RENTAL_CLOSED' => 'عقود مغلقة',
+            'CLOSED_NOT_RECEIVED' => 'عقود مغلقة ولم يتم استلام الأصناف',
+            'EXPIRED' => 'عقود مغلقة',
+            'CANCELLED' => 'عقود مغلقة',
+            default => 'عقود مفتوحة',
+        };
+    }
+
+    private function convertStatusToNewFormat(string $status): string
+    {
+        return match ($status) {
+            'ACTIVE', 'OPEN' => 'ACTIVE',
+            'CLOSED', 'COMPLETED', 'RENTAL_CLOSED', 'EXPIRED', 'CANCELLED' => 'CLOSED',
+            'CLOSED_NOT_RECEIVED' => 'CLOSED_NOT_RECEIVED',
+            default => 'ACTIVE',
         };
     }
 

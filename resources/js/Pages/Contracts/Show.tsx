@@ -63,6 +63,13 @@ interface Contract {
   updatedDateAr: string;
   duration: number;
   deliveryAddress: string;
+  deliveryAddressDetails?: {
+    governorate?: string;
+    wilayat?: string;
+    region?: string;
+    details?: string;
+    fullAddress?: string;
+  };
   locationMapLink?: string;
   equipmentCount: number;
   daysRemaining: number;
@@ -394,7 +401,42 @@ export default function ShowContract({ contract }: ShowContractProps) {
                       <MapPin className="h-6 w-6 text-gray-600" />
                       <h3 className="text-lg font-bold text-gray-900">الموقع</h3>
                     </div>
-                    <p className="text-lg text-gray-900">{contract.deliveryAddress || 'غير محدد'}</p>
+                    <div className="space-y-2">
+                      {contract.deliveryAddressDetails ? (
+                        <>
+                          {contract.deliveryAddressDetails.governorate && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-600">المحافظة:</span>
+                              <span className="text-sm text-gray-900">{contract.deliveryAddressDetails.governorate}</span>
+                            </div>
+                          )}
+                          {contract.deliveryAddressDetails.wilayat && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-600">الولاية:</span>
+                              <span className="text-sm text-gray-900">{contract.deliveryAddressDetails.wilayat}</span>
+                            </div>
+                          )}
+                          {contract.deliveryAddressDetails.region && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-600">المنطقة:</span>
+                              <span className="text-sm text-gray-900">{contract.deliveryAddressDetails.region}</span>
+                            </div>
+                          )}
+                          {contract.deliveryAddressDetails.details && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-600">التفاصيل:</span>
+                              <span className="text-sm text-gray-900">{contract.deliveryAddressDetails.details}</span>
+                            </div>
+                          )}
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <p className="text-sm font-medium text-gray-600 mb-1">العنوان الكامل:</p>
+                            <p className="text-sm text-gray-900 font-medium">{contract.deliveryAddressDetails.fullAddress || contract.deliveryAddress}</p>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-lg text-gray-900">{contract.deliveryAddress || 'غير محدد'}</p>
+                      )}
+                    </div>
                   </div>
                   <div className="bg-white border-2 border-gray-200 rounded-lg p-6 shadow-sm">
                     <div className="flex items-center gap-2 mb-4">

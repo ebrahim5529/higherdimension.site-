@@ -2,6 +2,7 @@
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { NationalitySelector } from '@/components/features/NationalitySelector';
+import { AddressSelector } from '@/components/features/AddressSelector';
 import { Customer } from '@/types/contracts';
 
 interface ContractBasicInfoProps {
@@ -12,6 +13,13 @@ interface ContractBasicInfoProps {
     filteredCustomers: Customer[];
     nationality: string;
     deliveryAddress: string;
+    deliveryAddressDetails: {
+        governorate?: string;
+        wilayat?: string;
+        region?: string;
+        details?: string;
+        fullAddress?: string;
+    };
     locationMapLink: string;
     processing: boolean;
     errors: any;
@@ -22,6 +30,13 @@ interface ContractBasicInfoProps {
         setContractNumber: (val: string) => void;
         setNationality: (val: string) => void;
         setDeliveryAddress: (val: string) => void;
+        setDeliveryAddressDetails: (address: {
+            governorate?: string;
+            wilayat?: string;
+            region?: string;
+            details?: string;
+            fullAddress?: string;
+        }) => void;
         setLocationMapLink: (val: string) => void;
         setContractDate: (val: string) => void;
         clearErrors: (field?: string) => void;
@@ -36,6 +51,7 @@ export function ContractBasicInfo({
     filteredCustomers,
     nationality,
     deliveryAddress,
+    deliveryAddressDetails,
     locationMapLink,
     processing,
     errors,
@@ -150,38 +166,38 @@ export function ContractBasicInfo({
                     </div>
                 </div>
 
-                {/* الجنسية */}
+                {/* الجنسية - تلقائية من بيانات العميل */}
                 <div>
-                    <NationalitySelector
-                        value={nationality}
-                        onChange={(val) => {
-                            actions.setNationality(val);
-                            actions.clearErrors('nationality');
-                        }}
-                        disabled={processing}
-                        label="الجنسية"
-                        required={false}
-                    />
-                    {errors.nationality && (
-                        <div className="text-red-500 text-sm mt-1 font-medium">{errors.nationality}</div>
-                    )}
+                    <label className="block text-sm font-medium text-gray-700 mb-2">الجنسية</label>
+                    <div className="relative">
+                        <Input
+                            type="text"
+                            value={nationality || 'سيتم تحديدها تلقائياً من بيانات العميل'}
+                            readOnly
+                            className="w-full bg-gray-50 text-gray-500 cursor-not-allowed"
+                        />
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">تُحدد تلقائياً من بيانات العميل المختار</p>
                 </div>
 
                 {/* عنوان الموقع */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">عنوان الموقع (موقع تنزيل المعدات) *</label>
-                    <Input
-                        type="text"
-                        value={deliveryAddress}
-                        onChange={(e) => {
-                            actions.setDeliveryAddress(e.target.value);
+                <div className="md:col-span-2">
+                    <AddressSelector
+                        value={deliveryAddressDetails}
+                        onChange={(addressData) => {
+                            actions.setDeliveryAddressDetails(addressData);
+                            actions.setDeliveryAddress(addressData.fullAddress || '');
                             actions.clearErrors('delivery_address');
                         }}
-                        placeholder="أدخل عنوان موقع تنزيل المعدات"
-                        dir="ltr"
-                        lang="en"
-                        required
-                        className={errors.delivery_address ? 'border-red-500' : ''}
+                        label="عنوان الموقع (موقع تنزيل المعدات)"
+                        required={true}
+                        disabled={processing}
+                        error={errors.delivery_address}
                     />
                     {errors.delivery_address && (
                         <div className="text-red-500 text-sm mt-1 font-medium">{errors.delivery_address}</div>
@@ -189,7 +205,7 @@ export function ContractBasicInfo({
                 </div>
 
                 {/* رابط الموقع قوقل ماب */}
-                <div className="md:col-span-2">
+                <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">رابط الموقع قوقل ماب</label>
                     <Input
                         type="url"
