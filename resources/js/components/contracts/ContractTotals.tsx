@@ -1,4 +1,5 @@
 /** @jsxImportSource react */
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { convertArabicToEnglishNumbers } from '@/lib/utils';
 
@@ -18,9 +19,33 @@ export function ContractTotals({
     totalAfterDiscount,
     actions,
 }: ContractTotalsProps) {
+    const [localTransport, setLocalTransport] = useState<string>(transportCost !== undefined && transportCost !== null ? transportCost.toString() : '');
+    const [localDiscount, setLocalDiscount] = useState<string>(totalDiscount !== undefined && totalDiscount !== null ? totalDiscount.toString() : '');
+
+    useEffect(() => {
+        const numericLocalTransport = parseFloat(localTransport);
+        if (isNaN(numericLocalTransport) ? transportCost !== 0 : numericLocalTransport !== transportCost) {
+            setLocalTransport(transportCost !== undefined && transportCost !== null ? transportCost.toString() : '');
+        }
+    }, [transportCost]);
+
+    useEffect(() => {
+        const numericLocalDiscount = parseFloat(localDiscount);
+        if (isNaN(numericLocalDiscount) ? totalDiscount !== 0 : numericLocalDiscount !== totalDiscount) {
+            setLocalDiscount(totalDiscount !== undefined && totalDiscount !== null ? totalDiscount.toString() : '');
+        }
+    }, [totalDiscount]);
+
     const handleTransportChange = (val: string) => {
         const convertedValue = convertArabicToEnglishNumbers(val);
-        const value = convertedValue === '' ? 0 : parseFloat(convertedValue) || 0;
+        setLocalTransport(convertedValue);
+        
+        if (convertedValue === '' || convertedValue === '.') {
+            actions.setTransportCost(0);
+            return;
+        }
+
+        const value = parseFloat(convertedValue);
         if (!isNaN(value) && isFinite(value) && value >= 0) {
             actions.setTransportCost(value);
         }
@@ -28,7 +53,14 @@ export function ContractTotals({
 
     const handleDiscountChange = (val: string) => {
         const convertedValue = convertArabicToEnglishNumbers(val);
-        const value = convertedValue === '' ? 0 : parseFloat(convertedValue) || 0;
+        setLocalDiscount(convertedValue);
+
+        if (convertedValue === '' || convertedValue === '.') {
+            actions.setTotalDiscount(0);
+            return;
+        }
+
+        const value = parseFloat(convertedValue);
         if (!isNaN(value) && isFinite(value) && value >= 0) {
             actions.setTotalDiscount(value);
         }
@@ -43,7 +75,7 @@ export function ContractTotals({
                     </label>
                     <Input
                         type="text"
-                        value={transportCost !== undefined && transportCost !== null ? transportCost.toString() : ''}
+                        value={localTransport}
                         onChange={(e) => handleTransportChange(e.target.value)}
                         dir="ltr"
                         lang="en"
@@ -57,7 +89,7 @@ export function ContractTotals({
                     </label>
                     <Input
                         type="text"
-                        value={totalDiscount !== undefined && totalDiscount !== null ? totalDiscount.toString() : ''}
+                        value={localDiscount}
                         onChange={(e) => handleDiscountChange(e.target.value)}
                         dir="ltr"
                         lang="en"

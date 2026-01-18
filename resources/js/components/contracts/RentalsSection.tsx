@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { RentalDetail, Scaffold } from '@/types/contracts';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,50 @@ import { Input } from '@/components/ui/input';
 import { ScaffoldSelector } from '@/components/features/ScaffoldSelector';
 import { convertArabicToEnglishNumbers } from '@/lib/utils';
 import { Trash2, Plus } from 'lucide-react';
+
+interface DecimalInputProps extends React.ComponentProps<typeof Input> {
+  value: number;
+  onValueChange: (value: number) => void;
+  convertedErrors?: string;
+}
+
+const DecimalInput = ({ value, onValueChange, convertedErrors, ...props }: DecimalInputProps) => {
+  const [displayValue, setDisplayValue] = useState<string>(value !== undefined && value !== null ? value.toString() : '');
+
+  useEffect(() => {
+    // Only sync if the numerical value actually changed externally
+    const numericDisplayValue = parseFloat(displayValue);
+    if (isNaN(numericDisplayValue) ? value !== 0 : numericDisplayValue !== value) {
+      setDisplayValue(value !== undefined && value !== null ? value.toString() : '');
+    }
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = convertArabicToEnglishNumbers(e.target.value);
+    
+    // Allow typing characters that are part of a valid decimal number
+    // but might not be a complete number yet (like "3." or "-")
+    setDisplayValue(rawValue);
+
+    if (rawValue === '' || rawValue === '.') {
+      onValueChange(0);
+      return;
+    }
+
+    const parsed = parseFloat(rawValue);
+    if (!isNaN(parsed) && isFinite(parsed)) {
+      onValueChange(parsed);
+    }
+  };
+
+  return (
+    <Input
+      {...props}
+      value={displayValue}
+      onChange={handleChange}
+    />
+  );
+};
 
 interface RentalsSectionProps {
   rentals: RentalDetail[];
@@ -171,19 +215,13 @@ export function RentalsSection({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   الإيجار اليومي (ر.ع)
                 </label>
-                <Input
-                  type="text"
+                <DecimalInput
                   value={rental.dailyRate}
-                  onChange={(e) => {
-                    const convertedValue = convertArabicToEnglishNumbers(e.target.value);
-                    e.target.value = convertedValue;
-                    const value = convertedValue === '' ? 0 : Number(convertedValue) || 0;
-                    onUpdateRentalDetail(rental.id, 'dailyRate', value);
-                  }}
+                  onValueChange={(value) => onUpdateRentalDetail(rental.id, 'dailyRate', value)}
                   dir="ltr"
                   lang="en"
                   className={`bg-white ${errors[`rental_details.${index}.daily_rate`] ? 'border-red-500' : ''}`}
-                  placeholder="0"
+                  placeholder="0.00"
                 />
                 {errors[`rental_details.${index}.daily_rate`] && (
                   <div className="text-red-500 text-xs mt-1">{errors[`rental_details.${index}.daily_rate`]}</div>
@@ -195,19 +233,13 @@ export function RentalsSection({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   الإيجار الشهري (ر.ع)
                 </label>
-                <Input
-                  type="text"
+                <DecimalInput
                   value={rental.monthlyRate}
-                  onChange={(e) => {
-                    const convertedValue = convertArabicToEnglishNumbers(e.target.value);
-                    e.target.value = convertedValue;
-                    const value = convertedValue === '' ? 0 : Number(convertedValue) || 0;
-                    onUpdateRentalDetail(rental.id, 'monthlyRate', value);
-                  }}
+                  onValueChange={(value) => onUpdateRentalDetail(rental.id, 'monthlyRate', value)}
                   dir="ltr"
                   lang="en"
                   className={`bg-white ${errors[`rental_details.${index}.monthly_rate`] ? 'border-red-500' : ''}`}
-                  placeholder="0"
+                  placeholder="0.00"
                 />
                 {errors[`rental_details.${index}.monthly_rate`] && (
                   <div className="text-red-500 text-xs mt-1">{errors[`rental_details.${index}.monthly_rate`]}</div>
@@ -219,24 +251,9 @@ export function RentalsSection({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   الخصم (ر.ع)
                 </label>
-                <Input
-                  type="text"
-                  value={rental.discount !== undefined && rental.discount !== null ? rental.discount.toString() : ''}
-                  onChange={(e) => {
-                    const convertedValue = convertArabicToEnglishNumbers(e.target.value);
-                    e.target.value = convertedValue;
-
-                    // السماح بالقيم الفارغة والصفر والكسور
-                    if (convertedValue === '') {
-                      onUpdateRentalDetail(rental.id, 'discount', 0);
-                      return;
-                    }
-
-                    const value = parseFloat(convertedValue);
-                    if (!isNaN(value) && isFinite(value) && value >= 0) {
-                      onUpdateRentalDetail(rental.id, 'discount', value);
-                    }
-                  }}
+                <DecimalInput
+                  value={rental.discount}
+                  onValueChange={(value) => onUpdateRentalDetail(rental.id, 'discount', value)}
                   dir="ltr"
                   lang="en"
                   className={`bg-white ${errors[`rental_details.${index}.discount`] ? 'border-red-500' : ''}`}

@@ -22,7 +22,6 @@ interface Customer {
   contractsCount: number;
   totalPayments: number;
   pendingAmount: number;
-  rating: number;
   hasWarnings: boolean;
 }
 
@@ -36,7 +35,6 @@ interface CustomerStatsType {
   totalPayments: number;
   totalPendingAmount: number;
   customersWithWarnings: number;
-  averageRating: number;
   nationalityDistribution: Record<string, number>;
   monthlyRegistrations: Record<string, number>;
 }
@@ -68,7 +66,6 @@ export default function CustomersIndex({ customers, stats }: CustomersIndexProps
     name: customer.name,
     customerType: customer.customerType,
     status: customer.status,
-    rating: customer.rating || 0,
     registrationDate: new Date(customer.registrationDate),
     email: customer.email,
     contractsCount: customer.contractsCount,

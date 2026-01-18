@@ -24,7 +24,6 @@ interface CustomerStatsType {
   totalPayments: number;
   totalPendingAmount: number;
   customersWithWarnings: number;
-  averageRating: number;
   nationalityDistribution: Record<string, number>;
   monthlyRegistrations: Record<string, number>;
 }

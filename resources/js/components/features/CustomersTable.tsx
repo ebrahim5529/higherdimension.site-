@@ -31,7 +31,6 @@ import {
   ChevronRight,
   User,
   Building2,
-  Star,
   Mail,
   Calendar,
 } from 'lucide-react';
@@ -42,7 +41,6 @@ interface CustomerTableData {
   name: string;
   customerType: 'INDIVIDUAL' | 'COMPANY';
   status: 'ACTIVE' | 'INACTIVE';
-  rating: number;
   registrationDate: Date | string;
   email?: string;
   contractsCount?: number;
@@ -124,17 +122,14 @@ export function CustomersTable({
         },
       },
       {
-        accessorKey: 'rating',
-        header: 'التقييم',
+        accessorKey: 'contractsCount',
+        header: 'عدد العقود',
         cell: ({ row }) => {
-          const rating = row.getValue('rating') as number;
-          return rating ? (
+          const contractsCount = row.getValue('contractsCount') as number;
+          return (
             <div className="flex items-center gap-1">
-              <Star className="h-3 w-3 text-yellow-500 fill-current" />
-              <span className="text-sm">{rating}/5</span>
+              <span className="text-sm font-medium text-blue-600">{contractsCount || 0}</span>
             </div>
-          ) : (
-            <span className="text-sm text-muted-foreground">-</span>
           );
         },
       },
@@ -328,12 +323,6 @@ export function CustomersTable({
                         case 'oldest':
                           table.getColumn('registrationDate')?.toggleSorting(true);
                           break;
-                        case 'rating-high':
-                          table.getColumn('rating')?.toggleSorting(false);
-                          break;
-                        case 'rating-low':
-                          table.getColumn('rating')?.toggleSorting(true);
-                          break;
                       }
                     }
                   }}
@@ -342,8 +331,6 @@ export function CustomersTable({
                   <option value="">اختر الترتيب</option>
                   <option value="newest">الأحدث أولاً</option>
                   <option value="oldest">الأقدم أولاً</option>
-                  <option value="rating-high">أعلى تقييم أولاً</option>
-                  <option value="rating-low">أقل تقييم أولاً</option>
                 </select>
               </div>
               <div className="flex items-end">
