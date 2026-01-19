@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             EmployeeSeeder::class,
             ScaffoldSeeder::class,
             ContractSeeder::class,
+            LocationsSeeder::class,
         ]);
     }
 }
