@@ -31,6 +31,7 @@ import {
   Settings,
   BarChart,
   PenTool,
+  MapPin,
   Building2,
   Eye,
   Mail,
@@ -129,6 +130,9 @@ export function Sidebar({
     'payment-reports': 'view-payment-reports',
     'settings': 'access-settings',
     'electronic-signature': 'manage-electronic-signature',
+    'settings-governorates': 'access-settings',
+    'settings-wilayats': 'access-settings',
+    'settings-regions': 'access-settings',
     'smtp-settings': 'access-settings',
   };
 
@@ -442,6 +446,24 @@ export function Sidebar({
         label: 'الإعدادات',
         icon: Settings,
         children: [
+          {
+            id: 'settings-governorates',
+            label: 'المحافظات',
+            icon: MapPin,
+            href: '/dashboard/locations/governorates',
+          },
+          {
+            id: 'settings-wilayats',
+            label: 'الولايات',
+            icon: MapPin,
+            href: '/dashboard/locations/wilayats',
+          },
+          {
+            id: 'settings-regions',
+            label: 'المناطق',
+            icon: MapPin,
+            href: '/dashboard/locations/regions',
+          },
           {
             id: 'electronic-signature',
             label: 'التوقيع الإلكتروني',

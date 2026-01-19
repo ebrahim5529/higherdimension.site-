@@ -4,7 +4,6 @@ import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { MapPin } from 'lucide-react';
-import { getAllGovernorates, getWilayatsByGovernorate, getRegionsByWilayat } from '@/data/omanRegions';
 
 interface AddressSelectorProps {
   value?: {
@@ -27,6 +26,23 @@ interface AddressSelectorProps {
   error?: string;
 }
 
+interface GovernorateOption {
+  id: number;
+  name: string;
+}
+
+interface WilayatOption {
+  id: number;
+  name: string;
+  governorate_id: number;
+}
+
+interface RegionOption {
+  id: number;
+  name: string;
+  wilayat_id: number;
+}
+
 export function AddressSelector({
   value = {},
   onChange,
@@ -40,17 +56,17 @@ export function AddressSelector({
   const [selectedWilayat, setSelectedWilayat] = useState<string>(value.wilayat || '');
   const [selectedRegion, setSelectedRegion] = useState<string>(value.region || '');
   const [details, setDetails] = useState<string>(value.details || '');
+  const [governorates, setGovernorates] = useState<GovernorateOption[]>([]);
+  const [wilayats, setWilayats] = useState<WilayatOption[]>([]);
+  const [regions, setRegions] = useState<RegionOption[]>([]);
 
-  const governorates = getAllGovernorates();
-  const wilayats = selectedGovernorate ? getWilayatsByGovernorate(selectedGovernorate) : [];
-  const regions = (selectedGovernorate && selectedWilayat)
-    ? getRegionsByWilayat(selectedGovernorate, selectedWilayat)
-    : [];
+  const selectedGovernorateId = governorates.find((g) => g.name === selectedGovernorate)?.id;
+  const selectedWilayatId = wilayats.find((w) => w.name === selectedWilayat)?.id;
 
   // تحويل البيانات إلى تنسيق Combobox
-  const governorateOptions = governorates.map(gov => ({ value: gov, label: gov }));
-  const wilayatOptions = wilayats.map(wilayat => ({ value: wilayat.name, label: wilayat.name }));
-  const regionOptions = regions.map(region => ({ value: region, label: region }));
+  const governorateOptions = governorates.map((gov) => ({ value: gov.name, label: gov.name }));
+  const wilayatOptions = wilayats.map((wilayat) => ({ value: wilayat.name, label: wilayat.name }));
+  const regionOptions = regions.map((region) => ({ value: region.name, label: region.name }));
 
   // تحديث القيم عند تغيير value من الخارج
   useEffect(() => {
@@ -59,6 +75,82 @@ export function AddressSelector({
     setSelectedRegion(value.region || '');
     setDetails(value.details || '');
   }, [value]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadGovernorates = async () => {
+      try {
+        const response = await fetch('/api/locations/governorates', { signal: controller.signal });
+        if (!response.ok) return;
+        const data = (await response.json()) as GovernorateOption[];
+        setGovernorates(data);
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Failed to load governorates', error);
+        }
+      }
+    };
+
+    loadGovernorates();
+
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedGovernorateId) {
+      setWilayats([]);
+      setRegions([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const loadWilayats = async () => {
+      try {
+        const response = await fetch(`/api/locations/governorates/${selectedGovernorateId}/wilayats`, {
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const data = (await response.json()) as WilayatOption[];
+        setWilayats(data);
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Failed to load wilayats', error);
+        }
+      }
+    };
+
+    loadWilayats();
+
+    return () => controller.abort();
+  }, [selectedGovernorateId]);
+
+  useEffect(() => {
+    if (!selectedWilayatId) {
+      setRegions([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const loadRegions = async () => {
+      try {
+        const response = await fetch(`/api/locations/wilayats/${selectedWilayatId}/regions`, {
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const data = (await response.json()) as RegionOption[];
+        setRegions(data);
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Failed to load regions', error);
+        }
+      }
+    };
+
+    loadRegions();
+
+    return () => controller.abort();
+  }, [selectedWilayatId]);
 
   const handleGovernorateChange = (governorate: string) => {
     setSelectedGovernorate(governorate);
