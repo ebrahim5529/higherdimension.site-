@@ -183,8 +183,8 @@ export default function EditContract({ contract, customers }: EditContractProps)
     if (durationType === 'daily') {
       start.setDate(start.getDate() + duration);
     } else {
-      // Calculate monthly as 30 days per month
-      // subtract 1 day to make it inclusive (e.g. 15/1 + 30 days -> 13/2)
+      // Calculate monthly as 30 days per month (inclusive)
+      // subtract 1 day to make it inclusive (e.g. 15/1 + 30 days -> 13/2 = 30 days total)
       start.setDate(start.getDate() + (duration * 30) - 1);
     }
     return start.toISOString().split('T')[0];
