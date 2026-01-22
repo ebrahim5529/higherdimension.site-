@@ -142,11 +142,11 @@ export function Sidebar({
     if (!requiredPermission) {
       return true; // إذا لم يكن هناك صلاحية محددة، اسمح بالوصول
     }
-    
+
     if (Array.isArray(requiredPermission)) {
       return requiredPermission.some(perm => userPermissions.includes(perm));
     }
-    
+
     return userPermissions.includes(requiredPermission);
   }, [userPermissions]);
 
@@ -212,15 +212,15 @@ export function Sidebar({
             icon: Package,
             href: '/dashboard/operations-reports',
           },
-          { 
-            id: 'customer-reports', 
-            label: 'تقارير العملاء', 
+          {
+            id: 'customer-reports',
+            label: 'تقارير العملاء',
             icon: Users,
             href: '/dashboard/customer-reports',
           },
         ],
       },
-   
+
       {
         id: 'customers',
         label: 'إدارة العملاء',
@@ -276,9 +276,9 @@ export function Sidebar({
         label: 'إدارة المخزون',
         icon: Package,
         children: [
-          { 
-            id: 'inventory-status', 
-            label: 'حالة المخزون', 
+          {
+            id: 'inventory-status',
+            label: 'حالة المخزون',
             icon: Package,
             href: '/inventory',
           },
@@ -288,9 +288,9 @@ export function Sidebar({
             icon: ShoppingCart,
             href: '/dashboard/purchase-equipment',
           },
-          { 
-            id: 'purchases-list', 
-            label: 'إدارة المشتريات', 
+          {
+            id: 'purchases-list',
+            label: 'إدارة المشتريات',
             icon: Receipt,
             href: '/dashboard/purchases-list',
           },
@@ -307,21 +307,21 @@ export function Sidebar({
             icon: FileText,
             href: '/contracts',
           },
-          { 
-            id: 'active-contracts', 
-            label: 'عقود نشطة', 
+          {
+            id: 'active-contracts',
+            label: 'عقود نشطة',
             icon: Activity,
             href: '/contracts/active',
           },
-          { 
-            id: 'expired-contracts', 
-            label: 'عقود منتهية', 
+          {
+            id: 'expired-contracts',
+            label: 'عقود منتهية',
             icon: Clock,
             href: '/contracts/expired',
           },
-          { 
-            id: 'cancelled-contracts', 
-            label: 'عقود ملغاة', 
+          {
+            id: 'cancelled-contracts',
+            label: 'عقود ملغاة',
             icon: X,
             href: '/contracts/cancelled',
           },
@@ -364,9 +364,9 @@ export function Sidebar({
             icon: ShoppingCart,
             href: '/dashboard/purchases-list',
           },
-          { 
-            id: 'invoices', 
-            label: 'الفواتير', 
+          {
+            id: 'invoices',
+            label: 'الفواتير',
             icon: Receipt,
             href: '/dashboard/invoices',
           },
@@ -458,12 +458,7 @@ export function Sidebar({
             icon: MapPin,
             href: '/dashboard/locations/wilayats',
           },
-          {
-            id: 'settings-regions',
-            label: 'المناطق',
-            icon: MapPin,
-            href: '/dashboard/locations/regions',
-          },
+
           {
             id: 'electronic-signature',
             label: 'التوقيع الإلكتروني',
