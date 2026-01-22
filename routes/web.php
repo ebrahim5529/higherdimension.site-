@@ -177,7 +177,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard/locations', [\App\Http\Controllers\Admin\LocationController::class, 'index'])->name('settings.locations');
         Route::get('/dashboard/locations/governorates', [\App\Http\Controllers\Admin\LocationController::class, 'index'])->name('settings.locations.governorates');
         Route::get('/dashboard/locations/wilayats', [\App\Http\Controllers\Admin\LocationController::class, 'wilayatsIndex'])->name('settings.locations.wilayats');
-        Route::get('/dashboard/locations/regions', [\App\Http\Controllers\Admin\LocationController::class, 'regionsIndex'])->name('settings.locations.regions');
 
         // Governorates
         Route::post('/locations/governorates', [\App\Http\Controllers\Admin\LocationController::class, 'storeGovernorate'])->name('locations.governorates.store');
@@ -189,10 +188,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/locations/wilayats/{wilayat}', [\App\Http\Controllers\Admin\LocationController::class, 'updateWilayat'])->name('locations.wilayats.update');
         Route::delete('/locations/wilayats/{wilayat}', [\App\Http\Controllers\Admin\LocationController::class, 'destroyWilayat'])->name('locations.wilayats.destroy');
 
-        // Regions
-        Route::post('/locations/regions', [\App\Http\Controllers\Admin\LocationController::class, 'storeRegion'])->name('locations.regions.store');
-        Route::put('/locations/regions/{region}', [\App\Http\Controllers\Admin\LocationController::class, 'updateRegion'])->name('locations.regions.update');
-        Route::delete('/locations/regions/{region}', [\App\Http\Controllers\Admin\LocationController::class, 'destroyRegion'])->name('locations.regions.destroy');
+
 
         Route::get('/dashboard/smtp-settings', [\App\Http\Controllers\Admin\SmtpSettingsController::class, 'index'])->name('settings.smtp');
         Route::post('/dashboard/smtp-settings', [\App\Http\Controllers\Admin\SmtpSettingsController::class, 'update'])->name('settings.smtp.update');
@@ -201,7 +197,6 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/api/locations/governorates', [\App\Http\Controllers\Admin\LocationController::class, 'getGovernorates'])->name('locations.governorates.index');
     Route::get('/api/locations/governorates/{governorate}/wilayats', [\App\Http\Controllers\Admin\LocationController::class, 'getWilayats'])->name('locations.governorates.wilayats');
-    Route::get('/api/locations/wilayats/{wilayat}/regions', [\App\Http\Controllers\Admin\LocationController::class, 'getRegions'])->name('locations.wilayats.regions');
 
     Route::post('/logout', function (Request $request) {
         Auth::logout();

@@ -22,20 +22,10 @@ return new class extends Migration
 
             $table->unique(['governorate_id', 'name']);
         });
-
-        Schema::create('regions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('wilayat_id')->constrained()->cascadeOnDelete();
-            $table->string('name');
-            $table->timestamps();
-
-            $table->unique(['wilayat_id', 'name']);
-        });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('regions');
         Schema::dropIfExists('wilayats');
         Schema::dropIfExists('governorates');
     }

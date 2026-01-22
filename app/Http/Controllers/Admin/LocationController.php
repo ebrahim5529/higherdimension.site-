@@ -4,13 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreGovernorateRequest;
-use App\Http\Requests\StoreRegionRequest;
 use App\Http\Requests\StoreWilayatRequest;
 use App\Http\Requests\UpdateGovernorateRequest;
-use App\Http\Requests\UpdateRegionRequest;
 use App\Http\Requests\UpdateWilayatRequest;
 use App\Models\Governorate;
-use App\Models\Region;
 use App\Models\Wilayat;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -47,28 +44,7 @@ class LocationController extends Controller
         ]);
     }
 
-    public function regionsIndex(): Response
-    {
-        $governorates = Governorate::query()
-            ->orderBy('name')
-            ->get();
 
-        $wilayats = Wilayat::query()
-            ->with('governorate')
-            ->orderBy('name')
-            ->get();
-
-        $regions = Region::query()
-            ->with('wilayat.governorate')
-            ->orderBy('name')
-            ->get();
-
-        return Inertia::render('Settings/Regions/Index', [
-            'governorates' => $governorates,
-            'wilayats' => $wilayats,
-            'regions' => $regions,
-        ]);
-    }
 
     public function storeGovernorate(StoreGovernorateRequest $request): RedirectResponse
     {
@@ -112,27 +88,7 @@ class LocationController extends Controller
         return redirect()->back()->with('success', 'تم حذف الولاية بنجاح');
     }
 
-    public function storeRegion(StoreRegionRequest $request): RedirectResponse
-    {
-        Region::create($request->validated());
-
-        return redirect()->back()->with('success', 'تم إضافة المنطقة بنجاح');
-    }
-
     // API methods for selectors
-    public function updateRegion(UpdateRegionRequest $request, Region $region): RedirectResponse
-    {
-        $region->update($request->validated());
-
-        return redirect()->back()->with('success', 'تم تحديث المنطقة بنجاح');
-    }
-
-    public function destroyRegion(Region $region): RedirectResponse
-    {
-        $region->delete();
-
-        return redirect()->back()->with('success', 'تم حذف المنطقة بنجاح');
-    }
 
     public function getGovernorates(): JsonResponse
     {
@@ -148,10 +104,5 @@ class LocationController extends Controller
         );
     }
 
-    public function getRegions(Wilayat $wilayat): JsonResponse
-    {
-        return response()->json(
-            $wilayat->regions()->orderBy('name')->get()
-        );
-    }
+
 }

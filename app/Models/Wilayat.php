@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Wilayat extends Model
 {
@@ -16,10 +15,5 @@ class Wilayat extends Model
     public function governorate(): BelongsTo
     {
         return $this->belongsTo(Governorate::class);
-    }
-
-    public function regions(): HasMany
-    {
-        return $this->hasMany(Region::class);
     }
 }
