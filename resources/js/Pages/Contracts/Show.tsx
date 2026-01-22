@@ -62,6 +62,19 @@ interface Contract {
   updatedDate: string;
   updatedDateAr: string;
   duration: number;
+  detailedDuration?: {
+    totalDays: number;
+    months: Array<{
+      year: number;
+      month: number;
+      monthName: string;
+      startDay: number;
+      endDay: number;
+      days: number;
+      description: string;
+    }>;
+    summary: string;
+  };
   deliveryAddress: string;
   deliveryAddressDetails?: {
     governorate?: string;
@@ -365,6 +378,31 @@ export default function ShowContract({ contract }: ShowContractProps) {
                     </div>
                   </div>
                 </div>
+
+                {/* المدة التفصيلية */}
+                {contract.detailedDuration && contract.detailedDuration.totalDays > 0 && (
+                  <div className="bg-white border-2 border-blue-200 rounded-lg p-6 shadow-sm">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Calendar className="h-6 w-6 text-blue-600" />
+                      <h3 className="text-lg font-bold text-gray-900">المدة التفصيلية</h3>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                        <p className="text-sm font-semibold text-gray-700 mb-2">التفصيل:</p>
+                        <div className="space-y-2">
+                          {contract.detailedDuration.months.map((monthDetail, index) => (
+                            <p key={index} className="text-sm text-gray-700">
+                              {monthDetail.description}
+                            </p>
+                          ))}
+                          <p className="text-sm font-semibold text-gray-900 mt-2">
+                            المجموع: {contract.detailedDuration.totalDays} يومًا.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* المعلومات المالية */}
                 <div className="bg-white border-2 border-yellow-200 rounded-lg p-6 shadow-sm">

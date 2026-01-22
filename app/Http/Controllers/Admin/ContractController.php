@@ -396,15 +396,10 @@ class ContractController extends Controller
             $contractType = 'بيع';
         }
 
-        // حساب المدة بالأيام (الفرق بين التواريخ - 1)
+        // حساب المدة بالأيام (شاملة يوم البداية والنهاية)
         $duration = 0;
         if ($contract->start_date && $contract->end_date) {
-            // استخدام diffInDays للحصول على الفرق بين التواريخ ثم طرح 1
-            $duration = abs($contract->start_date->diffInDays($contract->end_date)) - 1;
-            // التأكد من أن المدة لا تكون سالبة
-            if ($duration < 0) {
-                $duration = 0;
-            }
+            $duration = abs($contract->start_date->diffInDays($contract->end_date)) + 1;
         }
 
         // حساب الأيام المتبقية والمنقضية
@@ -444,6 +439,9 @@ class ContractController extends Controller
             'completed' => $contract->status === 'EXPIRED' || $contract->status === 'COMPLETED',
         ];
 
+        // حساب المدة التفصيلية
+        $detailedDuration = $this->calculateDetailedDuration($contract->start_date, $contract->end_date);
+
         return Inertia::render('Contracts/Show', [
             'contract' => [
                 'id' => $contract->id,
@@ -469,6 +467,7 @@ class ContractController extends Controller
                 'updatedDate' => $contract->updated_at?->format('Y-m-d'),
                 'updatedDateAr' => $contract->updated_at ? $this->formatDateArabic($contract->updated_at) : '',
                 'duration' => $duration,
+                'detailedDuration' => $detailedDuration,
                 'deliveryAddress' => $contract->delivery_address ?? '',
                 'deliveryAddressDetails' => $contract->delivery_address_details,
                 'locationMapLink' => $contract->location_map_link,
@@ -732,7 +731,7 @@ class ContractController extends Controller
         $equipmentData = $contract->equipment->map(function ($item) {
             $startDate = $item->start_date ? \Carbon\Carbon::parse($item->start_date) : null;
             $endDate = $item->end_date ? \Carbon\Carbon::parse($item->end_date) : null;
-            $duration = $startDate && $endDate ? $startDate->diffInDays($endDate) : 0;
+            $duration = $startDate && $endDate ? $startDate->diffInDays($endDate) + 1 : 0;
 
             return [
                 'id' => $item->id,
@@ -787,6 +786,91 @@ class ContractController extends Controller
         $year = $carbon->year;
 
         return "$day $month $year";
+    }
+
+    /**
+     * حساب المدة التفصيلية بين تاريخين
+     */
+    private function calculateDetailedDuration($startDate, $endDate): array
+    {
+        if (!$startDate || !$endDate) {
+            return [
+                'totalDays' => 0,
+                'months' => [],
+                'summary' => '',
+            ];
+        }
+
+        $start = \Carbon\Carbon::parse($startDate);
+        $end = \Carbon\Carbon::parse($endDate);
+        $months = [
+            1 => 'يناير', 2 => 'فبراير', 3 => 'مارس', 4 => 'أبريل',
+            5 => 'مايو', 6 => 'يونيو', 7 => 'يوليو', 8 => 'أغسطس',
+            9 => 'سبتمبر', 10 => 'أكتوبر', 11 => 'نوفمبر', 12 => 'ديسمبر',
+        ];
+
+        $monthDetails = [];
+        $current = $start->copy()->startOfMonth();
+
+        while ($current->lte($end)) {
+            $year = $current->year;
+            $month = $current->month;
+            $monthName = $months[$month] ?? $month;
+
+            // حساب أول يوم وآخر يوم في هذا الشهر
+            $firstDayOfMonth = $current->copy()->startOfMonth();
+            $lastDayOfMonth = $current->copy()->endOfMonth();
+
+            // تحديد تاريخ البداية الفعلي في هذا الشهر
+            // إذا كان تاريخ البدء في هذا الشهر، استخدم تاريخ البدء، وإلا استخدم أول يوم في الشهر
+            if ($start->copy()->gte($firstDayOfMonth) && $start->copy()->lte($lastDayOfMonth)) {
+                $monthStart = $start->copy();
+            } else {
+                $monthStart = $firstDayOfMonth->copy();
+            }
+
+            // تحديد تاريخ النهاية الفعلي في هذا الشهر
+            // إذا كان تاريخ الانتهاء في هذا الشهر، استخدم تاريخ الانتهاء، وإلا استخدم آخر يوم في الشهر
+            if ($end->copy()->gte($firstDayOfMonth) && $end->copy()->lte($lastDayOfMonth)) {
+                $monthEnd = $end->copy();
+            } else {
+                $monthEnd = $lastDayOfMonth->copy();
+            }
+
+            // التأكد من أن التواريخ صحيحة وأننا في نفس الشهر
+            if ($monthStart->lte($monthEnd) && $monthStart->month === $month && $monthEnd->month === $month) {
+                // حساب عدد الأيام في هذا الشهر (شاملة البداية والنهاية)
+                $daysInMonth = $monthStart->diffInDays($monthEnd) + 1;
+
+                $monthDetails[] = [
+                    'year' => $year,
+                    'month' => $month,
+                    'monthName' => $monthName,
+                    'startDay' => $monthStart->day,
+                    'endDay' => $monthEnd->day,
+                    'days' => $daysInMonth,
+                    'description' => "{$monthName} {$year}: (من {$monthStart->day} إلى {$monthEnd->day}) = {$daysInMonth} يومًا",
+                ];
+            }
+
+            // الانتقال إلى الشهر التالي
+            $current->addMonth()->startOfMonth();
+        }
+
+        $totalDays = $start->diffInDays($end) + 1;
+
+        // بناء الملخص
+        $summaryParts = array_map(function ($detail) {
+            return $detail['description'];
+        }, $monthDetails);
+
+        $summary = implode(".\n", $summaryParts) . ".\nالمجموع: " . $totalDays . " يومًا.";
+
+        return [
+            'totalDays' => $totalDays,
+            'months' => $monthDetails,
+            'summary' => $summary,
+        ];
     }
 
     /**
