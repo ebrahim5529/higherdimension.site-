@@ -1,6 +1,6 @@
 /** @jsxImportSource react */
 import { useState, useEffect, FormEvent } from 'react';
-import { router, useForm, Head } from '@inertiajs/react';
+import { router, useForm, Head, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -27,6 +27,7 @@ export default function TwoFactorChallenge({
   expires_at,
   flash,
 }: TwoFactorChallengeProps) {
+  const { auth } = usePage().props as any;
   const [code, setCode] = useState('');
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [isResending, setIsResending] = useState(false);
@@ -35,9 +36,19 @@ export default function TwoFactorChallenge({
     code: '',
   });
 
+  // منع إعادة التوجيه التلقائية إذا كان المستخدم مسجل دخول بالفعل
+  // (يجب أن يكون في صفحة التحدي وليس مسجل دخول)
+  useEffect(() => {
+    // إذا كان المستخدم مسجل دخول بالفعل، لا نقوم بأي شيء
+    // لأن هذا يعني أنه أكمل التحقق من 2FA بالفعل
+    if (auth?.user) {
+      console.log('User is authenticated, staying on challenge page');
+    }
+  }, [auth]);
+
   // حساب الوقت المتبقي
   useEffect(() => {
-    if (expires_at) {
+    if (expires_at && expires_at > 0) {
       const updateTimer = () => {
         const now = Math.floor(Date.now() / 1000);
         const remaining = expires_at - now;
@@ -48,6 +59,9 @@ export default function TwoFactorChallenge({
       const interval = setInterval(updateTimer, 1000);
 
       return () => clearInterval(interval);
+    } else {
+      // إذا لم يكن هناك expires_at، نعرض رسالة
+      setTimeRemaining(null);
     }
   }, [expires_at]);
 
@@ -157,6 +171,22 @@ export default function TwoFactorChallenge({
                         </p>
                         <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
                           يرجى طلب رمز جديد
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {timeRemaining === null && !expires_at && (
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                          جاري إرسال رمز التحقق...
+                        </p>
+                        <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                          يرجى الانتظار قليلاً
                         </p>
                       </div>
                     </div>

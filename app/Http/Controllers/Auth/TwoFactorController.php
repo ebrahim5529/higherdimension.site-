@@ -94,12 +94,25 @@ class TwoFactorController extends Controller
             'user_id' => $userId,
             'email' => $user->email,
             'expires_at' => $expiresAt?->toDateTimeString(),
+            'has_otp' => ! empty($user->two_factor_otp),
             'session_id' => $request->session()->getId(),
         ]);
 
+        // إذا لم يكن هناك OTP صالح، يجب إرسال واحد جديد
+        if (! $expiresAt) {
+            \Log::warning('TwoFactorChallenge: No OTP expiration time, sending new OTP', [
+                'user_id' => $userId,
+                'session_id' => $request->session()->getId(),
+            ]);
+            $this->twoFactorService->sendOtp($user);
+            $request->session()->put('two_factor.otp_sent_at', now()->toDateTimeString());
+            $user->refresh();
+            $expiresAt = $user->two_factor_otp_expires_at;
+        }
+
         return Inertia::render('Auth/TwoFactorChallenge', [
             'email' => $user->email,
-            'expires_at' => $expiresAt?->timestamp,
+            'expires_at' => $expiresAt?->timestamp ?? null,
         ]);
     }
 
