@@ -80,6 +80,7 @@ class LoginController extends Controller
                     // حفظ معرف المستخدم في الجلسة قبل تسجيل الخروج
                     $request->session()->put('login.id', $userId);
                     $request->session()->put('login.remember', $remember);
+                    $request->session()->put('two_factor.otp_sent_at', now()->toDateTimeString());
 
                     // تسجيل الخروج مؤقتاً حتى يتم التحقق من OTP
                     Auth::logout();

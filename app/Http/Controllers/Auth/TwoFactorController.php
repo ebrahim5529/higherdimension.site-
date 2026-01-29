@@ -53,13 +53,39 @@ class TwoFactorController extends Controller
         }
 
         // التحقق من وجود OTP صالح، وإذا لم يكن موجوداً، إرسال واحد جديد
+        // فقط إذا لم يتم إرسال OTP في هذه الجلسة مؤخراً (خلال آخر دقيقة)
+        $lastOtpSent = $request->session()->get('two_factor.otp_sent_at');
+        $shouldSendOtp = false;
+
         if (! $this->twoFactorService->isOtpValid($user)) {
-            \Log::info('TwoFactorChallenge: OTP expired or missing, sending new OTP', [
-                'user_id' => $userId,
-                'session_id' => $request->session()->getId(),
-            ]);
-            $this->twoFactorService->sendOtp($user);
-            $user->refresh(); // تحديث بيانات المستخدم من قاعدة البيانات
+            // التحقق من أنه لم يتم إرسال OTP في آخر دقيقة
+            if (! $lastOtpSent) {
+                $shouldSendOtp = true;
+            } else {
+                $lastSentTime = is_string($lastOtpSent) ? \Carbon\Carbon::parse($lastOtpSent) : $lastOtpSent;
+                $secondsSinceLastSent = now()->diffInSeconds($lastSentTime);
+
+                if ($secondsSinceLastSent > 60) {
+                    $shouldSendOtp = true;
+                } else {
+                    \Log::info('TwoFactorChallenge: OTP already sent recently, skipping', [
+                        'user_id' => $userId,
+                        'session_id' => $request->session()->getId(),
+                        'last_sent' => $lastOtpSent,
+                        'seconds_ago' => $secondsSinceLastSent,
+                    ]);
+                }
+            }
+
+            if ($shouldSendOtp) {
+                \Log::info('TwoFactorChallenge: OTP expired or missing, sending new OTP', [
+                    'user_id' => $userId,
+                    'session_id' => $request->session()->getId(),
+                ]);
+                $this->twoFactorService->sendOtp($user);
+                $request->session()->put('two_factor.otp_sent_at', now()->toDateTimeString());
+                $user->refresh(); // تحديث بيانات المستخدم من قاعدة البيانات
+            }
         }
 
         $expiresAt = $user->two_factor_otp_expires_at;
@@ -124,6 +150,7 @@ class TwoFactorController extends Controller
         Auth::login($user, $remember);
         $request->session()->forget('login.id');
         $request->session()->forget('login.remember');
+        $request->session()->forget('two_factor.otp_sent_at');
         $request->session()->regenerate();
 
         // حفظ الجهاز كجهاز موثوق
@@ -161,6 +188,7 @@ class TwoFactorController extends Controller
         RateLimiter::hit($key, 3600);
 
         $this->twoFactorService->sendOtp($user);
+        $request->session()->put('two_factor.otp_sent_at', now()->toDateTimeString());
 
         return back()->with('success', 'تم إرسال رمز التحقق إلى بريدك الإلكتروني');
     }
