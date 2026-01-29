@@ -36,23 +36,21 @@ export default function TwoFactorChallenge({
     code: '',
   });
 
-  // منع إعادة التوجيه التلقائية إذا كان المستخدم مسجل دخول بالفعل
-  // (يجب أن يكون في صفحة التحدي وليس مسجل دخول)
+  // منع إعادة التوجيه التلقائية - الصفحة تبقى دائماً
   useEffect(() => {
-    // إذا كان المستخدم مسجل دخول بالفعل، لا نقوم بأي شيء
-    // لأن هذا يعني أنه أكمل التحقق من 2FA بالفعل
-    if (auth?.user) {
-      console.log('User is authenticated, staying on challenge page');
-    }
-  }, [auth]);
+    // لا نقوم بأي إعادة توجيه تلقائية
+    // الصفحة تبقى حتى يتم إدخال الرمز بنجاح أو المستخدم يغادر يدوياً
+    console.log('TwoFactorChallenge page loaded - staying on page');
+  }, []);
 
-  // حساب الوقت المتبقي
+  // حساب الوقت المتبقي (للعرض فقط - لا يؤثر على بقاء الصفحة)
   useEffect(() => {
     if (expires_at && expires_at > 0) {
       const updateTimer = () => {
         const now = Math.floor(Date.now() / 1000);
         const remaining = expires_at - now;
-        setTimeRemaining(remaining > 0 ? remaining : 0);
+        // نعرض الوقت حتى لو كان سالباً (للعرض فقط)
+        setTimeRemaining(remaining);
       };
 
       updateTimer();
@@ -76,9 +74,12 @@ export default function TwoFactorChallenge({
   }, [flash]);
 
   const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    // التعامل مع الأوقات السالبة (انتهى الوقت)
+    const absSeconds = Math.abs(seconds);
+    const mins = Math.floor(absSeconds / 60);
+    const secs = absSeconds % 60;
+    const sign = seconds < 0 ? '-' : '';
+    return `${sign}${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleSubmit = (e: FormEvent) => {
@@ -161,7 +162,8 @@ export default function TwoFactorChallenge({
                   </div>
                 )}
 
-                {timeRemaining === 0 && (
+                {/* رسالة انتهاء الوقت - لكن الصفحة تبقى */}
+                {timeRemaining !== null && timeRemaining <= 0 && (
                   <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                     <div className="flex items-start gap-3">
                       <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
@@ -170,7 +172,7 @@ export default function TwoFactorChallenge({
                           انتهت صلاحية الرمز
                         </p>
                         <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                          يرجى طلب رمز جديد
+                          يمكنك طلب رمز جديد أو المحاولة بالرمز القديم
                         </p>
                       </div>
                     </div>
