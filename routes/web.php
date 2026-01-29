@@ -24,6 +24,11 @@ Route::post('/forgot-password', [ForgotPasswordController::class, 'store'])->mid
 Route::get('/reset-password/{token}', [ResetPasswordController::class, 'show'])->middleware('guest')->name('password.reset');
 Route::post('/reset-password', [ResetPasswordController::class, 'store'])->middleware('guest')->name('password.update');
 
+// Two Factor Authentication routes (accessible without auth, but requires login.id in session)
+Route::get('/two-factor/challenge', [\App\Http\Controllers\Auth\TwoFactorController::class, 'show'])->name('two-factor.challenge');
+Route::post('/two-factor/challenge', [\App\Http\Controllers\Auth\TwoFactorController::class, 'verify'])->name('two-factor.verify');
+Route::post('/two-factor/resend', [\App\Http\Controllers\Auth\TwoFactorController::class, 'resend'])->name('two-factor.resend');
+
 // Public routes (no authentication required)
 Route::get('/contract/sign/{contractNumber}', [\App\Http\Controllers\Admin\ContractController::class, 'sign'])->name('contracts.sign');
 Route::post('/contracts/{contractNumber}/sign', [\App\Http\Controllers\Admin\ContractController::class, 'saveSignature'])->name('contracts.saveSignature');
@@ -167,6 +172,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/profile', [\App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile', [\App\Http\Controllers\ProfileController::class, 'updateProfile'])->name('profile.update');
     Route::put('/profile/password', [\App\Http\Controllers\ProfileController::class, 'changePassword'])->name('profile.password.update');
+    Route::post('/profile/two-factor/enable', [\App\Http\Controllers\ProfileController::class, 'enableTwoFactor'])->name('profile.two-factor.enable');
+    Route::post('/profile/two-factor/disable', [\App\Http\Controllers\ProfileController::class, 'disableTwoFactor'])->name('profile.two-factor.disable');
 
     Route::middleware('permission:manage-electronic-signature')->group(function () {
         Route::get('/dashboard/electronic-signature', [\App\Http\Controllers\Admin\ElectronicSignatureController::class, 'index'])->name('settings.electronic-signature');
@@ -188,8 +195,6 @@ Route::middleware('auth')->group(function () {
         Route::put('/locations/wilayats/{wilayat}', [\App\Http\Controllers\Admin\LocationController::class, 'updateWilayat'])->name('locations.wilayats.update');
         Route::delete('/locations/wilayats/{wilayat}', [\App\Http\Controllers\Admin\LocationController::class, 'destroyWilayat'])->name('locations.wilayats.destroy');
 
-
-
         Route::get('/dashboard/smtp-settings', [\App\Http\Controllers\Admin\SmtpSettingsController::class, 'index'])->name('settings.smtp');
         Route::post('/dashboard/smtp-settings', [\App\Http\Controllers\Admin\SmtpSettingsController::class, 'update'])->name('settings.smtp.update');
         Route::post('/dashboard/smtp-settings/test', [\App\Http\Controllers\Admin\SmtpSettingsController::class, 'test'])->name('settings.smtp.test');
@@ -197,6 +202,12 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/api/locations/governorates', [\App\Http\Controllers\Admin\LocationController::class, 'getGovernorates'])->name('locations.governorates.index');
     Route::get('/api/locations/governorates/{governorate}/wilayats', [\App\Http\Controllers\Admin\LocationController::class, 'getWilayats'])->name('locations.governorates.wilayats');
+
+    // Security Notifications routes
+    Route::get('/dashboard/notifications', [\App\Http\Controllers\SecurityNotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{notification}/read', [\App\Http\Controllers\SecurityNotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [\App\Http\Controllers\SecurityNotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::delete('/notifications/{notification}', [\App\Http\Controllers\SecurityNotificationController::class, 'destroy'])->name('notifications.destroy');
 
     Route::post('/logout', function (Request $request) {
         Auth::logout();

@@ -34,9 +34,13 @@
                 @if(!empty($introLines) && is_array($introLines))
                   <div style="margin-top:12px;">
                     @foreach($introLines as $line)
-                      <div style="font-family:Tahoma, Arial, sans-serif;font-size:14px;line-height:1.8;color:#334155;margin:0 0 10px 0;">
-                        {!! e($line) !!}
-                      </div>
+                      @if(strip_tags($line) !== $line)
+                        {!! $line !!}
+                      @else
+                        <div style="font-family:Tahoma, Arial, sans-serif;font-size:14px;line-height:1.8;color:#334155;margin:0 0 10px 0;">
+                          {{ $line }}
+                        </div>
+                      @endif
                     @endforeach
                   </div>
                 @endif
@@ -70,9 +74,13 @@
                 @if(!empty($outroLines) && is_array($outroLines))
                   <div style="margin-top:14px;">
                     @foreach($outroLines as $line)
-                      <div style="font-family:Tahoma, Arial, sans-serif;font-size:14px;line-height:1.8;color:#334155;margin:0 0 10px 0;">
-                        {!! e($line) !!}
-                      </div>
+                      @if(strip_tags($line) !== $line)
+                        {!! $line !!}
+                      @else
+                        <div style="font-family:Tahoma, Arial, sans-serif;font-size:14px;line-height:1.8;color:#334155;margin:0 0 10px 0;">
+                          {{ $line }}
+                        </div>
+                      @endif
                     @endforeach
                   </div>
                 @endif

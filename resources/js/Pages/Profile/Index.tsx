@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { showToast } from '@/hooks/use-toast';
+import TwoFactorToggle from '@/components/security/TwoFactorToggle';
 
 interface UserData {
   id: number;
@@ -24,6 +25,7 @@ interface UserData {
   phone?: string;
   roles: string[];
   permissions: string[];
+  two_factor_enabled?: boolean;
 }
 
 interface ProfileProps {
@@ -322,6 +324,11 @@ export default function Profile({ user, flash }: ProfileProps) {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* Two Factor Authentication */}
+        <div className="mt-6">
+          <TwoFactorToggle enabled={user.two_factor_enabled || false} />
         </div>
       </div>
     </DashboardLayout>

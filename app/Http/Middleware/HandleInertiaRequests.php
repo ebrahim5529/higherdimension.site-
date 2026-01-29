@@ -37,6 +37,13 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
 
+        $unreadNotificationsCount = 0;
+        if ($user) {
+            $unreadNotificationsCount = $user->securityNotifications()
+                ->unread()
+                ->count();
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -46,12 +53,14 @@ class HandleInertiaRequests extends Middleware
                     'email' => $user->email,
                     'roles' => $user->roles->pluck('name')->toArray(),
                     'permissions' => $user->getAllPermissions()->pluck('name')->toArray(),
+                    'two_factor_enabled' => $user->hasTwoFactorEnabled(),
                 ] : null,
             ],
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
             ],
+            'unreadNotificationsCount' => $unreadNotificationsCount,
         ];
     }
 }
