@@ -1,6 +1,6 @@
 /** @jsxImportSource react */
 import { useState, useEffect, FormEvent } from 'react';
-import { router, useForm, Head, usePage } from '@inertiajs/react';
+import { router, useForm, Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -27,7 +27,6 @@ export default function TwoFactorChallenge({
   expires_at,
   flash,
 }: TwoFactorChallengeProps) {
-  const { auth } = usePage().props as any;
   const [code, setCode] = useState('');
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [isResending, setIsResending] = useState(false);
@@ -35,13 +34,6 @@ export default function TwoFactorChallenge({
   const form = useForm({
     code: '',
   });
-
-  // منع إعادة التوجيه التلقائية - الصفحة تبقى دائماً
-  useEffect(() => {
-    // لا نقوم بأي إعادة توجيه تلقائية
-    // الصفحة تبقى حتى يتم إدخال الرمز بنجاح أو المستخدم يغادر يدوياً
-    console.log('TwoFactorChallenge page loaded - staying on page');
-  }, []);
 
   // حساب الوقت المتبقي (للعرض فقط - لا يؤثر على بقاء الصفحة)
   useEffect(() => {
