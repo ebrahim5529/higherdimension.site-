@@ -39,22 +39,37 @@ class HandleInertiaRequests extends Middleware
 
         $unreadNotificationsCount = 0;
         if ($user) {
-            $unreadNotificationsCount = $user->securityNotifications()
-                ->unread()
-                ->count();
+            try {
+                $unreadNotificationsCount = $user->securityNotifications()
+                    ->unread()
+                    ->count();
+            } catch (\Exception $e) {
+                // تجاهل الأخطاء في حالة عدم وجود علاقة أو جدول
+                $unreadNotificationsCount = 0;
+            }
         }
 
-        return [
-            ...parent::share($request),
-            'auth' => [
-                'user' => $user ? [
+        $authData = null;
+        if ($user) {
+            try {
+                $authData = [
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
                     'roles' => $user->roles->pluck('name')->toArray(),
                     'permissions' => $user->getAllPermissions()->pluck('name')->toArray(),
                     'two_factor_enabled' => $user->hasTwoFactorEnabled(),
-                ] : null,
+                ];
+            } catch (\Exception $e) {
+                // في حالة وجود خطأ، نعيد null
+                $authData = null;
+            }
+        }
+
+        return [
+            ...parent::share($request),
+            'auth' => [
+                'user' => $authData,
             ],
             'flash' => [
                 'success' => $request->session()->get('success'),

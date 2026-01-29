@@ -110,9 +110,18 @@ class TwoFactorController extends Controller
             $expiresAt = $user->two_factor_otp_expires_at;
         }
 
+        // التأكد من أن الجلسة محفوظة بشكل صحيح
+        $request->session()->save();
+
+        \Log::info('TwoFactorChallenge: About to render Inertia page', [
+            'user_id' => $userId,
+            'email' => $user->email,
+            'session_id' => $request->session()->getId(),
+            'has_login_id' => $request->session()->has('login.id'),
+        ]);
+
         return Inertia::render('Auth/TwoFactorChallenge', [
             'email' => $user->email,
-            'expires_at' => $expiresAt?->timestamp ?? null,
         ]);
     }
 

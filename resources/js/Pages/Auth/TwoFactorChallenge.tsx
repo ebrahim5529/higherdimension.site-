@@ -15,7 +15,6 @@ import { showToast } from '@/hooks/use-toast';
 
 interface TwoFactorChallengeProps {
   email: string;
-  expires_at?: number;
   flash?: {
     success?: string;
     error?: string;
@@ -24,14 +23,19 @@ interface TwoFactorChallengeProps {
 
 export default function TwoFactorChallenge({
   email,
-  expires_at,
   flash,
 }: TwoFactorChallengeProps) {
   const [code, setCode] = useState('');
+  const [isMounted, setIsMounted] = useState(false);
 
   const form = useForm({
     code: '',
   });
+
+  // التأكد من أن المكون تم تحميله
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // عرض رسائل Flash
   useEffect(() => {
@@ -42,6 +46,19 @@ export default function TwoFactorChallenge({
       showToast.error('خطأ', flash.error);
     }
   }, [flash]);
+
+  // منع إعادة التوجيه التلقائي والحفاظ على الصفحة مرئية
+  useEffect(() => {
+    // التأكد من أننا على الصفحة الصحيحة
+    const currentPath = window.location.pathname;
+    if (currentPath !== '/two-factor/challenge') {
+      console.log('TwoFactorChallenge: Path mismatch', { currentPath, expected: '/two-factor/challenge' });
+      return;
+    }
+
+    // التأكد من أن الصفحة مرئية
+    console.log('TwoFactorChallenge: Component mounted and visible', { email });
+  }, [email]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -70,6 +87,18 @@ export default function TwoFactorChallenge({
       }
     );
   };
+
+  // إذا لم يتم تحميل المكون بعد، عرض شاشة تحميل
+  if (!isMounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">جاري التحميل...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

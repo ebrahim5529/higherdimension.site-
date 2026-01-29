@@ -43,8 +43,10 @@ export default function Login() {
         password,
       },
       {
-        onSuccess: () => {
-          router.visit('/dashboard');
+        onSuccess: (page) => {
+          // لا نقوم بإعادة التوجيه هنا - Laravel سيتولى ذلك
+          // إذا كان هناك 2FA، سيتم إعادة التوجيه إلى /two-factor/challenge تلقائياً
+          // إذا لم يكن هناك 2FA، سيتم إعادة التوجيه إلى /dashboard تلقائياً
         },
         onError: (errors) => {
           setError(
