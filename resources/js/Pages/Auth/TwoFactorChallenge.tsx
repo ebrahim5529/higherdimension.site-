@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Mail, Shield, RefreshCw } from 'lucide-react';
+import { Mail, Shield, RefreshCw, ArrowLeft } from 'lucide-react';
 import { showToast } from '@/hooks/use-toast';
 
 interface TwoFactorChallengeProps {
@@ -88,6 +88,15 @@ export default function TwoFactorChallenge({
     );
   };
 
+  const handleBackToLogin = () => {
+    // مسح بيانات الجلسة المتعلقة بتسجيل الدخول
+    router.visit('/login', {
+      onBefore: () => {
+        // يمكن إضافة منطق إضافي هنا إذا لزم الأمر
+      },
+    });
+  };
+
   // إذا لم يتم تحميل المكون بعد، عرض شاشة تحميل
   if (!isMounted) {
     return (
@@ -105,6 +114,19 @@ export default function TwoFactorChallenge({
       <Head title="التحقق من المصادقة الثنائية" />
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
         <div className="w-full max-w-md">
+          {/* زر الرجوع */}
+          <div className="mb-4">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleBackToLogin}
+              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            >
+              <ArrowLeft className="h-4 w-4 ml-2" />
+              الرجوع إلى تسجيل الدخول
+            </Button>
+          </div>
+
           <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
             <CardHeader className="space-y-1 text-center">
               <div className="mx-auto w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-4">
