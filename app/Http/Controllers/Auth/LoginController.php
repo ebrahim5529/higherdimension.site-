@@ -77,13 +77,15 @@ class LoginController extends Controller
                     $userId = $user->id;
                     $remember = $request->boolean('remember');
 
-                    // تسجيل الخروج مؤقتاً حتى يتم التحقق من OTP
-                    Auth::logout();
-                    $request->session()->regenerateToken();
-
-                    // حفظ معرف المستخدم في الجلسة للتحقق لاحقاً
+                    // حفظ معرف المستخدم في الجلسة قبل تسجيل الخروج
                     $request->session()->put('login.id', $userId);
                     $request->session()->put('login.remember', $remember);
+
+                    // تسجيل الخروج مؤقتاً حتى يتم التحقق من OTP
+                    Auth::logout();
+
+                    // عدم استخدام regenerateToken() لأنه يحذف البيانات من الجلسة
+                    // $request->session()->regenerateToken();
 
                     return redirect()->route('two-factor.challenge');
                 }

@@ -18,27 +18,58 @@ class TwoFactorController extends Controller
 
     public function show(Request $request): \Inertia\Response|\Illuminate\Http\RedirectResponse
     {
+        // التحقق من وجود login.id في الجلسة
         $userId = $request->session()->get('login.id');
 
         if (! $userId) {
-            return redirect()->route('login');
+            \Log::warning('TwoFactorChallenge: No login.id in session', [
+                'session_id' => $request->session()->getId(),
+                'session_data' => $request->session()->all(),
+            ]);
+
+            return redirect()->route('login')->with('error', 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.');
         }
 
         $user = \App\Models\User::find($userId);
 
-        if (! $user || ! $user->hasTwoFactorEnabled()) {
+        if (! $user) {
+            \Log::warning('TwoFactorChallenge: User not found', [
+                'user_id' => $userId,
+                'session_id' => $request->session()->getId(),
+            ]);
             $request->session()->forget('login.id');
 
-            return redirect()->route('login');
+            return redirect()->route('login')->with('error', 'المستخدم غير موجود. يرجى تسجيل الدخول مرة أخرى.');
+        }
+
+        if (! $user->hasTwoFactorEnabled()) {
+            \Log::warning('TwoFactorChallenge: 2FA not enabled for user', [
+                'user_id' => $userId,
+                'session_id' => $request->session()->getId(),
+            ]);
+            $request->session()->forget('login.id');
+
+            return redirect()->route('login')->with('error', 'المصادقة الثنائية غير مفعّلة لحسابك.');
         }
 
         // التحقق من وجود OTP صالح، وإذا لم يكن موجوداً، إرسال واحد جديد
         if (! $this->twoFactorService->isOtpValid($user)) {
+            \Log::info('TwoFactorChallenge: OTP expired or missing, sending new OTP', [
+                'user_id' => $userId,
+                'session_id' => $request->session()->getId(),
+            ]);
             $this->twoFactorService->sendOtp($user);
             $user->refresh(); // تحديث بيانات المستخدم من قاعدة البيانات
         }
 
         $expiresAt = $user->two_factor_otp_expires_at;
+
+        \Log::info('TwoFactorChallenge: Rendering challenge page', [
+            'user_id' => $userId,
+            'email' => $user->email,
+            'expires_at' => $expiresAt?->toDateTimeString(),
+            'session_id' => $request->session()->getId(),
+        ]);
 
         return Inertia::render('Auth/TwoFactorChallenge', [
             'email' => $user->email,
