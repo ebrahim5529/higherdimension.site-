@@ -209,6 +209,33 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/read-all', [\App\Http\Controllers\SecurityNotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::delete('/notifications/{notification}', [\App\Http\Controllers\SecurityNotificationController::class, 'destroy'])->name('notifications.destroy');
 
+    // Accounting Module
+    Route::prefix('accounting')->name('accounting.')->group(function () {
+        // Chart of Accounts
+        Route::get('/chart-of-accounts', [\App\Http\Controllers\Admin\AccountController::class, 'index'])->name('chart-of-accounts.index');
+        Route::post('/chart-of-accounts', [\App\Http\Controllers\Admin\AccountController::class, 'store'])->name('chart-of-accounts.store');
+        Route::put('/chart-of-accounts/{id}', [\App\Http\Controllers\Admin\AccountController::class, 'update'])->name('chart-of-accounts.update');
+        Route::delete('/chart-of-accounts/{id}', [\App\Http\Controllers\Admin\AccountController::class, 'destroy'])->name('chart-of-accounts.destroy');
+
+        // Journal Entries
+        Route::get('/journal-entries', [\App\Http\Controllers\Admin\JournalEntryController::class, 'index'])->name('journal-entries.index');
+        Route::get('/journal-entries/create', [\App\Http\Controllers\Admin\JournalEntryController::class, 'create'])->name('journal-entries.create');
+        Route::post('/journal-entries', [\App\Http\Controllers\Admin\JournalEntryController::class, 'store'])->name('journal-entries.store');
+        Route::get('/journal-entries/{id}', [\App\Http\Controllers\Admin\JournalEntryController::class, 'show'])->name('journal-entries.show');
+        Route::get('/journal-entries/{id}/edit', [\App\Http\Controllers\Admin\JournalEntryController::class, 'edit'])->name('journal-entries.edit');
+        Route::put('/journal-entries/{id}', [\App\Http\Controllers\Admin\JournalEntryController::class, 'update'])->name('journal-entries.update');
+        Route::delete('/journal-entries/{id}', [\App\Http\Controllers\Admin\JournalEntryController::class, 'destroy'])->name('journal-entries.destroy');
+        Route::post('/journal-entries/{id}/post', [\App\Http\Controllers\Admin\JournalEntryController::class, 'post'])->name('journal-entries.post');
+
+        // Accounting Reports
+        Route::get('/reports/trial-balance', [\App\Http\Controllers\Admin\AccountingReportController::class, 'trialBalance'])->name('reports.trial-balance');
+        Route::get('/reports/balance-sheet', [\App\Http\Controllers\Admin\AccountingReportController::class, 'balanceSheet'])->name('reports.balance-sheet');
+        Route::get('/reports/income-statement', [\App\Http\Controllers\Admin\AccountingReportController::class, 'incomeStatement'])->name('reports.income-statement');
+        Route::get('/reports/general-ledger', [\App\Http\Controllers\Admin\AccountingReportController::class, 'generalLedger'])->name('reports.general-ledger');
+        Route::get('/reports/account-statement', [\App\Http\Controllers\Admin\AccountingReportController::class, 'accountStatement'])->name('reports.account-statement');
+        Route::get('/reports/journal-report', [\App\Http\Controllers\Admin\AccountingReportController::class, 'journalReport'])->name('reports.journal-report');
+    });
+
     Route::post('/logout', function (Request $request) {
         Auth::logout();
         $request->session()->invalidate();

@@ -67,14 +67,17 @@
         "concurrently": "^9.0.1",
         "laravel-vite-plugin": "^2.0.0",
         "mysql2": "^3.15.3",
+        "nodemon": "^3.1.11",
         "tailwindcss": "^3.4.19",
         "typescript": "^5.8.3",
         "vite": "^7.0.7"
     },
     "scripts": {
-        "dev": "vite",
+        "dev": "concurrently \"npm run serve:watch\" \"vite\"",
+        "dev:vite": "vite",
         "dev:port": "vite --port",
         "serve": "php artisan serve",
+        "serve:watch": "nodemon --watch app --watch routes --watch config --watch database --ext php --exec \"php artisan serve\"",
         "serve:port": "php artisan serve --port",
         "build": "vite build",
         "build:production": "vite build --mode production",

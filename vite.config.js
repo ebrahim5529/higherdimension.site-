@@ -20,7 +20,7 @@ export default defineConfig({
     },
     build: {
         // Ensure consistent build output for production
-        manifest: true,
+        manifest: 'manifest.json',
         outDir: 'public/build',
         emptyOutDir: true,
         rollupOptions: {

@@ -35,6 +35,10 @@ import {
   Building2,
   Eye,
   Mail,
+  BookOpen,
+  Landmark,
+  Scale,
+  Plus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -134,6 +138,18 @@ export function Sidebar({
     'settings-wilayats': 'access-settings',
     'settings-regions': 'access-settings',
     'smtp-settings': 'access-settings',
+    'accounting': 'access-accounting',
+    'chart-of-accounts': 'manage-chart-of-accounts',
+    'journal-entries': 'manage-journal-entries',
+    'all-journal-entries': 'manage-journal-entries',
+    'create-journal-entry': 'manage-journal-entries',
+    'accounting-reports': 'view-accounting-reports',
+    'trial-balance': 'view-accounting-reports',
+    'balance-sheet': 'view-accounting-reports',
+    'income-statement': 'view-accounting-reports',
+    'general-ledger': 'view-accounting-reports',
+    'account-statement': 'view-accounting-reports',
+    'journal-report': 'view-accounting-reports',
   };
 
   // دالة للتحقق من الصلاحيات
@@ -438,6 +454,67 @@ export function Sidebar({
             label: 'تقارير المدفوعات',
             icon: BarChart,
             href: '/payments/reports',
+          },
+        ],
+      },
+      {
+        id: 'accounting',
+        label: 'المحاسبة',
+        icon: Landmark,
+        children: [
+          {
+            id: 'chart-of-accounts',
+            label: 'شجرة الحسابات',
+            icon: BookOpen,
+            href: '/accounting/chart-of-accounts',
+          },
+          {
+            id: 'all-journal-entries',
+            label: 'القيود المحاسبية',
+            icon: FileText,
+            href: '/accounting/journal-entries',
+          },
+          {
+            id: 'create-journal-entry',
+            label: 'إنشاء قيد جديد',
+            icon: Plus,
+            href: '/accounting/journal-entries/create',
+          },
+          {
+            id: 'trial-balance',
+            label: 'ميزان المراجعة',
+            icon: Scale,
+            href: '/accounting/reports/trial-balance',
+          },
+          {
+            id: 'balance-sheet',
+            label: 'الميزانية العمومية',
+            icon: BarChart,
+            href: '/accounting/reports/balance-sheet',
+          },
+          {
+            id: 'income-statement',
+            label: 'قائمة الدخل',
+            icon: TrendingUp,
+            href: '/accounting/reports/income-statement',
+          },
+          {
+            id: 'general-ledger',
+            label: 'دفتر الأستاذ العام',
+            icon: BookOpen,
+            href: '/accounting/reports/general-ledger',
+          },
+          {
+            id: 'account-statement',
+            label: 'كشف حساب',
+            icon: FileText,
+            href: '/accounting/reports/account-statement',
+          },
+          {
+            id: 'journal-report',
+            label: 'تقرير اليومية',
+            icon: ClipboardList,
+            href: '/accounting/reports/journal-report',
           },
         ],
       },

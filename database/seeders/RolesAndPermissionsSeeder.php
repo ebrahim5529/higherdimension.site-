@@ -78,6 +78,11 @@ class RolesAndPermissionsSeeder extends Seeder
             // الإعدادات
             'access-settings',
             'manage-electronic-signature',
+            // المحاسبة
+            'access-accounting',
+            'manage-chart-of-accounts',
+            'manage-journal-entries',
+            'view-accounting-reports',
         ];
 
         foreach ($menuPermissions as $permission) {
