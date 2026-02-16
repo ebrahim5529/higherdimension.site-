@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use App\Services\AccountingService;
 
 class PaymentController extends Controller
 {
@@ -217,6 +218,10 @@ class PaymentController extends Controller
             'notes' => $validated['notes'] ?? null,
         ]);
 
+        // إنشاء قيد محاسبي تلقائي
+        $payment->load('contract.customer');
+        (new AccountingService())->onContractPaymentCreated($payment);
+
         return redirect()->route('payments.index')->with('success', 'تم تسديد الدفعة بنجاح');
     }
 
@@ -263,6 +268,26 @@ class PaymentController extends Controller
                 'startDate' => $contract->start_date->format('Y-m-d'),
                 'endDate' => $contract->end_date->format('Y-m-d'),
             ],
+            'journalEntries' => AccountingService::getRelatedEntries('contract_payment', $payment->id)
+                ->map(function ($entry) {
+                    return [
+                        'id' => $entry->id,
+                        'entryNumber' => $entry->entry_number,
+                        'date' => $entry->date->format('Y-m-d'),
+                        'description' => $entry->description,
+                        'status' => $entry->status,
+                        'totalDebit' => (float) $entry->total_debit,
+                        'totalCredit' => (float) $entry->total_credit,
+                        'items' => $entry->items->map(function ($item) {
+                            return [
+                                'accountName' => $item->account->name ?? '',
+                                'accountCode' => $item->account->code ?? '',
+                                'debit' => (float) $item->debit,
+                                'credit' => (float) $item->credit,
+                            ];
+                        }),
+                    ];
+                })->values()->toArray(),
         ]);
     }
 

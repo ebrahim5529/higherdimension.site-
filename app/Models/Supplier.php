@@ -43,15 +43,8 @@ class Supplier extends Model
         ];
     }
 
-    // Relationships
-    // سيتم إضافة العلاقات لاحقاً عند إنشاء جداول purchases و supplier_invoices
-    // public function purchases(): HasMany
-    // {
-    //     return $this->hasMany(Purchase::class);
-    // }
-
-    // public function invoices(): HasMany
-    // {
-    //     return $this->hasMany(SupplierInvoice::class);
-    // }
+    public function purchases(): HasMany
+    {
+        return $this->hasMany(Purchase::class);
+    }
 }

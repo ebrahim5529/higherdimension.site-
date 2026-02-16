@@ -209,6 +209,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/read-all', [\App\Http\Controllers\SecurityNotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::delete('/notifications/{notification}', [\App\Http\Controllers\SecurityNotificationController::class, 'destroy'])->name('notifications.destroy');
 
+    // Purchases
+    Route::get('/purchases', [\App\Http\Controllers\Admin\PurchaseController::class, 'index'])->name('purchases.index');
+    Route::post('/purchases', [\App\Http\Controllers\Admin\PurchaseController::class, 'store'])->name('purchases.store');
+    Route::put('/purchases/{id}', [\App\Http\Controllers\Admin\PurchaseController::class, 'update'])->name('purchases.update');
+    Route::delete('/purchases/{id}', [\App\Http\Controllers\Admin\PurchaseController::class, 'destroy'])->name('purchases.destroy');
+
     // Accounting Module
     Route::prefix('accounting')->name('accounting.')->group(function () {
         // Chart of Accounts
@@ -226,6 +232,10 @@ Route::middleware('auth')->group(function () {
         Route::put('/journal-entries/{id}', [\App\Http\Controllers\Admin\JournalEntryController::class, 'update'])->name('journal-entries.update');
         Route::delete('/journal-entries/{id}', [\App\Http\Controllers\Admin\JournalEntryController::class, 'destroy'])->name('journal-entries.destroy');
         Route::post('/journal-entries/{id}/post', [\App\Http\Controllers\Admin\JournalEntryController::class, 'post'])->name('journal-entries.post');
+
+        // Accounting Settings
+        Route::get('/settings', [\App\Http\Controllers\Admin\AccountingSettingController::class, 'index'])->name('settings.index');
+        Route::post('/settings', [\App\Http\Controllers\Admin\AccountingSettingController::class, 'update'])->name('settings.update');
 
         // Accounting Reports
         Route::get('/reports/trial-balance', [\App\Http\Controllers\Admin\AccountingReportController::class, 'trialBalance'])->name('reports.trial-balance');

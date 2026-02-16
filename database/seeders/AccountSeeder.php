@@ -69,6 +69,14 @@ class AccountSeeder extends Seeder
             // 119 - تلفزيون LG
             ['code' => '119', 'name' => 'تلفزيون LG', 'type' => 'asset', 'level' => 3, 'is_parent' => false, 'parent_code' => '11'],
 
+            // 12 - الموجودات المتداولة
+            ['code' => '12', 'name' => 'الموجودات المتداولة', 'type' => 'asset', 'level' => 2, 'is_parent' => true, 'parent_code' => '1'],
+            ['code' => '121', 'name' => 'النقدية (الصندوق)', 'type' => 'asset', 'level' => 3, 'is_parent' => false, 'parent_code' => '12'],
+            ['code' => '122', 'name' => 'البنك', 'type' => 'asset', 'level' => 3, 'is_parent' => false, 'parent_code' => '12'],
+            ['code' => '123', 'name' => 'العملاء (المدينون)', 'type' => 'asset', 'level' => 3, 'is_parent' => false, 'parent_code' => '12'],
+            ['code' => '124', 'name' => 'المخزون', 'type' => 'asset', 'level' => 3, 'is_parent' => false, 'parent_code' => '12'],
+            ['code' => '125', 'name' => 'مصروفات مدفوعة مقدماً', 'type' => 'asset', 'level' => 3, 'is_parent' => false, 'parent_code' => '12'],
+
             // 2 - الالتزامات
             ['code' => '2', 'name' => 'الالتزامات', 'type' => 'liability', 'level' => 1, 'is_parent' => true, 'parent_code' => null],
             ['code' => '21', 'name' => 'الالتزامات المتداولة', 'type' => 'liability', 'level' => 2, 'is_parent' => true, 'parent_code' => '2'],
@@ -103,6 +111,7 @@ class AccountSeeder extends Seeder
             ['code' => '532', 'name' => 'مصروفات الاتصالات', 'type' => 'expense', 'level' => 3, 'is_parent' => false, 'parent_code' => '53'],
             ['code' => '533', 'name' => 'مصروفات مكتبية', 'type' => 'expense', 'level' => 3, 'is_parent' => false, 'parent_code' => '53'],
             ['code' => '54', 'name' => 'مصروفات الإهلاك', 'type' => 'expense', 'level' => 2, 'is_parent' => false, 'parent_code' => '5'],
+            ['code' => '55', 'name' => 'مصروفات المشتريات', 'type' => 'expense', 'level' => 2, 'is_parent' => false, 'parent_code' => '5'],
         ];
 
         // إنشاء الحسابات بالترتيب (الآباء أولاً)

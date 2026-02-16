@@ -7,6 +7,7 @@ use App\Models\Salary;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Services\AccountingService;
 
 class SalaryController extends Controller
 {
@@ -86,7 +87,13 @@ class SalaryController extends Controller
         $employee = Employee::findOrFail($validated['employee_id']);
         $validated['employee_number'] = $employee->employee_number;
 
-        Salary::create($validated);
+        $salary = Salary::create($validated);
+
+        // إنشاء قيد محاسبي تلقائي عند دفع الراتب
+        if ($validated['status'] === 'paid') {
+            $salary->load('employee');
+            (new AccountingService())->onSalaryPaid($salary);
+        }
 
         return redirect()->route('employees.salaries')
             ->with('success', 'تم إضافة الراتب بنجاح');

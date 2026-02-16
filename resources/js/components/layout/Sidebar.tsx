@@ -378,7 +378,7 @@ export function Sidebar({
             id: 'purchase-management',
             label: 'إدارة عمليات الشراء',
             icon: ShoppingCart,
-            href: '/dashboard/purchases-list',
+            href: '/purchases',
           },
           {
             id: 'invoices',
@@ -515,6 +515,12 @@ export function Sidebar({
             label: 'تقرير اليومية',
             icon: ClipboardList,
             href: '/accounting/reports/journal-report',
+          },
+          {
+            id: 'accounting-settings',
+            label: 'إعدادات الربط المحاسبي',
+            icon: Settings,
+            href: '/accounting/settings',
           },
         ],
       },

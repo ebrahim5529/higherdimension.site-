@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use App\Services\AccountingService;
 
 class ContractController extends Controller
 {
@@ -356,6 +357,19 @@ class ContractController extends Controller
             }
         }
 
+        // إنشاء قيد محاسبي تلقائي للعقد
+        $contract->load('customer');
+        (new AccountingService())->onContractCreated($contract);
+
+        // إنشاء قيود محاسبية للمدفوعات المضافة مع العقد
+        if (isset($validated['payments']) && is_array($validated['payments'])) {
+            $contractPayments = $contract->contractPayments()->get();
+            foreach ($contractPayments as $cp) {
+                $cp->load('contract.customer');
+                (new AccountingService())->onContractPaymentCreated($cp);
+            }
+        }
+
         // إرجاع بيانات العقد في الـ response
         return redirect()->back()->with([
             'success' => 'تم إنشاء العقد بنجاح',
@@ -492,6 +506,24 @@ class ContractController extends Controller
                         'created_at' => $attachment->created_at?->format('Y-m-d H:i:s'),
                     ];
                 })->toArray(),
+                'journalEntries' => AccountingService::getRelatedEntries('contract', $contract->id)
+                    ->merge(
+                        $contract->contractPayments->flatMap(function ($payment) {
+                            return AccountingService::getRelatedEntries('contract_payment', $payment->id);
+                        })
+                    )
+                    ->map(function ($entry) {
+                        return [
+                            'id' => $entry->id,
+                            'entryNumber' => $entry->entry_number,
+                            'date' => $entry->date->format('Y-m-d'),
+                            'description' => $entry->description,
+                            'status' => $entry->status,
+                            'totalDebit' => (float) $entry->total_debit,
+                            'totalCredit' => (float) $entry->total_credit,
+                            'referenceType' => $entry->reference_type,
+                        ];
+                    })->values()->toArray(),
                 'payments' => $contract->contractPayments->map(function ($payment) {
                     return [
                         'id' => $payment->id,
