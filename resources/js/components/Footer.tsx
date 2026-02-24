@@ -1,58 +1,45 @@
-import { Phone, Mail, MessageCircle, Facebook, Instagram, Twitter, Youtube } from "lucide-react";
+import { Phone, Mail, MessageCircle } from "lucide-react";
 import { Link } from "@inertiajs/react";
 import { Button } from "@/components/ui/button";
 
+const WHATSAPP_URL = "https://wa.me/96893099914";
+
+const quickLinks = [
+  { label: "الرئيسية", path: "/" },
+  { label: "من نحن", path: "/#about" },
+  { label: "خدماتنا", path: "/#services" },
+  { label: "لماذا البعد العالي؟", path: "/#advantages" },
+  { label: "تواصل معنا", path: "/#contact" },
+];
+
 export const Footer = () => {
   return (
-    <footer id="contact" className="bg-secondary text-secondary-foreground">
+    <footer className="bg-[#d5754e] text-white">
       <div className="section-container py-16">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* About */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-full bg-background flex items-center justify-center overflow-hidden">
-                <img src="/logo.png" alt="شعار د. آسيا خليفة طلال الجري" className="w-full h-full object-contain" />
+              <div className="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center overflow-hidden border border-white/30">
+                <img src="/img/logo.png" alt="شعار شركة البعد العالي للتجارة" className="w-full h-full object-contain" />
               </div>
               <div>
-                <h3 className="font-bold text-lg">د. آسيا الجري</h3>
-                <p className="text-sm text-secondary-foreground/70">استشاري نفسي وتربوي</p>
+                <h3 className="font-bold text-lg">شركة البعد العالي للتجارة</h3>
+                <p className="text-sm text-white/80">تأجير الجيكات والسقالات</p>
               </div>
             </div>
-            <p className="text-secondary-foreground/80 leading-relaxed max-w-md mb-6">
-              أقدم محتوى نفسي متميز من فيديوهات وكتب ورسائل ملهمة، بالإضافة إلى استشارات نفسية متخصصة لمساعدتكم في رحلة النمو والتطور الشخصي.
+            <p className="text-white/90 leading-relaxed max-w-md mb-6">
+              إحدى الشركات العمانية المتخصصة في مجال تأجير معدات البناء، وبالأخص الجيكات والسقالات بكافة أنواعها وأحجامها. مقرنا الرئيسي في منطقة الموالح الجنوبية.
             </p>
-            <div className="flex gap-3">
-              <a href="#" className="w-10 h-10 rounded-full bg-secondary-foreground/10 hover:bg-primary flex items-center justify-center transition-colors">
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-secondary-foreground/10 hover:bg-primary flex items-center justify-center transition-colors">
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-secondary-foreground/10 hover:bg-primary flex items-center justify-center transition-colors">
-                <Twitter className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-secondary-foreground/10 hover:bg-primary flex items-center justify-center transition-colors">
-                <Youtube className="w-5 h-5" />
-              </a>
-            </div>
           </div>
 
           {/* Quick Links */}
           <div>
             <h4 className="font-bold text-lg mb-6">روابط سريعة</h4>
             <ul className="space-y-3">
-              {[
-                { label: "الرئيسية", path: "/" },
-                { label: "من نحن", path: "/about" },
-                { label: "الاستشارات", path: "/consultations" },
-                { label: "الكتب", path: "/books" },
-                { label: "مقتطفات", path: "/messages" },
-                { label: "المقالات", path: "/articles" },
-                { label: "فيديوهات", path: "/videos" },
-                { label: "قصص", path: "/stories" },
-              ].map((link) => (
-                <li key={link.label}>
-                  <Link href={link.path} className="text-secondary-foreground/80 hover:text-primary transition-colors">
+              {quickLinks.map((link) => (
+                <li key={link.path}>
+                  <Link href={link.path} className="text-white/90 hover:text-white transition-colors">
                     {link.label}
                   </Link>
                 </li>
@@ -65,32 +52,37 @@ export const Footer = () => {
             <h4 className="font-bold text-lg mb-6">تواصل معنا</h4>
             <ul className="space-y-4">
               <li className="flex items-start gap-3">
-                <Phone className="w-5 h-5 text-primary mt-0.5" />
+                <Phone className="w-5 h-5 text-white mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-secondary-foreground/80" dir="ltr">+965 XXXX XXXX</p>
+                  <a href="tel:+96893099914" className="text-white/90 hover:text-white transition-colors" dir="ltr">
+                    +968 9309 9914
+                  </a>
+                  <br />
+                  <a href="tel:+96890891070" className="text-white/90 hover:text-white transition-colors" dir="ltr">
+                    +968 9089 1070
+                  </a>
                 </div>
               </li>
               <li className="flex items-start gap-3">
-                <Mail className="w-5 h-5 text-primary mt-0.5" />
-                <a href="mailto:info@drasiaaljiar.com" className="text-secondary-foreground/80 hover:text-primary transition-colors">
-                  info@drasiaaljiar.com
+                <Mail className="w-5 h-5 text-white mt-0.5 flex-shrink-0" />
+                <a href="mailto:info@higherdimension.site" className="text-white/90 hover:text-white transition-colors">
+                  info@higherdimension.site
                 </a>
               </li>
             </ul>
 
-            {/* WhatsApp Button */}
-            <Button
-              className="mt-6 w-full bg-green-500 hover:bg-green-600 text-white"
-            >
-              <MessageCircle className="w-5 h-5 ml-2" />
-              تواصل عبر واتساب
+            <Button asChild className="mt-6 w-full bg-green-500 hover:bg-green-600 text-white">
+              <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+                <MessageCircle className="w-5 h-5 ml-2" />
+                تواصل عبر واتساب
+              </a>
             </Button>
           </div>
         </div>
 
-        <div className="border-t border-secondary-foreground/10 mt-12 pt-8 text-center">
-          <p className="text-secondary-foreground/60 text-sm">
-            © {new Date().getFullYear()} د. آسيا خليفة طلال الجري - جميع الحقوق محفوظة
+        <div className="border-t border-white/20 mt-12 pt-8 text-center">
+          <p className="text-white/80 text-sm">
+            © {new Date().getFullYear()} شركة البعد العالي للتجارة - جميع الحقوق محفوظة
           </p>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { WhatsAppFloatingButton } from "@/components/landing/WhatsAppFloatingButton";
 import { ReactNode } from "react";
 
 interface LayoutProps {
@@ -14,6 +15,7 @@ export const Layout = ({ children }: LayoutProps) => {
         {children}
       </main>
       <Footer />
+      <WhatsAppFloatingButton />
     </div>
   );
 };

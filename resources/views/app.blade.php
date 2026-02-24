@@ -18,9 +18,9 @@
     <meta name="twitter:description" content="نظام إدارة السقالات" />
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/logo.png" />
-    <link rel="shortcut icon" type="image/png" href="/logo.png" />
-    <link rel="apple-touch-icon" href="/logo.png" />
+    <link rel="icon" type="image/png" href="/img/logo.png" />
+    <link rel="shortcut icon" type="image/png" href="/img/logo.png" />
+    <link rel="apple-touch-icon" href="/img/logo.png" />
 
     @viteReactRefresh
     @vite(['resources/css/app.css', 'resources/js/app.tsx'])
