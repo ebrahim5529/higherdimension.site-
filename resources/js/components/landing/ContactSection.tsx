@@ -63,10 +63,10 @@ export function ContactSection() {
                   <div>
                     <p className="text-sm text-muted-foreground">البريد الإلكتروني</p>
                     <a
-                      href="mailto:info@higherdimension.site"
+                      href="mailto:higherdimension30@gmail.com"
                       className="text-lg font-medium text-foreground hover:text-primary transition-colors"
                     >
-                      info@higherdimension.site
+                      higherdimension30@gmail.com
                     </a>
                   </div>
                 </li>

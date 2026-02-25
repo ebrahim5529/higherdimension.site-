@@ -17,10 +17,12 @@ export function HeroSection() {
             <div className="inline-block px-4 py-2 bg-white/20 rounded-full text-white text-sm mb-2 animate-fade-up-1">
               تأجير معدات البناء - الجيكات والسقالات
             </div>
+            <br className="mb-8" />
+
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-relaxed animate-fade-up-2">
               شركة البعد العالي للتجارة
-              <br className="mb-4" />
-              <span className="text-white/90">للتأجير الاحترافي في سلطنة عمان</span>
+              <br className="mb-8" />
+              <span className="text-white/90">للتأجير  في سلطنة عمان</span>
             </h1>
             <p className="text-xl md:text-2xl font-medium text-white/90 mt-4 animate-fade-up-3">
               جيكات وسقالات بكافة الأحجام · خدمة توصيل · أسعار منافسة
