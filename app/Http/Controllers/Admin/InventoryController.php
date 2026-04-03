@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ContractEquipment;
 use App\Models\Scaffold;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -18,6 +19,7 @@ class InventoryController extends Controller
             ->get()
             ->map(function ($scaffold) {
                 $size = is_array($scaffold->size) ? $scaffold->size : json_decode($scaffold->size ?? '{}', true);
+
                 return [
                     'id' => $scaffold->id,
                     'scaffoldNumber' => $scaffold->scaffold_number,
@@ -126,6 +128,7 @@ class InventoryController extends Controller
     public function create()
     {
         $suppliers = \App\Models\Supplier::select('id', 'name')->get();
+
         return Inertia::render('Inventory/Create', [
             'suppliers' => $suppliers,
         ]);
@@ -248,6 +251,40 @@ class InventoryController extends Controller
         $scaffold = Scaffold::with('supplier')->findOrFail($id);
         $size = is_array($scaffold->size) ? $scaffold->size : json_decode($scaffold->size ?? '{}', true);
 
+        $equipmentLines = ContractEquipment::query()
+            ->where('scaffold_id', $scaffold->id)
+            ->with([
+                'contract:id,contract_number,title,customer_id',
+                'contract.customer:id,name',
+            ])
+            ->orderBy('contract_id')
+            ->get();
+
+        $contractUsages = $equipmentLines
+            ->groupBy('contract_id')
+            ->map(function ($rows) {
+                $contract = $rows->first()?->contract;
+                if (! $contract) {
+                    return null;
+                }
+
+                return [
+                    'contractId' => $contract->id,
+                    'contractNumber' => $contract->contract_number,
+                    'contractTitle' => $contract->title,
+                    'customerName' => $contract->customer?->name,
+                    'quantityUsed' => (int) $rows->sum('quantity'),
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+
+        $quantityTotal = (int) $scaffold->quantity;
+        $availableTotal = (int) $scaffold->available_quantity;
+        $usedQuantityDifference = max(0, $quantityTotal - $availableTotal);
+        $usedQuantityFromContracts = (int) collect($contractUsages)->sum('quantityUsed');
+
         return Inertia::render('Inventory/Show', [
             'scaffold' => [
                 'id' => $scaffold->id,
@@ -259,6 +296,9 @@ class InventoryController extends Controller
                 'status' => $scaffold->status,
                 'quantity' => $scaffold->quantity,
                 'availableQuantity' => $scaffold->available_quantity,
+                'usedQuantityDifference' => $usedQuantityDifference,
+                'usedQuantityFromContracts' => $usedQuantityFromContracts,
+                'contractUsages' => $contractUsages,
                 'location' => $scaffold->location,
                 'warehouseLocation' => $scaffold->warehouse_location,
                 'sellingPrice' => $scaffold->selling_price,
@@ -380,17 +420,17 @@ class InventoryController extends Controller
                     ->selectRaw('type, COUNT(*) as count')
                     ->groupBy('type')
                     ->get()
-                    ->map(fn($item) => ['type' => $item->type, 'count' => $item->count]),
+                    ->map(fn ($item) => ['type' => $item->type, 'count' => $item->count]),
                 'by_material' => Scaffold::query()
                     ->selectRaw('material, COUNT(*) as count')
                     ->groupBy('material')
                     ->get()
-                    ->map(fn($item) => ['material' => $item->material, 'count' => $item->count]),
+                    ->map(fn ($item) => ['material' => $item->material, 'count' => $item->count]),
                 'by_condition' => Scaffold::query()
                     ->selectRaw('condition, COUNT(*) as count')
                     ->groupBy('condition')
                     ->get()
-                    ->map(fn($item) => ['condition' => $item->condition, 'count' => $item->count]),
+                    ->map(fn ($item) => ['condition' => $item->condition, 'count' => $item->count]),
             ],
         ]);
     }

@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\CompanySignature;
 use App\Models\Contract;
 use App\Models\Customer;
+use App\Services\AccountingService;
+use App\Services\ScaffoldInventoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
-use App\Services\AccountingService;
 
 class ContractController extends Controller
 {
@@ -285,103 +287,111 @@ class ContractController extends Controller
             'required' => 'هذا الحقل الزامي',
         ]);
 
-        // حساب التواريخ من rental_details
-        $startDate = collect($validated['rental_details'])->min('start_date');
-        $endDate = collect($validated['rental_details'])->max('end_date');
+        return DB::transaction(function () use ($validated) {
+            // حساب التواريخ من rental_details
+            $startDate = collect($validated['rental_details'])->min('start_date');
+            $endDate = collect($validated['rental_details'])->max('end_date');
 
-        // حساب المبلغ الإجمالي
-        $rentalTotal = collect($validated['rental_details'])->sum('total');
-        $totalAmount = $rentalTotal + ($validated['transport_and_installation_cost'] ?? 0) - ($validated['total_discount'] ?? 0);
+            // حساب المبلغ الإجمالي
+            $rentalTotal = collect($validated['rental_details'])->sum('total');
+            $totalAmount = $rentalTotal + ($validated['transport_and_installation_cost'] ?? 0) - ($validated['total_discount'] ?? 0);
 
-        // إنشاء العقد
-        $contract = Contract::create([
-            'contract_number' => $validated['contract_number'],
-            'title' => 'عقد تأجير - '.$validated['contract_number'],
-            'description' => $validated['contract_notes'] ?? '',
-            'amount' => $totalAmount,
-            'start_date' => $startDate,
-            'end_date' => $endDate,
-            'status' => 'ACTIVE',
-            'payment_type' => 'INSTALLMENT',
-            'delivery_address' => $validated['delivery_address'],
-            'delivery_address_details' => $validated['delivery_address_details'] ?? null,
-            'location_map_link' => $validated['location_map_link'] ?? null,
-            'transport_and_installation_cost' => $validated['transport_and_installation_cost'] ?? 0,
-            'total_discount' => $validated['total_discount'] ?? 0,
-            'contract_notes' => $validated['contract_notes'] ?? null,
-            'customer_id' => $validated['customer_id'],
-            'user_id' => Auth::id(),
-        ]);
-
-        // إضافة المعدات
-        foreach ($validated['rental_details'] as $rentalDetail) {
-            \App\Models\ContractEquipment::create([
-                'contract_id' => $contract->id,
-                'scaffold_id' => $rentalDetail['scaffold_id'] ?? null,
-                'item_code' => $rentalDetail['item_code'],
-                'item_description' => $rentalDetail['item_description'],
-                'start_date' => $rentalDetail['start_date'],
-                'end_date' => $rentalDetail['end_date'],
-                'duration' => $rentalDetail['duration'],
-                'duration_type' => $rentalDetail['duration_type'],
-                'quantity' => $rentalDetail['quantity'],
-                'daily_rate' => $rentalDetail['daily_rate'],
-                'monthly_rate' => $rentalDetail['monthly_rate'],
-                'discount' => $rentalDetail['discount'] ?? 0,
-                'total' => $rentalDetail['total'],
+            // إنشاء العقد
+            $contract = Contract::create([
+                'contract_number' => $validated['contract_number'],
+                'title' => 'عقد تأجير - '.$validated['contract_number'],
+                'description' => $validated['contract_notes'] ?? '',
+                'amount' => $totalAmount,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'status' => 'ACTIVE',
+                'payment_type' => 'INSTALLMENT',
+                'delivery_address' => $validated['delivery_address'],
+                'delivery_address_details' => $validated['delivery_address_details'] ?? null,
+                'location_map_link' => $validated['location_map_link'] ?? null,
+                'transport_and_installation_cost' => $validated['transport_and_installation_cost'] ?? 0,
+                'total_discount' => $validated['total_discount'] ?? 0,
+                'contract_notes' => $validated['contract_notes'] ?? null,
+                'customer_id' => $validated['customer_id'],
+                'user_id' => Auth::id(),
             ]);
-        }
 
-        // إضافة المدفوعات
-        if (isset($validated['payments']) && is_array($validated['payments'])) {
-            foreach ($validated['payments'] as $payment) {
-                if ($payment['amount'] > 0) {
-                    $checkImagePath = null;
+            // إضافة المعدات + خصم الكمية من المخزون
+            foreach ($validated['rental_details'] as $rentalDetail) {
+                $scaffoldId = isset($rentalDetail['scaffold_id']) ? (int) $rentalDetail['scaffold_id'] : null;
+                $qty = (int) $rentalDetail['quantity'];
+                if ($scaffoldId) {
+                    ScaffoldInventoryService::reserve($scaffoldId, $qty);
+                }
 
-                    // رفع صورة الشيك إذا كانت موجودة
-                    if (isset($payment['check_image']) && $payment['check_image']->isValid()) {
-                        $checkImagePath = $payment['check_image']->store('contracts/checks', 'public');
+                \App\Models\ContractEquipment::create([
+                    'contract_id' => $contract->id,
+                    'scaffold_id' => $scaffoldId ?: null,
+                    'item_code' => $rentalDetail['item_code'],
+                    'item_description' => $rentalDetail['item_description'],
+                    'start_date' => $rentalDetail['start_date'],
+                    'end_date' => $rentalDetail['end_date'],
+                    'duration' => $rentalDetail['duration'],
+                    'duration_type' => $rentalDetail['duration_type'],
+                    'quantity' => $qty,
+                    'daily_rate' => $rentalDetail['daily_rate'],
+                    'monthly_rate' => $rentalDetail['monthly_rate'],
+                    'discount' => $rentalDetail['discount'] ?? 0,
+                    'total' => $rentalDetail['total'],
+                ]);
+            }
+
+            // إضافة المدفوعات
+            if (isset($validated['payments']) && is_array($validated['payments'])) {
+                foreach ($validated['payments'] as $payment) {
+                    if ($payment['amount'] > 0) {
+                        $checkImagePath = null;
+
+                        // رفع صورة الشيك إذا كانت موجودة
+                        if (isset($payment['check_image']) && $payment['check_image']->isValid()) {
+                            $checkImagePath = $payment['check_image']->store('contracts/checks', 'public');
+                        }
+
+                        \App\Models\ContractPayment::create([
+                            'contract_id' => $contract->id,
+                            'payment_method' => $payment['payment_method'],
+                            'payment_date' => $payment['payment_date'],
+                            'amount' => $payment['amount'],
+                            'check_number' => $payment['check_number'] ?? null,
+                            'bank_name' => $payment['bank_name'] ?? null,
+                            'check_date' => $payment['check_date'] ?? null,
+                            'check_image_path' => $checkImagePath,
+                        ]);
                     }
-
-                    \App\Models\ContractPayment::create([
-                        'contract_id' => $contract->id,
-                        'payment_method' => $payment['payment_method'],
-                        'payment_date' => $payment['payment_date'],
-                        'amount' => $payment['amount'],
-                        'check_number' => $payment['check_number'] ?? null,
-                        'bank_name' => $payment['bank_name'] ?? null,
-                        'check_date' => $payment['check_date'] ?? null,
-                        'check_image_path' => $checkImagePath,
-                    ]);
                 }
             }
-        }
 
-        // إنشاء قيد محاسبي تلقائي للعقد
-        $contract->load('customer');
-        (new AccountingService())->onContractCreated($contract);
+            // إنشاء قيد محاسبي تلقائي للعقد
+            $contract->load('customer');
+            (new AccountingService)->onContractCreated($contract);
 
-        // إنشاء قيود محاسبية للمدفوعات المضافة مع العقد
-        if (isset($validated['payments']) && is_array($validated['payments'])) {
-            $contractPayments = $contract->contractPayments()->get();
-            foreach ($contractPayments as $cp) {
-                $cp->load('contract.customer');
-                (new AccountingService())->onContractPaymentCreated($cp);
+            // إنشاء قيود محاسبية للمدفوعات المضافة مع العقد
+            if (isset($validated['payments']) && is_array($validated['payments'])) {
+                $contractPayments = $contract->contractPayments()->get();
+                foreach ($contractPayments as $cp) {
+                    $cp->load('contract.customer');
+                    (new AccountingService)->onContractPaymentCreated($cp);
+                }
             }
-        }
 
-        // إرجاع بيانات العقد في الـ response
-        return redirect()->back()->with([
-            'success' => 'تم إنشاء العقد بنجاح',
-            'contract' => [
-                'id' => $contract->id,
-                'contract_number' => $contract->contract_number,
-                'customer_name' => $contract->customer->name ?? 'غير معروف',
-                'total_amount' => $contract->amount,
-                'contract_date' => $contract->contract_date?->format('Y-m-d') ?? $contract->start_date?->format('Y-m-d'),
-                'contract_type' => 'تأجير معدات بناء',
-            ],
-        ]);
+            // إرجاع بيانات العقد في الـ response
+            return redirect()->back()->with([
+                'success' => 'تم إنشاء العقد بنجاح',
+                'contract' => [
+                    'id' => $contract->id,
+                    'contract_number' => $contract->contract_number,
+                    'customer_name' => $contract->customer->name ?? 'غير معروف',
+                    'total_amount' => $contract->amount,
+                    'contract_date' => $contract->contract_date?->format('Y-m-d') ?? $contract->start_date?->format('Y-m-d'),
+                    'contract_type' => 'تأجير معدات بناء',
+                ],
+            ]);
+        });
     }
 
     /**
@@ -389,7 +399,8 @@ class ContractController extends Controller
      */
     public function show(string $id)
     {
-        $contract = Contract::with(['customer', 'user', 'equipment', 'contractPayments', 'attachments'])->findOrFail($id);
+        $contract = Contract::with(['customer', 'user', 'equipment.scaffold', 'contractPayments', 'attachments'])
+            ->findOrFail($id);
 
         $paidAmount = $contract->contractPayments()->sum('amount') ?? 0;
         $remainingAmount = max(0, $contract->amount - $paidAmount);
@@ -445,6 +456,18 @@ class ContractController extends Controller
         // حساب عدد المعدات
         $equipmentCount = $contract->equipment()->sum('quantity') ?? 0;
 
+        // تفاصيل المعدات المستخدمة في العقد
+        $equipment = $contract->equipment->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'scaffoldId' => $item->scaffold_id,
+                'itemCode' => $item->scaffold?->scaffold_number ?? $item->item_code ?? '',
+                'quantity' => (int) ($item->quantity ?? 0),
+                // في هذا التطبيق غالباً item_description هو الوصف العربي
+                'itemDescriptionAr' => $item->item_description ?? $item->scaffold?->description_ar ?? '',
+            ];
+        })->values()->all();
+
         // تحديد مراحل العقد
         $stages = [
             'signed' => $contract->signed_at !== null,
@@ -486,6 +509,7 @@ class ContractController extends Controller
                 'deliveryAddressDetails' => $contract->delivery_address_details,
                 'locationMapLink' => $contract->location_map_link,
                 'equipmentCount' => $equipmentCount,
+                'equipment' => $equipment,
                 'daysRemaining' => $daysRemaining,
                 'daysElapsed' => $daysElapsed,
                 'progressPercentage' => $progressPercentage,
@@ -625,7 +649,7 @@ class ContractController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $contract = Contract::findOrFail($id);
+        $contract = Contract::with('equipment')->findOrFail($id);
 
         $validated = $request->validate([
             'contract_number' => 'required|string|unique:contracts,contract_number,'.$id,
@@ -661,72 +685,85 @@ class ContractController extends Controller
             'status' => 'nullable|string|in:ACTIVE,CLOSED,CLOSED_NOT_RECEIVED',
         ]);
 
-        // حساب المبلغ الإجمالي
-        $equipmentTotal = collect($validated['rental_details'])->sum('total');
-        $transportCost = $validated['transport_and_installation_cost'] ?? 0;
-        $discount = $validated['total_discount'] ?? 0;
-        $totalAmount = $equipmentTotal + $transportCost - $discount;
+        return DB::transaction(function () use ($request, $contract, $validated) {
+            // حساب المبلغ الإجمالي
+            $equipmentTotal = collect($validated['rental_details'])->sum('total');
+            $transportCost = $validated['transport_and_installation_cost'] ?? 0;
+            $discount = $validated['total_discount'] ?? 0;
+            $totalAmount = $equipmentTotal + $transportCost - $discount;
 
-        // تحديث بيانات العقد
-        $contract->update([
-            'contract_number' => $validated['contract_number'],
-            'start_date' => $validated['contract_date'],
-            'end_date' => collect($validated['rental_details'])->max('end_date'),
-            'customer_id' => $validated['customer_id'],
-            'delivery_address' => $validated['delivery_address'],
-            'delivery_address_details' => $validated['delivery_address_details'] ?? null,
-            'location_map_link' => $validated['location_map_link'] ?? null,
-            'transport_and_installation_cost' => $transportCost,
-            'total_discount' => $discount,
-            'contract_notes' => $validated['contract_notes'] ?? null,
-            'amount' => $totalAmount,
-            'status' => $request->status ?? $contract->status,
-        ]);
+            // إرجاع كميات بنود العقد القديمة إلى المخزون قبل الحذف
+            foreach ($contract->equipment as $line) {
+                ScaffoldInventoryService::release($line->scaffold_id, (int) $line->quantity);
+            }
 
-        // حذف المعدات القديمة وإضافة الجديدة
-        $contract->equipment()->delete();
-        foreach ($validated['rental_details'] as $rental) {
-            $contract->equipment()->create([
-                'scaffold_id' => $rental['scaffold_id'] ?? null,
-                'item_code' => $rental['item_code'] ?? null,
-                'item_description' => $rental['item_description'] ?? null,
-                'start_date' => $rental['start_date'],
-                'end_date' => $rental['end_date'],
-                'duration' => $rental['duration'],
-                'duration_type' => $rental['duration_type'],
-                'quantity' => $rental['quantity'],
-                'daily_rate' => $rental['daily_rate'],
-                'monthly_rate' => $rental['monthly_rate'],
-                'discount' => $rental['discount'] ?? 0,
-                'total' => $rental['total'],
+            // تحديث بيانات العقد
+            $contract->update([
+                'contract_number' => $validated['contract_number'],
+                'start_date' => $validated['contract_date'],
+                'end_date' => collect($validated['rental_details'])->max('end_date'),
+                'customer_id' => $validated['customer_id'],
+                'delivery_address' => $validated['delivery_address'],
+                'delivery_address_details' => $validated['delivery_address_details'] ?? null,
+                'location_map_link' => $validated['location_map_link'] ?? null,
+                'transport_and_installation_cost' => $transportCost,
+                'total_discount' => $discount,
+                'contract_notes' => $validated['contract_notes'] ?? null,
+                'amount' => $totalAmount,
+                'status' => $request->status ?? $contract->status,
             ]);
-        }
 
-        // حذف المدفوعات القديمة وإضافة الجديدة
-        $contract->contractPayments()->delete();
-        if (isset($validated['payments'])) {
-            foreach ($validated['payments'] as $payment) {
-                $checkImagePath = null;
-
-                // رفع صورة الشيك إذا كانت موجودة
-                if (isset($payment['check_image']) && $payment['check_image']->isValid()) {
-                    $checkImagePath = $payment['check_image']->store('contracts/checks', 'public');
+            // حذف المعدات القديمة وإضافة الجديدة
+            $contract->equipment()->delete();
+            foreach ($validated['rental_details'] as $rental) {
+                $scaffoldId = isset($rental['scaffold_id']) ? (int) $rental['scaffold_id'] : null;
+                $qty = (int) $rental['quantity'];
+                if ($scaffoldId) {
+                    ScaffoldInventoryService::reserve($scaffoldId, $qty);
                 }
 
-                $contract->contractPayments()->create([
-                    'payment_method' => $payment['payment_method'],
-                    'payment_date' => $payment['payment_date'],
-                    'amount' => $payment['amount'],
-                    'check_number' => $payment['check_number'] ?? null,
-                    'bank_name' => $payment['bank_name'] ?? null,
-                    'check_date' => $payment['check_date'] ?? null,
-                    'check_image_path' => $checkImagePath,
+                $contract->equipment()->create([
+                    'scaffold_id' => $scaffoldId ?: null,
+                    'item_code' => $rental['item_code'] ?? null,
+                    'item_description' => $rental['item_description'] ?? null,
+                    'start_date' => $rental['start_date'],
+                    'end_date' => $rental['end_date'],
+                    'duration' => $rental['duration'],
+                    'duration_type' => $rental['duration_type'],
+                    'quantity' => $qty,
+                    'daily_rate' => $rental['daily_rate'],
+                    'monthly_rate' => $rental['monthly_rate'],
+                    'discount' => $rental['discount'] ?? 0,
+                    'total' => $rental['total'],
                 ]);
             }
-        }
 
-        return redirect()->route('contracts.index')
-            ->with('success', 'تم تحديث العقد بنجاح');
+            // حذف المدفوعات القديمة وإضافة الجديدة
+            $contract->contractPayments()->delete();
+            if (isset($validated['payments'])) {
+                foreach ($validated['payments'] as $payment) {
+                    $checkImagePath = null;
+
+                    // رفع صورة الشيك إذا كانت موجودة
+                    if (isset($payment['check_image']) && $payment['check_image']->isValid()) {
+                        $checkImagePath = $payment['check_image']->store('contracts/checks', 'public');
+                    }
+
+                    $contract->contractPayments()->create([
+                        'payment_method' => $payment['payment_method'],
+                        'payment_date' => $payment['payment_date'],
+                        'amount' => $payment['amount'],
+                        'check_number' => $payment['check_number'] ?? null,
+                        'bank_name' => $payment['bank_name'] ?? null,
+                        'check_date' => $payment['check_date'] ?? null,
+                        'check_image_path' => $checkImagePath,
+                    ]);
+                }
+            }
+
+            return redirect()->route('contracts.index')
+                ->with('success', 'تم تحديث العقد بنجاح');
+        });
     }
 
     /**
@@ -734,8 +771,14 @@ class ContractController extends Controller
      */
     public function destroy(string $id)
     {
-        $contract = Contract::findOrFail($id);
-        $contract->delete();
+        $contract = Contract::with('equipment')->findOrFail($id);
+
+        DB::transaction(function () use ($contract) {
+            foreach ($contract->equipment as $line) {
+                ScaffoldInventoryService::release($line->scaffold_id, (int) $line->quantity);
+            }
+            $contract->delete();
+        });
 
         return redirect()->route('contracts.index')
             ->with('success', 'تم حذف العقد بنجاح');
@@ -825,7 +868,7 @@ class ContractController extends Controller
      */
     private function calculateDetailedDuration($startDate, $endDate): array
     {
-        if (!$startDate || !$endDate) {
+        if (! $startDate || ! $endDate) {
             return [
                 'totalDays' => 0,
                 'months' => [],
@@ -896,7 +939,7 @@ class ContractController extends Controller
             return $detail['description'];
         }, $monthDetails);
 
-        $summary = implode(".\n", $summaryParts) . ".\nالمجموع: " . $totalDays . " يومًا.";
+        $summary = implode(".\n", $summaryParts).".\nالمجموع: ".$totalDays.' يومًا.';
 
         return [
             'totalDays' => $totalDays,

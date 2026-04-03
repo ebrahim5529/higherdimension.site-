@@ -520,8 +520,8 @@ export default function SignContract({ contract, companySignature }: SignContrac
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-8 mt-12 pt-8 border-t-2 border-black">
-                <div className="text-center">
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-8 mt-8 sm:mt-12 pt-6 sm:pt-8 border-t-2 border-black">
+                <div className="text-center min-w-0">
                   <div className="mb-8">
                     {companySignature?.signature_url ? (
                       <div className="border border-black rounded-sm w-48 mx-auto h-16 flex items-center justify-center bg-white">
@@ -539,22 +539,23 @@ export default function SignContract({ contract, companySignature }: SignContrac
                   <p className="text-sm text-black mt-2">{companySignature?.company_name || 'شركة البعد العالي للتجارة'}</p>
                 </div>
 
-                <div className="text-center">
-                  <div className="mb-8">
-                    <div className="border-2 border-dashed border-[#58d2c8] rounded-lg p-4 bg-gray-50 signature-pad">
-                      <div className="text-center mb-4">
-                        <h3 className="text-lg font-medium text-gray-900">توقيع العميل</h3>
-                        <p className="text-sm text-gray-600">اضغط واسحب للتوقيع في المنطقة أدناه</p>
+                <div className="text-center min-w-0">
+                  <div className="mb-6 sm:mb-8">
+                    <div className="border-2 border-dashed border-[#58d2c8] rounded-lg p-3 sm:p-4 bg-gray-50 signature-pad">
+                      <div className="text-center mb-3 sm:mb-4">
+                        <h3 className="text-base sm:text-lg font-medium text-gray-900">توقيع العميل</h3>
+                        <p className="text-xs sm:text-sm text-gray-600 mt-1">اضغط واسحب للتوقيع في المنطقة أدناه</p>
                       </div>
-                      <div className="w-full">
+                      <div className="w-full min-w-0">
                         <DigitalSignature
+                          responsive
+                          minHeight={128}
+                          aspectRatio={0.38}
                           onSignatureComplete={handleSignature}
                           onSignatureClear={() => {
                             setCustomerSignature('');
                             setIsSavingSignature(false);
                           }}
-                          width={300}
-                          height={120}
                           strokeColor="#000000"
                           strokeWidth={2}
                         />
@@ -593,7 +594,7 @@ export default function SignContract({ contract, companySignature }: SignContrac
               <h2 className="text-2xl font-bold text-gray-900 mb-2">تم التوقيع بنجاح!</h2>
               <p className="text-gray-600 mb-6">شكراً لتوقيعك على العقد</p>
 
-              <div className="grid grid-cols-2 gap-6 pt-6 border-t border-black">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 pt-6 border-t border-black">
                 <div className="text-center">
                   {companySignature?.signature_url ? (
                     <div className="border border-black rounded-sm w-48 mx-auto h-16 flex items-center justify-center bg-white">
@@ -629,7 +630,7 @@ export default function SignContract({ contract, companySignature }: SignContrac
             </div>
 
             <div className="print-only">
-              <div className="grid grid-cols-2 gap-6 pt-2 border-t border-black">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 pt-2 border-t border-black">
                 <div className="text-center">
                   {companySignature?.signature_url ? (
                     <div className="border border-black rounded-sm w-48 mx-auto h-12 flex items-center justify-center bg-white">

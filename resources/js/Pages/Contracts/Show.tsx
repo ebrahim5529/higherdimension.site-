@@ -1,5 +1,5 @@
 /** @jsxImportSource react */
-import { Head, router, usePage, useForm } from '@inertiajs/react';
+import { Head, router, usePage, useForm, Link } from '@inertiajs/react';
 import { useEffect, useState, useRef } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -89,6 +89,13 @@ interface Contract {
   daysElapsed: number;
   progressPercentage: number;
   dailyValue: number;
+  equipment?: Array<{
+    id: number;
+    scaffoldId: number | null;
+    itemCode: string;
+    quantity: number;
+    itemDescriptionAr: string;
+  }>;
   stages: {
     signed: boolean;
     delivered: boolean;
@@ -485,6 +492,55 @@ export default function ShowContract({ contract }: ShowContractProps) {
                       <span className="text-3xl font-semibold text-[#58d2c8]">{contract.equipmentCount}</span>{' '}
                       <span className="text-lg text-gray-600">قطعة</span>
                     </p>
+
+                    {contract.equipment && contract.equipment.length > 0 && (
+                      <div className="mt-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <h4 className="text-sm font-semibold text-gray-900">تفاصيل بنود المعدّات</h4>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-gray-200">
+                                <th className="text-right font-semibold text-gray-700 py-2 pr-1">كود الصنف</th>
+                                <th className="text-right font-semibold text-gray-700 py-2 px-1">الكمية</th>
+                                <th className="text-right font-semibold text-gray-700 py-2 px-1">
+                                  الوصف العربي
+                                </th>
+                                <th className="text-right font-semibold text-gray-700 py-2 pl-1">في المخزون</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {contract.equipment.map((row) => (
+                                <tr key={row.id} className="border-b border-gray-100 last:border-b-0">
+                                  <td className="text-right py-2 pr-1 font-medium text-gray-900">
+                                    {row.itemCode}
+                                  </td>
+                                  <td className="text-right py-2 px-1 text-gray-900 tabular-nums">
+                                    {row.quantity.toLocaleString('en-US')}
+                                  </td>
+                                  <td className="text-right py-2 px-1 text-gray-700">
+                                    {row.itemDescriptionAr || '—'}
+                                  </td>
+                                  <td className="text-right py-2 pl-1">
+                                    {row.scaffoldId ? (
+                                      <Link
+                                        href={`/inventory/${row.scaffoldId}`}
+                                        className="text-[#58d2c8] hover:underline font-mono"
+                                      >
+                                        عرض
+                                      </Link>
+                                    ) : (
+                                      <span className="text-gray-500">—</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

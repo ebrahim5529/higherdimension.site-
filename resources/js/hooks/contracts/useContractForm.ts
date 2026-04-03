@@ -1,4 +1,4 @@
-import { useForm, usePage } from '@inertiajs/react';
+import { useForm, usePage, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import { Customer, Scaffold, RentalDetail, PaymentDetail } from '@/types/contracts';
 import { showToast } from '@/hooks/use-toast';
@@ -35,7 +35,8 @@ export function useContractForm(customers: Customer[]) {
     const [nationality, setNationality] = useState('');
     const [createdContract, setCreatedContract] = useState<any>(null);
 
-    const contractDate = new Date().toISOString().split('T')[0];
+    // تاريخ العقد يجب أن يكون قابلاً للتعديل (ويقبل تواريخ سابقة).
+    const [contractDate, setContractDate] = useState(() => new Date().toISOString().split('T')[0]);
     const initialStartDate = new Date().toISOString().split('T')[0];
 
     const calculateEndDate = (startDate: string, duration: number, durationType: 'daily' | 'monthly'): string => {
@@ -320,7 +321,8 @@ export function useContractForm(customers: Customer[]) {
                         contract_type: contractData.contract_type || 'تأجير معدات بناء',
                     });
                 }
-                setWhatsappModalOpen(true);
+                // عند نجاح إنشاء العقد انتقل لقائمة العقود مباشرة
+                router.visit('/contracts');
             },
             onError: (errors) => {
                 const errorLabels: Record<string, string> = {
@@ -445,7 +447,10 @@ export function useContractForm(customers: Customer[]) {
             setDeliveryAddressDetails,
             setLocationMapLink,
             setNationality,
-            setContractDate: (val: string) => setData('contract_date' as any, val),
+            setContractDate: (val: string) => {
+                setContractDate(val)
+                clearErrors('contract_date')
+            },
             updateRentalDetail,
             handleScaffoldChange,
             handleAddRentalItem,

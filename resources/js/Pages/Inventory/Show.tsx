@@ -1,8 +1,16 @@
 /** @jsxImportSource react */
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   Package,
   ArrowRight,
@@ -10,13 +18,25 @@ import {
   Download,
   Edit,
   DollarSign,
+  FileText,
 } from 'lucide-react';
+
+interface ContractUsageRow {
+  contractId: number;
+  contractNumber: string;
+  contractTitle: string;
+  customerName: string | null;
+  quantityUsed: number;
+}
 
 interface Scaffold {
   id: number;
   scaffoldNumber: string;
   quantity: number;
   availableQuantity: number;
+  usedQuantityDifference: number;
+  usedQuantityFromContracts: number;
+  contractUsages: ContractUsageRow[];
   descriptionAr: string;
   descriptionEn: string;
   dailyRentalPrice: number;
@@ -29,6 +49,13 @@ interface ShowScaffoldProps {
 }
 
 export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
+  const contractUsages = scaffold.contractUsages ?? [];
+  const usedDiff = scaffold.usedQuantityDifference ?? Math.max(0, scaffold.quantity - scaffold.availableQuantity);
+  const usedFromContracts = scaffold.usedQuantityFromContracts ?? contractUsages.reduce((s, r) => s + r.quantityUsed, 0);
+  const hasContractUsageData = contractUsages.length > 0;
+  const usageMismatch = hasContractUsageData && usedDiff !== usedFromContracts;
+  const usedButNoContractLines = usedDiff > 0 && !hasContractUsageData;
+
   const getStatusLabel = (status: string) => {
     const statuses: Record<string, string> = {
       AVAILABLE: 'متوفرة',
@@ -112,11 +139,45 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
                 <label className="text-sm font-medium text-gray-600 dark:text-gray-400">كود الصنف</label>
                 <p className="text-sm font-mono text-gray-900 dark:text-white">{scaffold.scaffoldNumber}</p>
               </div>
-              <div>
+              <div className="md:col-span-2 lg:col-span-3">
                 <label className="text-sm font-medium text-gray-600 dark:text-gray-400">الكمية</label>
-                <p className="text-sm text-gray-900 dark:text-white">
-                  {scaffold.quantity} (متاح: {scaffold.availableQuantity})
-                </p>
+                <div className="mt-1 space-y-1 text-sm text-gray-900 dark:text-white">
+                  <p>
+                    <span className="text-gray-600 dark:text-gray-400">الإجمالي:</span>{' '}
+                    <span className="font-medium tabular-nums">{scaffold.quantity.toLocaleString('en-US')}</span>
+                  </p>
+                  <p>
+                    <span className="text-gray-600 dark:text-gray-400">المتاح:</span>{' '}
+                    <span className="font-medium tabular-nums text-green-700 dark:text-green-400">
+                      {scaffold.availableQuantity.toLocaleString('en-US')}
+                    </span>
+                  </p>
+                  <p>
+                    <span className="text-gray-600 dark:text-gray-400">المستخدم (فرق الكمية):</span>{' '}
+                    <span className="font-medium tabular-nums text-amber-700 dark:text-amber-300">
+                      {usedDiff.toLocaleString('en-US')}
+                    </span>
+                    <span className="text-gray-500 dark:text-gray-400 text-xs mr-2">
+                      (الإجمالي − المتاح)
+                    </span>
+                  </p>
+                  {contractUsages.length > 0 && (
+                    <p>
+                      <span className="text-gray-600 dark:text-gray-400">مجموع المسجل في العقود:</span>{' '}
+                      <span className="font-medium tabular-nums">{usedFromContracts.toLocaleString('en-US')}</span>
+                    </p>
+                  )}
+                  {usageMismatch && (
+                    <p className="text-xs text-amber-700 dark:text-amber-300 pt-1">
+                      ملاحظة: مجموع الكميات في جدول العقود لا يساوي فرق الكمية أعلاه؛ قد يكون هناك تعديل يدوي أو بيانات قديمة.
+                    </p>
+                  )}
+                  {usedButNoContractLines && (
+                    <p className="text-xs text-amber-700 dark:text-amber-300 pt-1">
+                      يوجد فرق كمية لكن لا توجد بنود عقد مرتبطة بهذه المعدة في النظام (قد تكون المعدة أُضيفت للعقد قبل ربط السجل أو حُدّثت الكميات يدوياً).
+                    </p>
+                  )}
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600 dark:text-gray-400">الحالة</label>
@@ -127,6 +188,55 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
                 </p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* استخدام الكمية في العقود */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              الكمية المستخدمة في العقود
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {contractUsages.length === 0 ? (
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                لا توجد بنود عقد مرتبطة بهذه المعدة حالياً.
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-right">اسم العقد</TableHead>
+                    <TableHead className="text-right">العميل</TableHead>
+                    <TableHead className="text-right">رقم العقد</TableHead>
+                    <TableHead className="text-right w-[120px]">الكمية المستخدمة</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {contractUsages.map((row) => (
+                    <TableRow key={row.contractId}>
+                      <TableCell className="text-right font-medium">{row.contractTitle}</TableCell>
+                      <TableCell className="text-right text-gray-700 dark:text-gray-300">
+                        {row.customerName ?? '—'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Link
+                          href={`/contracts/${row.contractId}`}
+                          className="text-[#58d2c8] hover:underline font-mono"
+                        >
+                          {row.contractNumber}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums font-medium">
+                        {row.quantityUsed.toLocaleString('en-US')}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 
