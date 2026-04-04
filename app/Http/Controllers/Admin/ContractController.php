@@ -22,11 +22,12 @@ class ContractController extends Controller
     public function index()
     {
         $contracts = Contract::with(['customer', 'user'])
+            ->withSum('contractPayments as total_paid', 'amount')
             ->get()
             ->map(function ($contract) {
                 // حساب المبلغ المدفوع والمتبقي
-                $paidAmount = $contract->payments()->sum('amount') ?? 0;
-                $remainingAmount = max(0, $contract->amount - $paidAmount);
+                $paidAmount = (float) ($contract->total_paid ?? 0);
+                $remainingAmount = max(0, (float) $contract->amount - $paidAmount);
 
                 // تحديد حالة الدفع
                 $paymentStatus = 'غير مدفوعة';
@@ -51,8 +52,8 @@ class ContractController extends Controller
                     'customerPhone' => $contract->customer->phone ?? '',
                     'customerId' => $contract->customer_id,
                     'type' => $contractType,
-                    'amount' => $contract->amount,
-                    'totalAfterDiscount' => $contract->amount,
+                    'amount' => (float) $contract->amount,
+                    'totalAfterDiscount' => (float) $contract->amount,
                     'totalPayments' => $paidAmount,
                     'remainingAmount' => $remainingAmount,
                     'status' => $this->getStatusLabel($contract->status),
@@ -68,33 +69,47 @@ class ContractController extends Controller
             });
 
         // إحصائيات العقود
-        $totalContracts = Contract::count();
-        $activeContracts = Contract::where('status', 'ACTIVE')->count();
-        $expiredContracts = Contract::where('status', 'EXPIRED')->count();
-        $cancelledContracts = Contract::where('status', 'CANCELLED')->count();
-        $totalValue = Contract::sum('amount') ?? 0;
+        $totalContracts = $contracts->count();
+        $activeContracts = $contracts->where('status', 'عقود مفتوحة')->count();
+        // ملاحظة: getStatusLabel ترجع 'عقود مفتوحة' أو 'عقود مغلقة'
+        // لذا يجب أن نستخدم القيم الأصلية للإحصائيات الدقيقة من قاعدة البيانات
+        // أو نعتمد على الكولكشن إذا كانت القيم في الـ map متطابقة
 
-        // حساب العقود المدفوعة وغير المدفوعة
+        // الأفضل جلب الإحصائيات مباشرة من قاعدة البيانات بكفاءة
+        $counts = Contract::query()
+            ->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN status IN ('ACTIVE', 'OPEN') THEN 1 ELSE 0 END) as active,
+                SUM(CASE WHEN status = 'EXPIRED' THEN 1 ELSE 0 END) as expired,
+                SUM(CASE WHEN status = 'CANCELLED' THEN 1 ELSE 0 END) as cancelled,
+                SUM(amount) as total_value
+            ")
+            ->first();
+
+        // حساب العقود المدفوعة وغير المدفوعة من الكولكشن المحملة بالفعل
         $paidContracts = 0;
         $pendingContracts = 0;
         $partialPaymentContracts = 0;
 
         foreach ($contracts as $contract) {
-            if ($contract['remainingAmount'] == 0 && $contract['amount'] > 0) {
+            $amt = (float) ($contract['amount'] ?? 0);
+            $rem = (float) ($contract['remainingAmount'] ?? 0);
+            
+            if ($rem == 0 && $amt > 0) {
                 $paidContracts++;
-            } elseif ($contract['remainingAmount'] == $contract['amount'] && $contract['amount'] > 0) {
+            } elseif ($rem == $amt && $amt > 0) {
                 $pendingContracts++;
-            } elseif ($contract['remainingAmount'] > 0 && $contract['remainingAmount'] < $contract['amount']) {
+            } elseif ($rem > 0 && $rem < $amt) {
                 $partialPaymentContracts++;
             }
         }
 
         $stats = [
-            'totalContracts' => $totalContracts,
-            'activeContracts' => $activeContracts,
-            'expiredContracts' => $expiredContracts,
-            'cancelledContracts' => $cancelledContracts,
-            'totalValue' => $totalValue,
+            'totalContracts' => (int) (($counts?->total ?? 0) ?: 0),
+            'activeContracts' => (int) (($counts?->active ?? 0) ?: 0),
+            'expiredContracts' => (int) (($counts?->expired ?? 0) ?: 0),
+            'cancelledContracts' => (int) (($counts?->cancelled ?? 0) ?: 0),
+            'totalValue' => (float) (($counts?->total_value ?? 0) ?: 0),
             'paidContracts' => $paidContracts,
             'pendingContracts' => $pendingContracts,
             'partialPaymentContracts' => $partialPaymentContracts,
@@ -111,12 +126,13 @@ class ContractController extends Controller
      */
     public function active()
     {
-        $contracts = Contract::with(['customer', 'user', 'contractPayments'])
+        $contracts = Contract::with(['customer', 'user'])
+            ->withSum('contractPayments as total_paid', 'amount')
             ->where('status', 'ACTIVE')
             ->get()
             ->map(function ($contract) {
-                $paidAmount = $contract->contractPayments()->sum('amount') ?? 0;
-                $remainingAmount = max(0, $contract->amount - $paidAmount);
+                $paidAmount = (float) ($contract->total_paid ?? 0);
+                $remainingAmount = max(0, (float) $contract->amount - $paidAmount);
 
                 $contractType = $contract->payment_type === 'rental' ? 'تأجير' : ($contract->payment_type === 'sale' ? 'شراء' : 'تأجير');
 
@@ -128,8 +144,8 @@ class ContractController extends Controller
                     'customerId' => $contract->customer_id,
                     'type' => $contractType,
                     'amount' => (float) $contract->amount,
-                    'totalPayments' => (float) $paidAmount,
-                    'remainingAmount' => (float) $remainingAmount,
+                    'totalPayments' => $paidAmount,
+                    'remainingAmount' => $remainingAmount,
                     'status' => $this->getStatusLabel($contract->status),
                     'startDate' => $contract->start_date?->format('Y-m-d'),
                     'endDate' => $contract->end_date?->format('Y-m-d'),
@@ -139,9 +155,9 @@ class ContractController extends Controller
 
         $stats = [
             'total' => $contracts->count(),
-            'totalValue' => $contracts->sum('amount'),
-            'totalPaid' => $contracts->sum('totalPayments'),
-            'totalRemaining' => $contracts->sum('remainingAmount'),
+            'totalValue' => (float) $contracts->sum('amount'),
+            'totalPaid' => (float) $contracts->sum('totalPayments'),
+            'totalRemaining' => (float) $contracts->sum('remainingAmount'),
         ];
 
         return Inertia::render('Contracts/Active', [
@@ -155,12 +171,13 @@ class ContractController extends Controller
      */
     public function expired()
     {
-        $contracts = Contract::with(['customer', 'user', 'contractPayments'])
+        $contracts = Contract::with(['customer', 'user'])
+            ->withSum('contractPayments as total_paid', 'amount')
             ->where('status', 'EXPIRED')
             ->get()
             ->map(function ($contract) {
-                $paidAmount = $contract->contractPayments()->sum('amount') ?? 0;
-                $remainingAmount = max(0, $contract->amount - $paidAmount);
+                $paidAmount = (float) ($contract->total_paid ?? 0);
+                $remainingAmount = max(0, (float) $contract->amount - $paidAmount);
 
                 $contractType = $contract->payment_type === 'rental' ? 'تأجير' : ($contract->payment_type === 'sale' ? 'شراء' : 'تأجير');
 
@@ -172,8 +189,8 @@ class ContractController extends Controller
                     'customerId' => $contract->customer_id,
                     'type' => $contractType,
                     'amount' => (float) $contract->amount,
-                    'totalPayments' => (float) $paidAmount,
-                    'remainingAmount' => (float) $remainingAmount,
+                    'totalPayments' => $paidAmount,
+                    'remainingAmount' => $remainingAmount,
                     'status' => $this->getStatusLabel($contract->status),
                     'startDate' => $contract->start_date?->format('Y-m-d'),
                     'endDate' => $contract->end_date?->format('Y-m-d'),
@@ -183,9 +200,9 @@ class ContractController extends Controller
 
         $stats = [
             'total' => $contracts->count(),
-            'totalValue' => $contracts->sum('amount'),
-            'totalPaid' => $contracts->sum('totalPayments'),
-            'totalRemaining' => $contracts->sum('remainingAmount'),
+            'totalValue' => (float) $contracts->sum('amount'),
+            'totalPaid' => (float) $contracts->sum('totalPayments'),
+            'totalRemaining' => (float) $contracts->sum('remainingAmount'),
         ];
 
         return Inertia::render('Contracts/Expired', [
@@ -199,12 +216,13 @@ class ContractController extends Controller
      */
     public function cancelled()
     {
-        $contracts = Contract::with(['customer', 'user', 'contractPayments'])
+        $contracts = Contract::with(['customer', 'user'])
+            ->withSum('contractPayments as total_paid', 'amount')
             ->where('status', 'CANCELLED')
             ->get()
             ->map(function ($contract) {
-                $paidAmount = $contract->contractPayments()->sum('amount') ?? 0;
-                $remainingAmount = max(0, $contract->amount - $paidAmount);
+                $paidAmount = (float) ($contract->total_paid ?? 0);
+                $remainingAmount = max(0, (float) $contract->amount - $paidAmount);
 
                 $contractType = $contract->payment_type === 'rental' ? 'تأجير' : ($contract->payment_type === 'sale' ? 'شراء' : 'تأجير');
 
@@ -216,8 +234,8 @@ class ContractController extends Controller
                     'customerId' => $contract->customer_id,
                     'type' => $contractType,
                     'amount' => (float) $contract->amount,
-                    'totalPayments' => (float) $paidAmount,
-                    'remainingAmount' => (float) $remainingAmount,
+                    'totalPayments' => $paidAmount,
+                    'remainingAmount' => $remainingAmount,
                     'status' => $this->getStatusLabel($contract->status),
                     'startDate' => $contract->start_date?->format('Y-m-d'),
                     'endDate' => $contract->end_date?->format('Y-m-d'),
@@ -227,9 +245,9 @@ class ContractController extends Controller
 
         $stats = [
             'total' => $contracts->count(),
-            'totalValue' => $contracts->sum('amount'),
-            'totalPaid' => $contracts->sum('totalPayments'),
-            'totalRemaining' => $contracts->sum('remainingAmount'),
+            'totalValue' => (float) $contracts->sum('amount'),
+            'totalPaid' => (float) $contracts->sum('totalPayments'),
+            'totalRemaining' => (float) $contracts->sum('remainingAmount'),
         ];
 
         return Inertia::render('Contracts/Cancelled', [

@@ -69,24 +69,31 @@ class AccountingReportController extends Controller
     {
         $dateTo = $request->get('date_to', now()->format('Y-m-d'));
 
+        // جلب الأرصدة في استعلام واحد بدلاً من N+1
+        $balances = DB::table('journal_entry_items')
+            ->join('journal_entries', 'journal_entry_items.journal_entry_id', '=', 'journal_entries.id')
+            ->where('journal_entries.status', 'posted')
+            ->whereDate('journal_entries.date', '<=', $dateTo)
+            ->select('journal_entry_items.account_id', 
+                DB::raw('SUM(journal_entry_items.debit) as total_debit'),
+                DB::raw('SUM(journal_entry_items.credit) as total_credit')
+            )
+            ->groupBy('journal_entry_items.account_id')
+            ->get()
+            ->keyBy('account_id');
+
         $accounts = Account::where('is_parent', false)
             ->whereIn('type', ['asset', 'liability', 'equity'])
             ->orderBy('code')
             ->get()
-            ->map(function ($account) use ($dateTo) {
-                $debit = JournalEntryItem::where('account_id', $account->id)
-                    ->whereHas('journalEntry', function ($q) use ($dateTo) {
-                        $q->where('status', 'posted')->whereDate('date', '<=', $dateTo);
-                    })->sum('debit');
-
-                $credit = JournalEntryItem::where('account_id', $account->id)
-                    ->whereHas('journalEntry', function ($q) use ($dateTo) {
-                        $q->where('status', 'posted')->whereDate('date', '<=', $dateTo);
-                    })->sum('credit');
+            ->map(function ($account) use ($balances) {
+                $row = $balances->get($account->id);
+                $debit = $row ? (float) $row->total_debit : 0;
+                $credit = $row ? (float) $row->total_credit : 0;
 
                 $balance = in_array($account->type, ['asset'])
-                    ? (float) $debit - (float) $credit
-                    : (float) $credit - (float) $debit;
+                    ? $debit - $credit
+                    : $credit - $debit;
 
                 return [
                     'id' => $account->id,
@@ -101,6 +108,37 @@ class AccountingReportController extends Controller
         $assets = $accounts->where('type', 'asset')->values();
         $liabilities = $accounts->where('type', 'liability')->values();
         $equity = $accounts->where('type', 'equity')->values();
+
+        // حساب صافي الربح للفترة بكفاءة
+        $incomeStats = DB::table('journal_entry_items')
+            ->join('accounts', 'journal_entry_items.account_id', '=', 'accounts.id')
+            ->join('journal_entries', 'journal_entry_items.journal_entry_id', '=', 'journal_entries.id')
+            ->where('journal_entries.status', 'posted')
+            ->whereDate('journal_entries.date', '<=', $dateTo)
+            ->whereIn('accounts.type', ['revenue', 'expense'])
+            ->select('accounts.type', 
+                DB::raw('SUM(journal_entry_items.debit) as total_debit'),
+                DB::raw('SUM(journal_entry_items.credit) as total_credit')
+            )
+            ->groupBy('accounts.type')
+            ->get()
+            ->keyBy('type');
+
+        $revenueData = $incomeStats->get('revenue');
+        $expenseData = $incomeStats->get('expense');
+        
+        $totalRevenue = $revenueData ? (float) ($revenueData->total_credit - $revenueData->total_debit) : 0;
+        $totalExpenses = $expenseData ? (float) ($expenseData->total_debit - $expenseData->total_credit) : 0;
+        $netIncome = $totalRevenue - $totalExpenses;
+
+        // إضافة صافي الربح لحقوق الملكية
+        $equity->push([
+            'id' => 0,
+            'code' => '',
+            'name' => 'صافي ربح الفترة',
+            'type' => 'equity',
+            'balance' => $netIncome,
+        ]);
 
         return Inertia::render('Accounting/Reports/BalanceSheet', [
             'assets' => $assets,
@@ -120,28 +158,32 @@ class AccountingReportController extends Controller
         $dateFrom = $request->get('date_from', now()->startOfYear()->format('Y-m-d'));
         $dateTo = $request->get('date_to', now()->format('Y-m-d'));
 
+        // جلب الأرصدة في استعلام واحد بدلاً من N+1
+        $balances = DB::table('journal_entry_items')
+            ->join('journal_entries', 'journal_entry_items.journal_entry_id', '=', 'journal_entries.id')
+            ->where('journal_entries.status', 'posted')
+            ->whereDate('journal_entries.date', '>=', $dateFrom)
+            ->whereDate('journal_entries.date', '<=', $dateTo)
+            ->select('journal_entry_items.account_id', 
+                DB::raw('SUM(journal_entry_items.debit) as total_debit'),
+                DB::raw('SUM(journal_entry_items.credit) as total_credit')
+            )
+            ->groupBy('journal_entry_items.account_id')
+            ->get()
+            ->keyBy('account_id');
+
         $accounts = Account::where('is_parent', false)
             ->whereIn('type', ['revenue', 'expense'])
             ->orderBy('code')
             ->get()
-            ->map(function ($account) use ($dateFrom, $dateTo) {
-                $debit = JournalEntryItem::where('account_id', $account->id)
-                    ->whereHas('journalEntry', function ($q) use ($dateFrom, $dateTo) {
-                        $q->where('status', 'posted')
-                          ->whereDate('date', '>=', $dateFrom)
-                          ->whereDate('date', '<=', $dateTo);
-                    })->sum('debit');
-
-                $credit = JournalEntryItem::where('account_id', $account->id)
-                    ->whereHas('journalEntry', function ($q) use ($dateFrom, $dateTo) {
-                        $q->where('status', 'posted')
-                          ->whereDate('date', '>=', $dateFrom)
-                          ->whereDate('date', '<=', $dateTo);
-                    })->sum('credit');
+            ->map(function ($account) use ($balances) {
+                $row = $balances->get($account->id);
+                $debit = $row ? (float) $row->total_debit : 0;
+                $credit = $row ? (float) $row->total_credit : 0;
 
                 $balance = $account->type === 'revenue'
-                    ? (float) $credit - (float) $debit
-                    : (float) $debit - (float) $credit;
+                    ? $credit - $debit
+                    : $debit - $credit;
 
                 return [
                     'id' => $account->id,

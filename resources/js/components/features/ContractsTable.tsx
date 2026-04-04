@@ -63,6 +63,100 @@ interface ContractsTableProps {
   isLoading?: boolean;
 }
 
+interface ContractTableGroupProps {
+  contracts: Contract[];
+  title: string;
+  bgColor: string;
+  borderColor: string;
+  columns: ColumnDef<Contract>[];
+  sorting: SortingState;
+  onSortingChange: (updaterOrValue: SortingState | ((old: SortingState) => SortingState)) => void;
+}
+
+function ContractTableGroup({
+  contracts,
+  title,
+  bgColor,
+  borderColor,
+  columns,
+  sorting,
+  onSortingChange,
+}: ContractTableGroupProps) {
+  const table = useReactTable({
+    data: contracts,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    onSortingChange,
+    state: {
+      sorting,
+    },
+  });
+
+  if (contracts.length === 0) return null;
+
+  return (
+    <Card key={title} className={`mb-6 ${borderColor}`}>
+      <CardHeader className={`${bgColor} border-b`}>
+        <CardTitle className="flex items-center gap-2">
+          <Package className="h-5 w-5" />
+          {title} ({contracts.length})
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-800">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <th
+                      key={header.id}
+                      className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                    >
+                      {header.isPlaceholder ? null : (
+                        <div
+                          className="cursor-pointer select-none flex items-center gap-1"
+                          onClick={header.column.getToggleSortingHandler()}
+                        >
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                          {{
+                            asc: <ChevronRight className="h-4 w-4 rotate-90" />,
+                            desc: <ChevronRight className="h-4 w-4 -rotate-90" />,
+                          }[header.column.getIsSorted() as string] ?? null}
+                        </div>
+                      )}
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+              {table.getRowModel().rows.map((row) => (
+                <tr
+                  key={row.id}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <td
+                      key={cell.id}
+                      className="py-3 px-2 sm:px-4"
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function ContractsTable({
   data,
   onAddContract,
@@ -92,92 +186,6 @@ export function ContractsTable({
     }
   };
 
-  // تقسيم البيانات إلى 3 مجموعات
-  const openContracts = data.filter(contract => contract.status === 'عقود مفتوحة');
-  const closedNotReceivedContracts = data.filter(contract => contract.status === 'عقود مغلقة ولم يتم استلام الأصناف');
-  const closedContracts = data.filter(contract => contract.status === 'عقود مغلقة');
-
-  // دالة لإنشاء جدول منفصل
-  const renderContractTable = (contracts: Contract[], title: string, bgColor: string, borderColor: string) => {
-    if (contracts.length === 0) return null;
-
-    const table = useReactTable({
-      data: contracts,
-      columns,
-      getCoreRowModel: getCoreRowModel(),
-      getFilteredRowModel: getFilteredRowModel(),
-      getSortedRowModel: getSortedRowModel(),
-      getPaginationRowModel: getPaginationRowModel(),
-      onSortingChange: setSorting,
-      onColumnFiltersChange: setColumnFilters,
-      onGlobalFilterChange: setGlobalFilter,
-      state: {
-        sorting,
-        columnFilters,
-        globalFilter,
-      },
-    });
-
-    return (
-      <Card key={title} className={`mb-6 ${borderColor}`}>
-        <CardHeader className={`${bgColor} border-b`}>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            {title} ({contracts.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-800">
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <th
-                        key={header.id}
-                        className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                      >
-                        {header.isPlaceholder ? null : (
-                          <div
-                            className="cursor-pointer select-none flex items-center gap-1"
-                            onClick={header.column.getToggleSortingHandler()}
-                          >
-                            {flexRender(header.column.columnDef.header, header.getContext())}
-                            {{
-                              asc: <ChevronRight className="h-4 w-4 rotate-90" />,
-                              desc: <ChevronRight className="h-4 w-4 -rotate-90" />,
-                            }[header.column.getIsSorted() as string] ?? null}
-                          </div>
-                        )}
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                {table.getRowModel().rows.map((row) => (
-                  <tr
-                    key={row.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        className="py-3 px-2 sm:px-4"
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case 'مدفوعة':
@@ -204,6 +212,11 @@ export function ContractsTable({
       return matchesSearch && matchesStatus;
     });
   }, [data, globalFilter, statusFilter]);
+
+  // تقسيم البيانات المفلترة إلى 3 مجموعات
+  const openContracts = useMemo(() => filteredData.filter(contract => contract.status === 'عقود مفتوحة'), [filteredData]);
+  const closedNotReceivedContracts = useMemo(() => filteredData.filter(contract => contract.status === 'عقود مغلقة ولم يتم استلام الأصناف'), [filteredData]);
+  const closedContracts = useMemo(() => filteredData.filter(contract => contract.status === 'عقود مغلقة'), [filteredData]);
 
 
   const columns: ColumnDef<Contract>[] = useMemo(
@@ -359,7 +372,12 @@ export function ContractsTable({
                     </button>
                   )}
                   <button
-                    onClick={() => onDeleteContract(contract)}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onDeleteContract(contract);
+                    }}
                     className="text-red-600 hover:text-red-700 transition-colors p-1"
                     title="حذف"
                   >
@@ -384,28 +402,6 @@ export function ContractsTable({
     ],
     [onViewContract, onEditContract, onDeleteContract, onViewStages, onPrint, onIssueInvoice]
   );
-
-  const table = useReactTable({
-    data: filteredData,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
-    state: {
-      sorting,
-      columnFilters,
-      globalFilter,
-    },
-    initialState: {
-      pagination: {
-        pageSize: 10,
-      },
-    },
-  });
 
   return (
     <div className="space-y-6">
@@ -441,13 +437,37 @@ export function ContractsTable({
       </Card>
 
       {/* جدول العقود المفتوحة */}
-      {renderContractTable(openContracts, 'عقود مفتوحة', 'bg-green-50 dark:bg-green-900/10', 'border-green-200 dark:border-green-800')}
+      <ContractTableGroup
+        contracts={openContracts}
+        title="عقود مفتوحة"
+        bgColor="bg-green-50 dark:bg-green-900/10"
+        borderColor="border-green-200 dark:border-green-800"
+        columns={columns}
+        sorting={sorting}
+        onSortingChange={setSorting}
+      />
 
       {/* جدول العقود المغلقة ولم يتم استلام الأصناف */}
-      {renderContractTable(closedNotReceivedContracts, 'عقود مغلقة ولم يتم استلام الأصناف', 'bg-orange-50 dark:bg-orange-900/10', 'border-orange-200 dark:border-orange-800')}
+      <ContractTableGroup
+        contracts={closedNotReceivedContracts}
+        title="عقود مغلقة ولم يتم استلام الأصناف"
+        bgColor="bg-orange-50 dark:bg-orange-900/10"
+        borderColor="border-orange-200 dark:border-orange-800"
+        columns={columns}
+        sorting={sorting}
+        onSortingChange={setSorting}
+      />
 
       {/* جدول العقود المغلقة */}
-      {renderContractTable(closedContracts, 'عقود مغلقة', 'bg-blue-50 dark:bg-blue-900/10', 'border-blue-200 dark:border-blue-800')}
+      <ContractTableGroup
+        contracts={closedContracts}
+        title="عقود مغلقة"
+        bgColor="bg-blue-50 dark:bg-blue-900/10"
+        borderColor="border-blue-200 dark:border-blue-800"
+        columns={columns}
+        sorting={sorting}
+        onSortingChange={setSorting}
+      />
 
       {/* رسالة إذا لم تكن هناك عقود */}
       {data.length === 0 && !isLoading && (

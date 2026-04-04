@@ -15,9 +15,21 @@ class CustomerController extends Controller
      */
     public function index()
     {
-        $customers = Customer::with(['contracts', 'payments'])
+        $customers = Customer::withCount('contracts')
+            ->withSum('payments as total_payments', 'amount')
             ->get()
             ->map(function ($customer) {
+                // بدلاً من الاستعلام لكل عميل، سنقوم بجلب المبالغ المتبقية لجميع العملاء في استعلام واحد لاحقاً أو استخدامه هنا بحذر
+                // للتبسيط الآن، سنقوم بتحميل العقود النشطة مع مجموع مدفوعاتها
+                $pendingAmount = $customer->contracts()
+                    ->where('status', 'ACTIVE')
+                    ->selectRaw('SUM(amount) as total_amount')
+                    ->withSum('payments as paid_amount', 'amount')
+                    ->get()
+                    ->sum(function ($contract) {
+                        return max(0, (float) ($contract->total_amount ?? 0) - (float) ($contract->paid_amount ?? 0));
+                    });
+
                 return [
                     'id' => $customer->id,
                     'customerNumber' => $customer->customer_number,
@@ -29,50 +41,45 @@ class CustomerController extends Controller
                     'email' => $customer->email,
                     'status' => $customer->status,
                     'registrationDate' => $customer->registration_date,
-                    'contractsCount' => $customer->contracts->count(),
-                    'totalPayments' => $customer->payments->sum('amount') ?? 0,
-                    'pendingAmount' => $customer->contracts()
-                        ->where('status', 'ACTIVE')
-                        ->withSum('payments as paid_amount', 'amount')
-                        ->get()
-                        ->sum(function ($contract) {
-                            $paidAmount = $contract->paid_amount ?? 0;
-
-                            return max(0, ($contract->amount ?? 0) - $paidAmount);
-                        }),
+                    'contractsCount' => (int) $customer->contracts_count,
+                    'totalPayments' => (float) ($customer->total_payments ?? 0),
+                    'pendingAmount' => (float) $pendingAmount,
                     'rating' => $customer->rating,
                     'hasWarnings' => ! empty($customer->warnings),
                 ];
             });
 
-        // إحصائيات العملاء من قاعدة البيانات
-        $totalCustomers = Customer::count();
-        $activeCustomers = Customer::where('status', 'ACTIVE')->count();
-        $inactiveCustomers = Customer::where('status', 'INACTIVE')->count();
-        $individualCustomers = Customer::where('customer_type', 'INDIVIDUAL')->count();
-        $companyCustomers = Customer::where('customer_type', 'COMPANY')->count();
+        // إحصائيات العملاء في استعلام واحد
+        $counts = Customer::query()
+            ->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'ACTIVE' THEN 1 ELSE 0 END) as active,
+                SUM(CASE WHEN status = 'INACTIVE' THEN 1 ELSE 0 END) as inactive,
+                SUM(CASE WHEN customer_type = 'INDIVIDUAL' THEN 1 ELSE 0 END) as individual,
+                SUM(CASE WHEN customer_type = 'COMPANY' THEN 1 ELSE 0 END) as company,
+                AVG(rating) as avg_rating
+            ")
+            ->first();
 
-        // إحصائيات العقود والمدفوعات من قاعدة البيانات
+        // إحصائيات العقود والمدفوعات
         $totalContracts = \App\Models\Contract::count();
         $totalPayments = \App\Models\Payment::sum('amount') ?? 0;
 
-        // حساب المبلغ المتبقي بشكل فعال من قاعدة البيانات
+        // حساب المبلغ المتبقي الإجمالي بكفاءة
         $totalPendingAmount = \App\Models\Contract::query()
             ->where('status', 'ACTIVE')
+            ->selectRaw('SUM(amount) as total_amount')
             ->withSum('payments as paid_amount', 'amount')
             ->get()
             ->sum(function ($contract) {
-                $paidAmount = $contract->paid_amount ?? 0;
-
-                return max(0, ($contract->amount ?? 0) - $paidAmount);
+                return max(0, (float) ($contract->total_amount ?? 0) - (float) ($contract->paid_amount ?? 0));
             });
 
         $customersWithWarnings = Customer::whereNotNull('warnings')
             ->where('warnings', '!=', '')
             ->count();
-        $averageRating = Customer::whereNotNull('rating')->avg('rating') ?? 0;
 
-        // توزيع الجنسيات من قاعدة البيانات
+        // توزيع الجنسيات
         $nationalityDistribution = Customer::query()
             ->selectRaw('nationality, COUNT(*) as count')
             ->whereNotNull('nationality')
@@ -80,7 +87,7 @@ class CustomerController extends Controller
             ->pluck('count', 'nationality')
             ->toArray();
 
-        // التسجيلات الشهرية من قاعدة البيانات
+        // التسجيلات الشهرية
         $monthlyRegistrations = Customer::query()
             ->selectRaw('DATE_FORMAT(registration_date, "%Y-%m") as month, COUNT(*) as count')
             ->whereNotNull('registration_date')
@@ -90,16 +97,16 @@ class CustomerController extends Controller
             ->toArray();
 
         $stats = [
-            'totalCustomers' => $totalCustomers,
-            'activeCustomers' => $activeCustomers,
-            'inactiveCustomers' => $inactiveCustomers,
-            'individualCustomers' => $individualCustomers,
-            'companyCustomers' => $companyCustomers,
+            'totalCustomers' => (int) $counts->total,
+            'activeCustomers' => (int) $counts->active,
+            'inactiveCustomers' => (int) $counts->inactive,
+            'individualCustomers' => (int) $counts->individual,
+            'companyCustomers' => (int) $counts->company,
             'totalContracts' => $totalContracts,
-            'totalPayments' => $totalPayments,
-            'totalPendingAmount' => $totalPendingAmount,
+            'totalPayments' => (float) $totalPayments,
+            'totalPendingAmount' => (float) $totalPendingAmount,
             'customersWithWarnings' => $customersWithWarnings,
-            'averageRating' => round($averageRating, 2),
+            'averageRating' => round((float) $counts->avg_rating, 2),
             'nationalityDistribution' => $nationalityDistribution,
             'monthlyRegistrations' => $monthlyRegistrations,
         ];

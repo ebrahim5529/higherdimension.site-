@@ -1,6 +1,6 @@
 /** @jsxImportSource react */
 import { Head, router, usePage } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { ContractsStats } from '@/components/features/ContractsStats';
 import { ContractsTable } from '@/components/features/ContractsTable';
@@ -63,55 +63,69 @@ export default function ContractsIndex({ contracts, stats }: ContractsIndexProps
     }
   }, [flash]);
 
-  const handleAddContract = () => {
+  const handleAddContract = useCallback(() => {
     router.visit('/contracts/create');
-  };
+  }, []);
 
-  const handleEditContract = (contract: Contract) => {
+  const handleEditContract = useCallback((contract: Contract) => {
     router.visit(`/contracts/${contract.id}/edit`);
-  };
+  }, []);
 
-  const handleDeleteContract = (contract: Contract) => {
+  const handleDeleteContract = useCallback((contract: Contract) => {
     setContractToDelete(contract);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const confirmDelete = () => {
-    if (contractToDelete) {
-      setIsLoading(true);
-      router.delete(`/contracts/${contractToDelete.id}`, {
-        onSuccess: () => {
-          showToast.success('تم الحذف بنجاح', `تم حذف العقد "${contractToDelete.contractNumber}" بنجاح`);
-          setDeleteDialogOpen(false);
-          setContractToDelete(null);
-          setIsLoading(false);
-        },
-        onError: (errors) => {
-          showToast.error('فشل الحذف', errors?.message || 'حدث خطأ أثناء حذف العقد');
-          setIsLoading(false);
-        },
-      });
+  const confirmDelete = useCallback(() => {
+    if (!contractToDelete) {
+      return;
     }
-  };
 
-  const handleViewContract = (contract: Contract) => {
+    const target = contractToDelete;
+    setIsLoading(true);
+
+    router.delete(`/contracts/${target.id}`, {
+      preserveScroll: true,
+      onSuccess: () => {
+        showToast.success('تم الحذف بنجاح', `تم حذف العقد "${target.contractNumber}" بنجاح`);
+        setDeleteDialogOpen(false);
+        setContractToDelete(null);
+      },
+      onError: (errors) => {
+        let msg = 'حدث خطأ أثناء حذف العقد';
+        if (errors && typeof errors === 'object') {
+          const values = Object.values(errors as Record<string, unknown>).flat();
+          const first = values.find((v) => typeof v === 'string') as string | undefined;
+          if (first) {
+            msg = first;
+          }
+        }
+        showToast.error('فشل الحذف', msg);
+      },
+      onFinish: () => {
+        setIsLoading(false);
+      },
+    });
+  }, [contractToDelete]);
+
+  const handleViewContract = useCallback((contract: Contract) => {
     router.visit(`/contracts/${contract.id}`);
-  };
+  }, []);
 
-  const handleViewStages = (contract: Contract) => {
+  const handleViewStages = useCallback((contract: Contract) => {
     setContractForStages(contract);
     setStagesModalOpen(true);
-  };
+  }, []);
 
-  const handlePrint = (contract: Contract) => {
+  const handlePrint = useCallback((contract: Contract) => {
     // TODO: Implement print functionality
     showToast.info('طباعة', `جاري طباعة العقد ${contract.contractNumber}...`);
-  };
+  }, []);
 
-  const handleIssueInvoice = (contract: Contract) => {
+  const handleIssueInvoice = useCallback((contract: Contract) => {
     setContractForInvoice(contract);
     setInvoiceModalOpen(true);
-  };
+  }, []);
 
   return (
     <DashboardLayout>
@@ -153,13 +167,19 @@ export default function ContractsIndex({ contracts, stats }: ContractsIndexProps
         {/* نافذة تأكيد الحذف */}
         <ConfirmDialog
           open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
+          onOpenChange={(open) => {
+            setDeleteDialogOpen(open);
+            if (!open) {
+              setContractToDelete(null);
+            }
+          }}
           onConfirm={confirmDelete}
           title="تأكيد حذف العقد"
           description={`هل أنت متأكد من حذف العقد "${contractToDelete?.contractNumber}"؟ لا يمكن التراجع عن هذا الإجراء.`}
           confirmText="حذف"
           cancelText="إلغاء"
           variant="danger"
+          isLoading={isLoading}
         />
 
         {/* نافذة عرض المراحل */}

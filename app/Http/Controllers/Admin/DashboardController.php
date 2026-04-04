@@ -83,17 +83,27 @@ class DashboardController extends Controller
             ['name' => 'مكتب الشرق', 'value' => round($totalUsers * 0.25)],
         ];
 
-        // الإيرادات الشهرية للمكاتب (آخر 6 أشهر)
+        // الإيرادات الشهرية للمكاتب (آخر 6 أشهر) في استعلام واحد
+        $startDate = now()->subMonths(5)->startOfMonth();
+        $monthlyRevenues = ContractPayment::where('payment_date', '>=', $startDate)
+            ->selectRaw('MONTH(payment_date) as month, YEAR(payment_date) as year, SUM(amount) as total')
+            ->groupBy('year', 'month')
+            ->orderBy('year')
+            ->orderBy('month')
+            ->get()
+            ->keyBy(function($item) {
+                return $item->year . '-' . str_pad($item->month, 2, '0', STR_PAD_LEFT);
+            });
+
         $monthlyRevenue = [];
-        $months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'];
+        $months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
         for ($i = 5; $i >= 0; $i--) {
-            $month = now()->subMonths($i);
-            $revenue = ContractPayment::whereMonth('payment_date', $month->month)
-                ->whereYear('payment_date', $month->year)
-                ->sum('amount') ?? 0;
+            $monthDate = now()->subMonths($i);
+            $key = $monthDate->format('Y-m');
+            $revenue = (float) ($monthlyRevenues->get($key)->total ?? 0);
             
             $monthlyRevenue[] = [
-                'month' => $months[$month->month - 1] ?? $month->format('M'),
+                'month' => $months[$monthDate->month - 1] ?? $monthDate->format('M'),
                 'المكتب الرئيسي' => round($revenue * 0.32),
                 'مكتب الشمال' => round($revenue * 0.23),
                 'مكتب الجنوب' => round($revenue * 0.20),
@@ -101,13 +111,20 @@ class DashboardController extends Controller
             ];
         }
 
-        // النشاط الأسبوعي للمكاتب
+        // النشاط الأسبوعي للمكاتب في استعلام واحد
+        $startDay = now()->subDays(6)->startOfDay();
+        $dailyContracts = Contract::where('created_at', '>=', $startDay)
+            ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
+
         $weeklyActivity = [];
-        $days = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الجمعة'];
+        $days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
         for ($i = 6; $i >= 0; $i--) {
-            $day = now()->subDays($i);
-            $dayName = $days[$day->dayOfWeek] ?? $day->format('D');
-            $contractsCount = Contract::whereDate('created_at', $day->format('Y-m-d'))->count();
+            $dayDate = now()->subDays($i);
+            $dayName = $days[$dayDate->dayOfWeek] ?? $dayDate->format('D');
+            $contractsCount = (int) ($dailyContracts->get($dayDate->format('Y-m-d'))->count ?? 0);
             
             $weeklyActivity[] = [
                 'day' => $dayName,
@@ -118,12 +135,20 @@ class DashboardController extends Controller
             ];
         }
 
-        // توزيع المعدات حسب المكاتب
-        $equipmentByOffice = [];
-        $totalAvailable = Scaffold::where('status', 'available')->count();
-        $totalRented = Scaffold::where('status', 'rented')->count();
-        $totalMaintenance = Scaffold::where('status', 'maintenance')->count();
+        // توزيع المعدات حسب المكاتب - تحسين استعلامات الإحصائيات
+        $equipmentStats = Scaffold::query()
+            ->selectRaw("
+                SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) as available,
+                SUM(CASE WHEN status = 'rented' THEN 1 ELSE 0 END) as rented,
+                SUM(CASE WHEN status = 'maintenance' THEN 1 ELSE 0 END) as maintenance
+            ")
+            ->first();
+
+        $totalAvailable = (int) $equipmentStats->available;
+        $totalRented = (int) $equipmentStats->rented;
+        $totalMaintenance = (int) $equipmentStats->maintenance;
         
+        $equipmentByOffice = [];
         $offices = ['مكتب الشمال', 'مكتب الشرق'];
         foreach ($offices as $office) {
             $equipmentByOffice[] = [

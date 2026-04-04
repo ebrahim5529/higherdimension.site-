@@ -34,7 +34,6 @@ export function ConfirmDialog({
   const handleConfirm = async () => {
     try {
       await onConfirm();
-      onOpenChange(false);
     } catch (error) {
       // الخطأ سيتم التعامل معه في onConfirm
     }
@@ -98,6 +97,7 @@ export function ConfirmDialog({
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-800">
           <Button
+            type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isLoading}
@@ -105,6 +105,7 @@ export function ConfirmDialog({
             {cancelText}
           </Button>
           <Button
+            type="button"
             className={styles.button}
             onClick={handleConfirm}
             disabled={isLoading}

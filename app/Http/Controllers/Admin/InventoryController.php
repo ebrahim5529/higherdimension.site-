@@ -53,29 +53,33 @@ class InventoryController extends Controller
                 ];
             });
 
-        // إحصائيات المخزون
-        $totalScaffolds = Scaffold::count();
-        $availableScaffolds = Scaffold::where('status', 'AVAILABLE')->count();
-        $rentedScaffolds = Scaffold::where('status', 'RENTED')->count();
-        $soldScaffolds = Scaffold::where('status', 'SOLD')->count();
-        $maintenanceScaffolds = Scaffold::where('status', 'MAINTENANCE')->count();
-        $reservedScaffolds = Scaffold::where('status', 'RESERVED')->count();
+        // إحصائيات المخزون في استعلام واحد
+        $statsData = Scaffold::query()
+            ->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'AVAILABLE' THEN 1 ELSE 0 END) as available,
+                SUM(CASE WHEN status = 'RENTED' THEN 1 ELSE 0 END) as rented,
+                SUM(CASE WHEN status = 'SOLD' THEN 1 ELSE 0 END) as sold,
+                SUM(CASE WHEN status = 'MAINTENANCE' THEN 1 ELSE 0 END) as maintenance,
+                SUM(CASE WHEN status = 'RESERVED' THEN 1 ELSE 0 END) as reserved
+            ")
+            ->first();
 
-        // توزيع حسب النوع
+        // توزيع حسب النوع في استعلام واحد
         $typeDistribution = Scaffold::query()
             ->selectRaw('type, COUNT(*) as count')
             ->groupBy('type')
             ->pluck('count', 'type')
             ->toArray();
 
-        // توزيع حسب المادة
+        // توزيع حسب المادة في استعلام واحد
         $materialDistribution = Scaffold::query()
             ->selectRaw('material, COUNT(*) as count')
             ->groupBy('material')
             ->pluck('count', 'material')
             ->toArray();
 
-        // توزيع حسب الحالة
+        // توزيع حسب الحالة في استعلام واحد
         $conditionDistribution = Scaffold::query()
             ->selectRaw('`condition`, COUNT(*) as count')
             ->groupBy('condition')
@@ -88,12 +92,12 @@ class InventoryController extends Controller
             ->count();
 
         $stats = [
-            'totalScaffolds' => $totalScaffolds,
-            'availableScaffolds' => $availableScaffolds,
-            'rentedScaffolds' => $rentedScaffolds,
-            'soldScaffolds' => $soldScaffolds,
-            'maintenanceScaffolds' => $maintenanceScaffolds,
-            'reservedScaffolds' => $reservedScaffolds,
+            'totalScaffolds' => (int) $statsData->total,
+            'availableScaffolds' => (int) $statsData->available,
+            'rentedScaffolds' => (int) $statsData->rented,
+            'soldScaffolds' => (int) $statsData->sold,
+            'maintenanceScaffolds' => (int) $statsData->maintenance,
+            'reservedScaffolds' => (int) $statsData->reserved,
             'totalValue' => 0, // سيتم حسابه لاحقاً
             'availableValue' => 0,
             'rentedValue' => 0,
@@ -105,11 +109,11 @@ class InventoryController extends Controller
             'materialDistribution' => $materialDistribution,
             'conditionDistribution' => $conditionDistribution,
             'statusDistribution' => [
-                'AVAILABLE' => $availableScaffolds,
-                'RENTED' => $rentedScaffolds,
-                'SOLD' => $soldScaffolds,
-                'MAINTENANCE' => $maintenanceScaffolds,
-                'RESERVED' => $reservedScaffolds,
+                'AVAILABLE' => (int) $statsData->available,
+                'RENTED' => (int) $statsData->rented,
+                'SOLD' => (int) $statsData->sold,
+                'MAINTENANCE' => (int) $statsData->maintenance,
+                'RESERVED' => (int) $statsData->reserved,
             ],
             'monthlyAdditions' => [],
             'monthlyRentals' => [],
