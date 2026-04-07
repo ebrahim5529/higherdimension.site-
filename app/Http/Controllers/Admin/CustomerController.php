@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Contract;
 use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -15,20 +16,28 @@ class CustomerController extends Controller
      */
     public function index()
     {
+        $activeContracts = Contract::query()
+            ->select(['id', 'customer_id', 'amount'])
+            ->whereNotNull('customer_id')
+            ->where('status', 'ACTIVE')
+            ->withSum('payments as paid_amount', 'amount')
+            ->get();
+
+        $pendingAmountsByCustomerId = $activeContracts
+            ->groupBy('customer_id')
+            ->map(function ($contracts) {
+                return $contracts->sum(function ($contract) {
+                    return max(0, (float) $contract->amount - (float) ($contract->paid_amount ?? 0));
+                });
+            });
+
+        $totalPendingAmount = (float) $pendingAmountsByCustomerId->sum();
+
         $customers = Customer::withCount('contracts')
             ->withSum('payments as total_payments', 'amount')
             ->get()
             ->map(function ($customer) {
-                // بدلاً من الاستعلام لكل عميل، سنقوم بجلب المبالغ المتبقية لجميع العملاء في استعلام واحد لاحقاً أو استخدامه هنا بحذر
-                // للتبسيط الآن، سنقوم بتحميل العقود النشطة مع مجموع مدفوعاتها
-                $pendingAmount = $customer->contracts()
-                    ->where('status', 'ACTIVE')
-                    ->selectRaw('SUM(amount) as total_amount')
-                    ->withSum('payments as paid_amount', 'amount')
-                    ->get()
-                    ->sum(function ($contract) {
-                        return max(0, (float) ($contract->total_amount ?? 0) - (float) ($contract->paid_amount ?? 0));
-                    });
+                $pendingAmount = (float) ($pendingAmountsByCustomerId[$customer->id] ?? 0);
 
                 return [
                     'id' => $customer->id,
@@ -64,16 +73,6 @@ class CustomerController extends Controller
         // إحصائيات العقود والمدفوعات
         $totalContracts = \App\Models\Contract::count();
         $totalPayments = \App\Models\Payment::sum('amount') ?? 0;
-
-        // حساب المبلغ المتبقي الإجمالي بكفاءة
-        $totalPendingAmount = \App\Models\Contract::query()
-            ->where('status', 'ACTIVE')
-            ->selectRaw('SUM(amount) as total_amount')
-            ->withSum('payments as paid_amount', 'amount')
-            ->get()
-            ->sum(function ($contract) {
-                return max(0, (float) ($contract->total_amount ?? 0) - (float) ($contract->paid_amount ?? 0));
-            });
 
         $customersWithWarnings = Customer::whereNotNull('warnings')
             ->where('warnings', '!=', '')
