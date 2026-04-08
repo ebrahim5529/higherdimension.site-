@@ -321,8 +321,9 @@ export function useContractForm(customers: Customer[]) {
                         contract_type: contractData.contract_type || 'تأجير معدات بناء',
                     });
                 }
-                // عند نجاح إنشاء العقد انتقل لقائمة العقود مباشرة
-                router.visit('/contracts');
+                // ابق في نفس الصفحة بعد الإنشاء (contracts/create)
+                // واسمح للمستخدم باختيار إرسال عبر واتساب إذا أراد.
+                setWhatsappModalOpen(true);
             },
             onError: (errors) => {
                 const errorLabels: Record<string, string> = {

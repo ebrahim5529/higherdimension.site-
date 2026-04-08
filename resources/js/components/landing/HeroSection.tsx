@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { MessageCircle } from "lucide-react";
 
-const WHATSAPP_URL = "https://wa.me/96893099914";
+const WHATSAPP_URL = "https://wa.me/96890891070";
 
 export function HeroSection() {
   return (

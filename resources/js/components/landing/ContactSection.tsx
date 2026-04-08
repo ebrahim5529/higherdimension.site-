@@ -2,7 +2,7 @@ import { Phone, Mail, MessageCircle, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RevealOnScroll } from "./RevealOnScroll";
 
-const WHATSAPP_URL = "https://wa.me/96893099914";
+const WHATSAPP_URL = "https://wa.me/96890891070";
 const MAP_EMBED_URL =
   "https://maps.google.com/maps?q=23.535345,58.191704&hl=ar&z=15&output=embed";
 

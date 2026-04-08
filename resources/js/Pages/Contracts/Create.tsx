@@ -5,12 +5,12 @@ import { RentalsSection } from '@/components/contracts/RentalsSection';
 import { PaymentsSection } from '@/components/contracts/PaymentsSection';
 import { CreateContractProps } from '@/types/contracts';
 import { ArrowLeft } from 'lucide-react';
-import { ContractWhatsAppModal } from '@/components/features/ContractWhatsAppModal';
 import { ContractPreviewModal } from '@/components/features/ContractPreviewModal';
 import { useContractForm } from '@/hooks/contracts/useContractForm';
 import { ContractBasicInfo } from '@/components/contracts/ContractBasicInfo';
 import { ContractTotals } from '@/components/contracts/ContractTotals';
 import { ContractFormActions } from '@/components/contracts/ContractFormActions';
+import { ContractWhatsAppModalSection } from '@/components/contracts/ContractWhatsAppModalSection';
 
 export default function CreateContract({ customers }: CreateContractProps) {
   const { state, actions } = useContractForm(customers);
@@ -109,14 +109,9 @@ export default function CreateContract({ customers }: CreateContractProps) {
       </div>
 
       {/* Modal إرسال العقد عبر الواتساب */}
-      <ContractWhatsAppModal
+      <ContractWhatsAppModalSection
         open={state.whatsappModalOpen}
-        onOpenChange={(open) => {
-          actions.setWhatsappModalOpen(open);
-          if (!open) {
-            router.visit('/contracts');
-          }
-        }}
+        onOpenChange={actions.setWhatsappModalOpen}
         contract={state.createdContract}
         customerPhone={state.selectedCustomer?.phone || ''}
       />

@@ -5,7 +5,7 @@ import { Link } from "@inertiajs/react";
 import { cn } from "@/lib/utils";
 import { usePage } from "@inertiajs/react";
 
-const WHATSAPP_URL = "https://wa.me/96893099914";
+const WHATSAPP_URL = "https://wa.me/96890891070";
 
 const navLinks = [
   { label: "الرئيسية", path: "/" },

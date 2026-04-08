@@ -2,7 +2,7 @@ import { Phone, Mail, MessageCircle } from "lucide-react";
 import { Link } from "@inertiajs/react";
 import { Button } from "@/components/ui/button";
 
-const WHATSAPP_URL = "https://wa.me/96893099914";
+const WHATSAPP_URL = "https://wa.me/96890891070";
 
 const quickLinks = [
   { label: "الرئيسية", path: "/" },

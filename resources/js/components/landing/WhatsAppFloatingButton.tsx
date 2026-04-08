@@ -1,7 +1,7 @@
 import { MessageCircle } from "lucide-react";
 import { useState } from "react";
 
-const WHATSAPP_URL = "https://wa.me/96893099914?text=مرحباً، أود الاستفسار عن خدمات تأجير المعدات";
+const WHATSAPP_URL = "https://wa.me/96890891070?text=مرحباً، أود الاستفسار عن خدمات تأجير المعدات";
 
 export function WhatsAppFloatingButton() {
   const [isHovered, setIsHovered] = useState(false);

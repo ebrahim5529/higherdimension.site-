@@ -94,7 +94,7 @@ class ContractController extends Controller
         foreach ($contracts as $contract) {
             $amt = (float) ($contract['amount'] ?? 0);
             $rem = (float) ($contract['remainingAmount'] ?? 0);
-            
+
             if ($rem == 0 && $amt > 0) {
                 $paidContracts++;
             } elseif ($rem == $amt && $amt > 0) {
@@ -505,6 +505,7 @@ class ContractController extends Controller
                 'description' => $contract->description,
                 'customerName' => $contract->customer->name ?? 'غير معروف',
                 'customerNumber' => $contract->customer->customer_number ?? '',
+                'customerPhone' => $contract->customer->phone ?? '',
                 'customerId' => $contract->customer_id,
                 'type' => $contractType,
                 'amount' => $contract->amount,
