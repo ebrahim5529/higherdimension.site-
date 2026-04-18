@@ -4,6 +4,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { ContractsTable } from '@/components/features/ContractsTable';
 import { Card, CardContent } from '@/components/ui/card';
 import { Activity, FileText, DollarSign, TrendingUp } from 'lucide-react';
+import { openContractSignPrintWindow } from '@/components/features/ContractPrint';
 
 interface Contract {
   id: number;
@@ -153,7 +154,7 @@ export default function ActiveContracts({ contracts, stats }: ActiveContractsPro
   }
 
   function handlePrint(contract: Contract) {
-    // Handle print
+    openContractSignPrintWindow(contract.contractNumber);
   }
 
   function handleInvoice(contract: Contract) {

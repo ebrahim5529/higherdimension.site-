@@ -1,7 +1,8 @@
 /** @jsxImportSource react */
 import { Head, router } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
-import { FileText, Check, AlertCircle, MapPin, Printer } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { FileText, Check, AlertCircle, MapPin } from 'lucide-react';
+import { ContractPrintStyles, ContractPrintButton } from '@/components/features/ContractPrint';
 import DigitalSignature from '@/components/features/DigitalSignature';
 import { showToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,8 @@ interface ContractData {
   location_map_link?: string | null;
   transport_and_installation_cost: number;
   contract_notes?: string | null;
+  /** مطابق لصفحة التفاصيل: diffInDays + 1 بين بداية ونهاية العقد */
+  duration_days?: number;
   rental_details: RentalDetail[];
   status: string;
   customer_signature?: string | null;
@@ -61,7 +64,8 @@ export default function SignContract({ contract, companySignature }: SignContrac
   const [customerSignature, setCustomerSignature] = useState<string>('');
   const [isSavingSignature, setIsSavingSignature] = useState(false);
   const [isSigned, setIsSigned] = useState(false);
-  
+  const autoPrintTriggeredRef = useRef(false);
+
   // الحصول على رقم العقد من الرابط للتأكد من التطابق
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
   const contractNumberFromUrl = pathname.split('/contract/sign/')[1] || '';
@@ -85,6 +89,37 @@ export default function SignContract({ contract, companySignature }: SignContrac
       setCustomerSignature(contract.customer_signature);
     }
   }, [contract, contractNumberFromUrl]);
+
+  // طباعة أفقية للعقود الطويلة: ?layout=landscape (يضبط @page في أنماط الطباعة)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('layout') !== 'landscape') return undefined;
+    document.documentElement.classList.add('contract-sign-print-landscape');
+    return () => {
+      document.documentElement.classList.remove('contract-sign-print-landscape');
+    };
+  }, []);
+
+  // طباعة تلقائية عند فتح الرابط من جدول العقود (?print=1)
+  useEffect(() => {
+    if (!contract || autoPrintTriggeredRef.current) return;
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('print') !== '1') return;
+    autoPrintTriggeredRef.current = true;
+    const timer = window.setTimeout(() => {
+      window.print();
+      params.delete('print');
+      const search = params.toString();
+      window.history.replaceState(
+        {},
+        '',
+        `${window.location.pathname}${search ? `?${search}` : ''}`
+      );
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [contract]);
 
   // معالجة التوقيع
   const handleSignature = async (signatureData: string) => {
@@ -140,105 +175,44 @@ export default function SignContract({ contract, companySignature }: SignContrac
     });
   };
 
-  const calculateDuration = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+  /** أيام تقويمية شاملة (مطابقة لـ Laravel diffInDays + 1) */
+  const inclusiveCalendarDays = (startDate: string, endDate: string) => {
+    if (!startDate || !endDate) return 0;
+    const parseUtc = (s: string) => {
+      const [y, m, d] = s.split('T')[0].split('-').map((x) => parseInt(x, 10));
+      if (!y || !m || !d) return NaN;
+      return Date.UTC(y, m - 1, d);
+    };
+    const start = parseUtc(startDate);
+    const end = parseUtc(endDate);
+    if (Number.isNaN(start) || Number.isNaN(end)) return 0;
+    return Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
   };
 
-  const handlePrint = () => {
-    window.print();
+  const contractTotalDays =
+    contract.duration_days && contract.duration_days > 0
+      ? contract.duration_days
+      : inclusiveCalendarDays(contract.start_date, contract.end_date);
+
+  /** مطابقة منطق إنشاء العقد: شهر تعاقدي = 30 يوماً */
+  const CONTRACT_MONTH_AS_DAYS = 30;
+
+  /** المدة دائماً بالأيام (للطباعة والعرض) */
+  const formatRentalLineDuration = (detail: RentalDetail) => {
+    const fromRange = inclusiveCalendarDays(detail.start_date, detail.end_date);
+    if (fromRange > 0) return `${fromRange} يوم`;
+    const dt = String(detail.duration_type || '').toLowerCase();
+    if (dt === 'monthly' && detail.duration > 0) {
+      return `${detail.duration * CONTRACT_MONTH_AS_DAYS} يوم`;
+    }
+    if (detail.duration > 0) return `${detail.duration} يوم`;
+    return '—';
   };
 
   return (
     <>
       <Head title={`توقيع العقد ${displayContractNumber}`} />
-      <style>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 5mm;
-          }
-          body {
-            margin: 0;
-            padding: 0;
-            font-size: 11px !important;
-          }
-          .print-only {
-            display: block !important;
-          }
-          .screen-only {
-            display: none !important;
-          }
-          .print-scale {
-            zoom: 0.95;
-            transform-origin: top left;
-          }
-          .no-print {
-            display: none !important;
-          }
-          .print-container {
-            max-width: 100% !important;
-            margin: 0 !important;
-            padding: 4px !important;
-            box-shadow: none !important;
-            background: white !important;
-          }
-          .print-container * {
-            color: black !important;
-            background: white !important;
-          }
-          .print-two-columns {
-            column-count: 2;
-            column-gap: 12px;
-          }
-          .print-two-columns li {
-            break-inside: avoid;
-            margin-bottom: 2px;
-          }
-          .signature-pad {
-            display: none !important;
-          }
-          .print-break {
-            page-break-inside: avoid;
-          }
-          .print-page {
-            page-break-after: always;
-          }
-          .print-page:last-child {
-            page-break-after: auto;
-          }
-          h1 { font-size: 16px !important; }
-          h2 { font-size: 13px !important; }
-          h3 { font-size: 12px !important; }
-          p { font-size: 10px !important; line-height: 1.25 !important; }
-          .text-xl { font-size: 13px !important; }
-          .text-lg { font-size: 12px !important; }
-          .text-sm { font-size: 9px !important; }
-          .p-6 { padding: 4px !important; }
-          .p-4 { padding: 2px !important; }
-          .p-3 { padding: 1px !important; }
-          .mb-6 { margin-bottom: 4px !important; }
-          .mb-4 { margin-bottom: 2px !important; }
-          .mb-2 { margin-bottom: 1px !important; }
-          .mt-2 { margin-top: 1px !important; }
-          .gap-6 { gap: 4px !important; }
-          .gap-4 { gap: 2px !important; }
-          .gap-2 { gap: 1px !important; }
-          .grid-cols-2 { grid-template-columns: 1fr 1fr !important; }
-          table { font-size: 9px !important; }
-          th, td { padding: 1px !important; }
-          .border-2 { border-width: 1px !important; }
-          .border-b-2 { border-bottom-width: 1px !important; }
-        }
-        @media screen {
-          .print-only {
-            display: none;
-          }
-        }
-      `}</style>
+      <ContractPrintStyles />
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-4xl mx-auto px-4">
           {/* Header */}
@@ -255,13 +229,7 @@ export default function SignContract({ contract, companySignature }: SignContrac
               </div>
 
               <div className="flex items-center gap-3">
-                <Button
-                  onClick={handlePrint}
-                  className="bg-[#58d2c8] hover:bg-[#4AB8B3] text-white flex items-center gap-2"
-                >
-                  <Printer className="h-4 w-4" />
-                  طباعة العقد
-                </Button>
+                <ContractPrintButton />
 
                 {isSigned && (
                   <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-lg">
@@ -273,16 +241,16 @@ export default function SignContract({ contract, companySignature }: SignContrac
             </div>
           </div>
 
-        <div className="print-scale">
+        <div className="print-scale contract-print-one-page sign-contract-sheet">
           {/* معلومات العقد */}
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6 print-container print-break">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FileText className="h-5 w-5" />
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6 print-container">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2 sign-print-doc-title">
+              <FileText className="h-5 w-5 screen-only" />
               تفاصيل العقد
             </h2>
 
             <div className="overflow-x-auto mb-6">
-              <table className="w-full border border-black">
+              <table className="sign-print-meta-table w-full border border-black border-collapse text-sm">
                 <tbody>
                   <tr>
                     <td className="border border-black p-1 align-top">
@@ -297,6 +265,9 @@ export default function SignContract({ contract, companySignature }: SignContrac
                       <div className="text-xs text-gray-600">مدة الإيجار</div>
                       <div className="font-medium text-gray-900">
                         من {formatDate(contract.start_date)} إلى {formatDate(contract.end_date)}
+                        {contractTotalDays > 0 && (
+                          <span className="block text-xs mt-0.5">({contractTotalDays} يوم)</span>
+                        )}
                       </div>
                     </td>
                     <td className="border border-black p-1 align-top">
@@ -337,14 +308,14 @@ export default function SignContract({ contract, companySignature }: SignContrac
             </div>
 
           {/* الطرف الأول والثاني */}
-          <div className="mb-6 space-y-4">
-            <div className="bg-gray-50 rounded-lg p-4">
+          <div className="mb-6 space-y-4 sign-print-parties">
+            <div className="sign-print-party bg-gray-50 rounded-lg p-4">
               <p className="font-bold text-lg text-black mb-2">الطرف الأول (المالك):</p>
               <p className="text-black">
                 شركة البعد العالي للتجارة، س.ت: 1208502، ومقرها ولاية السيب، هاتف: ٩٣٠٩٩٩١٤.
               </p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="sign-print-party bg-gray-50 rounded-lg p-4">
               <p className="font-bold text-lg text-black mb-2">الطرف الثاني (المستأجر):</p>
               <p className="text-black">
                 {contract.customer_type === 'COMPANY' ? 'شركة / مؤسسة' : 'فرد'}:{' '}
@@ -368,7 +339,7 @@ export default function SignContract({ contract, companySignature }: SignContrac
           </div>
 
           {/* المقدمة */}
-          <div className="mb-6">
+          <div className="mb-6 sign-print-section">
             <p className="font-bold text-lg text-black mb-2">مقدمة:</p>
             <p className="text-black">
               الطرف الأول منشأة تمتلك عدد من المعدات، وقد أبدى الطرف الثاني رغبته في استئجار
@@ -378,13 +349,13 @@ export default function SignContract({ contract, companySignature }: SignContrac
 
           {/* تفاصيل المعدات */}
           {contract.rental_details && contract.rental_details.length > 0 && (
-            <div className="mb-6">
+            <div className="mb-6 sign-print-section">
               <p className="text-lg font-bold mb-4 text-black">
                 أولاً: بموجب هذا العقد التزم المالك (الطرف الأول) بتأجير عدد من المعدات للمستأجر
                 (الطرف الثاني) والمبينة أوصافها فيما يلي:
               </p>
               <div className="overflow-x-auto">
-                <table className="w-full border-2 border-black">
+                <table className="sign-print-items-table w-full border-2 border-black border-collapse">
                   <thead>
                     <tr className="bg-white border-2 border-black">
                       <th className="border-2 border-black p-3 text-center font-bold text-black">م</th>
@@ -398,7 +369,7 @@ export default function SignContract({ contract, companySignature }: SignContrac
                   </thead>
                   <tbody>
                     {contract.rental_details.map((detail, index) => {
-                      const duration = calculateDuration(detail.start_date, detail.end_date);
+                      const durationLabel = formatRentalLineDuration(detail);
                       return (
                         <tr key={detail.id} className="border-2 border-black">
                           <td className="border-2 border-black p-3 text-center font-semibold text-black">
@@ -417,7 +388,7 @@ export default function SignContract({ contract, companySignature }: SignContrac
                             {formatDate(detail.end_date)}
                           </td>
                           <td className="border-2 border-black p-3 text-center font-semibold text-black">
-                            {duration} يوم
+                            {durationLabel}
                           </td>
                           <td className="border-2 border-black p-3 text-center font-bold text-black">
                             {detail.total.toLocaleString()} ر.ع
@@ -432,7 +403,7 @@ export default function SignContract({ contract, companySignature }: SignContrac
           )}
 
           {/* ثانياً: مكان الاتفاق */}
-          <div className="mb-6">
+          <div className="mb-6 sign-print-section">
             <p className="font-bold text-lg text-black mb-2">ثانياً: مكان الاتفاق:</p>
             <p className="text-black">
               {contract.delivery_address || 'مسقط، سلطنة عمان'}
@@ -440,7 +411,7 @@ export default function SignContract({ contract, companySignature }: SignContrac
           </div>
 
           {/* ثالثاً: مدة العقد */}
-          <div className="mb-6">
+          <div className="mb-6 sign-print-section">
             <p className="font-bold text-lg text-black mb-2">ثالثاً: مدة العقد:</p>
             <p className="text-black">
               مدة هذا العقد تبدأ من تاريخ إستلام المستأجر للمعدات الموضحة في العقد، وتتجدد
@@ -451,9 +422,9 @@ export default function SignContract({ contract, companySignature }: SignContrac
           </div>
 
           {/* رابعاً: التزامات المستأجر */}
-          <div className="mb-6">
+          <div className="mb-6 sign-print-section">
             <p className="font-bold text-lg text-black mb-2">رابعاً: التزامات المستأجر:</p>
-            <ul className="list-disc list-inside space-y-2 text-black pr-4 print-two-columns">
+            <ul className="sign-print-obligations list-disc list-outside space-y-2 text-black pr-5 columns-1 md:columns-2 [column-gap:1rem]">
               <li>
                 يلتزم المستأجر بتمكين المؤجر أو من يمثله بمعاينة المعدات المؤجرة وتفقدها
                 وصيانتها في أى وقت أو سحبها ونقلها في حال تخلف المستأجر عن سداد قيمة الإيجار
@@ -488,7 +459,7 @@ export default function SignContract({ contract, companySignature }: SignContrac
           </div>
 
           {/* خامساً: الفصل في النزاع */}
-          <div className="mb-6">
+          <div className="mb-6 sign-print-section">
             <p className="font-bold text-lg text-black mb-2">خامساً: الفصل في النزاع:</p>
             <p className="text-black">
               أي نزاع قد ينشأ عن تنفيذ هذا العقد أو تفسير نصوصه إن لم يتم حسمه بالتراضي يتم
@@ -500,7 +471,7 @@ export default function SignContract({ contract, companySignature }: SignContrac
 
         {/* منطقة التوقيع */}
         {!isSigned ? (
-          <div className="bg-white rounded-lg shadow-sm p-6 print-container print-break">
+          <div className="bg-white rounded-lg shadow-sm p-6 print-container">
             <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <FileText className="h-5 w-5" />
               التوقيع على العقد
@@ -520,55 +491,61 @@ export default function SignContract({ contract, companySignature }: SignContrac
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-8 mt-8 sm:mt-12 pt-6 sm:pt-8 border-t-2 border-black">
-                <div className="text-center min-w-0">
-                  <div className="mb-8">
-                    {companySignature?.signature_url ? (
-                      <div className="border border-black rounded-sm w-48 mx-auto h-16 flex items-center justify-center bg-white">
-                        <img
-                          src={companySignature.signature_url}
-                          alt="توقيع الشركة"
-                          className="max-h-14 max-w-[180px] object-contain"
-                        />
+              <table
+                className="sign-signature-table w-full table-fixed border-collapse border-2 border-black mt-8 sm:mt-10"
+                dir="rtl"
+              >
+                <tbody>
+                  <tr>
+                    <td className="w-1/2 align-top border border-black p-3 sm:p-4 text-center min-w-0">
+                      <div className="mb-4 sm:mb-6">
+                        {companySignature?.signature_url ? (
+                          <div className="border border-black rounded-sm w-48 max-w-full mx-auto h-16 flex items-center justify-center bg-white">
+                            <img
+                              src={companySignature.signature_url}
+                              alt="توقيع الشركة"
+                              className="max-h-14 max-w-[180px] object-contain"
+                            />
+                          </div>
+                        ) : (
+                          <div className="border-b-2 border-black w-48 max-w-full mx-auto mb-2 h-16"></div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="border-b-2 border-black w-48 mx-auto mb-2 h-16"></div>
-                    )}
-                  </div>
-                  <p className="font-bold text-lg text-black">توقيع الطرف الأول (المؤجر)</p>
-                  <p className="text-sm text-black mt-2">{companySignature?.company_name || 'شركة البعد العالي للتجارة'}</p>
-                </div>
-
-                <div className="text-center min-w-0">
-                  <div className="mb-6 sm:mb-8">
-                    <div className="border-2 border-dashed border-[#58d2c8] rounded-lg p-3 sm:p-4 bg-gray-50 signature-pad">
-                      <div className="text-center mb-3 sm:mb-4">
-                        <h3 className="text-base sm:text-lg font-medium text-gray-900">توقيع العميل</h3>
-                        <p className="text-xs sm:text-sm text-gray-600 mt-1">اضغط واسحب للتوقيع في المنطقة أدناه</p>
+                      <p className="font-bold text-lg text-black">توقيع الطرف الأول (المؤجر)</p>
+                      <p className="text-sm text-black mt-2">{companySignature?.company_name || 'شركة البعد العالي للتجارة'}</p>
+                    </td>
+                    <td className="w-1/2 align-top border border-black p-3 sm:p-4 text-center min-w-0">
+                      <div className="mb-4 sm:mb-6">
+                        <div className="border-2 border-dashed border-[#58d2c8] rounded-lg p-3 sm:p-4 bg-gray-50 signature-pad">
+                          <div className="text-center mb-3 sm:mb-4">
+                            <h3 className="text-base sm:text-lg font-medium text-gray-900">توقيع العميل</h3>
+                            <p className="text-xs sm:text-sm text-gray-600 mt-1">اضغط واسحب للتوقيع في المنطقة أدناه</p>
+                          </div>
+                          <div className="w-full min-w-0">
+                            <DigitalSignature
+                              responsive
+                              minHeight={128}
+                              aspectRatio={0.38}
+                              onSignatureComplete={handleSignature}
+                              onSignatureClear={() => {
+                                setCustomerSignature('');
+                                setIsSavingSignature(false);
+                              }}
+                              strokeColor="#000000"
+                              strokeWidth={2}
+                            />
+                          </div>
+                        </div>
+                        <div className="print-only">
+                          <div className="border-b border-black w-48 max-w-full mx-auto h-10"></div>
+                        </div>
                       </div>
-                      <div className="w-full min-w-0">
-                        <DigitalSignature
-                          responsive
-                          minHeight={128}
-                          aspectRatio={0.38}
-                          onSignatureComplete={handleSignature}
-                          onSignatureClear={() => {
-                            setCustomerSignature('');
-                            setIsSavingSignature(false);
-                          }}
-                          strokeColor="#000000"
-                          strokeWidth={2}
-                        />
-                      </div>
-                    </div>
-                    <div className="print-only">
-                      <div className="border-b border-black w-48 mx-auto h-10"></div>
-                    </div>
-                  </div>
-                  <p className="font-bold text-lg text-black">توقيع الطرف الثاني (المستأجر)</p>
-                  <p className="text-sm text-black mt-2">{contract.customer_name}</p>
-                </div>
-              </div>
+                      <p className="font-bold text-lg text-black">توقيع الطرف الثاني (المستأجر)</p>
+                      <p className="text-sm text-black mt-2">{contract.customer_name}</p>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
 
               {isSavingSignature && (
                 <div className="mt-6 text-center">
@@ -586,7 +563,7 @@ export default function SignContract({ contract, companySignature }: SignContrac
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm p-6 print-container print-break">
+          <div className="bg-white rounded-lg shadow-sm p-6 print-container">
             <div className="text-center screen-only">
               <div className="p-3 bg-green-100 rounded-full inline-block mb-4">
                 <Check className="h-8 w-8 text-green-600" />
@@ -594,89 +571,103 @@ export default function SignContract({ contract, companySignature }: SignContrac
               <h2 className="text-2xl font-bold text-gray-900 mb-2">تم التوقيع بنجاح!</h2>
               <p className="text-gray-600 mb-6">شكراً لتوقيعك على العقد</p>
 
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 pt-6 border-t border-black">
-                <div className="text-center">
-                  {companySignature?.signature_url ? (
-                    <div className="border border-black rounded-sm w-48 mx-auto h-16 flex items-center justify-center bg-white">
-                      <img
-                        src={companySignature.signature_url}
-                        alt="توقيع الشركة"
-                        className="max-h-14 max-w-[180px] object-contain"
-                      />
-                    </div>
-                  ) : (
-                    <div className="border-b border-black w-48 mx-auto h-10"></div>
-                  )}
-                  <p className="font-bold text-black mt-2">توقيع الطرف الأول (المؤجر)</p>
-                  <p className="text-black">{companySignature?.company_name || 'شركة البعد العالي للتجارة'}</p>
-                </div>
-
-                <div className="text-center">
-                  <div className="border border-black rounded-sm w-48 mx-auto h-16 flex items-center justify-center bg-white">
-                    {(customerSignature || contract.customer_signature) ? (
-                      <img
-                        src={(customerSignature || contract.customer_signature) as string}
-                        alt="توقيع العميل"
-                        className="max-h-14 max-w-[180px] object-contain"
-                      />
-                    ) : (
-                      <div className="border-b border-black w-40"></div>
-                    )}
-                  </div>
-                  <p className="font-bold text-black mt-2">توقيع الطرف الثاني (المستأجر)</p>
-                  <p className="text-black">{contract.customer_name}</p>
-                </div>
-              </div>
+              <table
+                className="sign-signature-table w-full table-fixed border-collapse border-2 border-black mt-6 border-t-2 border-t-black pt-6"
+                dir="rtl"
+              >
+                <tbody>
+                  <tr>
+                    <td className="w-1/2 align-top border border-black p-4 text-center">
+                      {companySignature?.signature_url ? (
+                        <div className="border border-black rounded-sm w-48 max-w-full mx-auto h-16 flex items-center justify-center bg-white">
+                          <img
+                            src={companySignature.signature_url}
+                            alt="توقيع الشركة"
+                            className="max-h-14 max-w-[180px] object-contain"
+                          />
+                        </div>
+                      ) : (
+                        <div className="border-b border-black w-48 max-w-full mx-auto h-10"></div>
+                      )}
+                      <p className="font-bold text-black mt-2">توقيع الطرف الأول (المؤجر)</p>
+                      <p className="text-black">{companySignature?.company_name || 'شركة البعد العالي للتجارة'}</p>
+                    </td>
+                    <td className="w-1/2 align-top border border-black p-4 text-center">
+                      <div className="border border-black rounded-sm w-48 max-w-full mx-auto h-16 flex items-center justify-center bg-white">
+                        {(customerSignature || contract.customer_signature) ? (
+                          <img
+                            src={(customerSignature || contract.customer_signature) as string}
+                            alt="توقيع العميل"
+                            className="max-h-14 max-w-[180px] object-contain"
+                          />
+                        ) : (
+                          <div className="border-b border-black w-40"></div>
+                        )}
+                      </div>
+                      <p className="font-bold text-black mt-2">توقيع الطرف الثاني (المستأجر)</p>
+                      <p className="text-black">{contract.customer_name}</p>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
             <div className="print-only">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 pt-2 border-t border-black">
-                <div className="text-center">
-                  {companySignature?.signature_url ? (
-                    <div className="border border-black rounded-sm w-48 mx-auto h-12 flex items-center justify-center bg-white">
-                      <img
-                        src={companySignature.signature_url}
-                        alt="توقيع الشركة"
-                        className="max-h-10 max-w-[180px] object-contain"
-                      />
-                    </div>
-                  ) : (
-                    <div className="border-b border-black w-48 mx-auto h-10"></div>
-                  )}
-                  <p className="font-bold text-black mt-2">توقيع الطرف الأول (المؤجر)</p>
-                  <p className="text-black">{companySignature?.company_name || 'شركة البعد العالي للتجارة'}</p>
-                </div>
-
-                <div className="text-center">
-                  <div className="border border-black rounded-sm w-48 mx-auto h-12 flex items-center justify-center">
-                    {(customerSignature || contract.customer_signature) ? (
-                      <img
-                        src={(customerSignature || contract.customer_signature) as string}
-                        alt="توقيع العميل"
-                        className="max-h-10 max-w-[180px] object-contain"
-                      />
-                    ) : (
-                      <div className="border-b border-black w-40"></div>
-                    )}
-                  </div>
-                  <p className="font-bold text-black mt-2">توقيع الطرف الثاني (المستأجر)</p>
-                  <p className="text-black">{contract.customer_name}</p>
-                </div>
-              </div>
+              <table
+                className="sign-signature-table w-full table-fixed border-collapse border-2 border-black mt-2 pt-2 border-t border-black"
+                dir="rtl"
+              >
+                <tbody>
+                  <tr>
+                    <td className="w-1/2 align-top border border-black p-3 text-center">
+                      {companySignature?.signature_url ? (
+                        <div className="border border-black rounded-sm w-44 max-w-full mx-auto h-12 flex items-center justify-center bg-white">
+                          <img
+                            src={companySignature.signature_url}
+                            alt="توقيع الشركة"
+                            className="max-h-10 max-w-[180px] object-contain"
+                          />
+                        </div>
+                      ) : (
+                        <div className="border-b border-black w-44 max-w-full mx-auto h-10"></div>
+                      )}
+                      <p className="font-bold text-black mt-2">توقيع الطرف الأول (المؤجر)</p>
+                      <p className="text-black">{companySignature?.company_name || 'شركة البعد العالي للتجارة'}</p>
+                    </td>
+                    <td className="w-1/2 align-top border border-black p-3 text-center">
+                      <div className="border border-black rounded-sm w-44 max-w-full mx-auto h-12 flex items-center justify-center bg-white">
+                        {(customerSignature || contract.customer_signature) ? (
+                          <img
+                            src={(customerSignature || contract.customer_signature) as string}
+                            alt="توقيع العميل"
+                            className="max-h-10 max-w-[180px] object-contain"
+                          />
+                        ) : (
+                          <div className="border-b border-black w-40"></div>
+                        )}
+                      </div>
+                      <p className="font-bold text-black mt-2">توقيع الطرف الثاني (المستأجر)</p>
+                      <p className="text-black">{contract.customer_name}</p>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         )}
 
-        <div className="mt-8 pt-6 border-t border-black text-center text-sm text-black print-break">
-          <p className="mb-1">
+        <div className="mt-8 pt-4 border-t border-black text-center text-xs text-black print-footer-contract">
+          <p className="mb-0.5">
             رقم العقد: <span className="font-semibold">{displayContractNumber}</span>
-          </p>
-          <p>
+            {' — '}
             تاريخ الإصدار: <span className="font-semibold">{formatDate(contract.contract_date)}</span>
+          </p>
+          <p className="text-gray-500 mt-1 print-only text-[9px]">
+            شركة البعد العالي للتجارة
           </p>
         </div>
 
-        <div className="mt-8 text-center text-sm text-gray-500 print-break">
+        <div className="mt-4 text-center text-sm text-gray-500 screen-only">
           <p>شركة البعد العالي للتجارة - جميع الحقوق محفوظة</p>
           <p>هذا التوقيع الإلكتروني محمي ومؤمن</p>
         </div>

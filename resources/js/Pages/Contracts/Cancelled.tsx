@@ -4,6 +4,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { ContractsTable } from '@/components/features/ContractsTable';
 import { Card, CardContent } from '@/components/ui/card';
 import { X, FileText, DollarSign, AlertCircle } from 'lucide-react';
+import { openContractSignPrintWindow } from '@/components/features/ContractPrint';
 
 interface Contract {
   id: number;
@@ -56,7 +57,7 @@ export default function CancelledContracts({ contracts, stats }: CancelledContra
   };
 
   const handlePrint = (contract: Contract) => {
-    // Handle print
+    openContractSignPrintWindow(contract.contractNumber);
   };
 
   const handleInvoice = (contract: Contract) => {

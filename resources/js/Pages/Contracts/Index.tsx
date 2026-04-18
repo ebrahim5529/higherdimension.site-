@@ -9,6 +9,7 @@ import { ContractInvoiceModal } from '@/components/features/ContractInvoiceModal
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { showToast } from '@/hooks/use-toast';
 import { FileText, Plus } from 'lucide-react';
+import { openContractSignPrintWindow } from '@/components/features/ContractPrint';
 
 interface Contract {
   id: number;
@@ -118,8 +119,7 @@ export default function ContractsIndex({ contracts, stats }: ContractsIndexProps
   }, []);
 
   const handlePrint = useCallback((contract: Contract) => {
-    // TODO: Implement print functionality
-    showToast.info('طباعة', `جاري طباعة العقد ${contract.contractNumber}...`);
+    openContractSignPrintWindow(contract.contractNumber);
   }, []);
 
   const handleIssueInvoice = useCallback((contract: Contract) => {

@@ -1005,6 +1005,12 @@ class ContractController extends Controller
             })->toArray();
         }
 
+        // نفس منطق صفحة تفاصيل العقد: أيام شاملة ليوم البداية والنهاية
+        $durationDays = 0;
+        if ($contract->start_date && $contract->end_date) {
+            $durationDays = abs($contract->start_date->diffInDays($contract->end_date)) + 1;
+        }
+
         $contractData = [
             'id' => $contract->id,
             'contract_number' => $contract->contract_number,
@@ -1017,6 +1023,7 @@ class ContractController extends Controller
             'contract_date' => $contract->contract_date?->format('Y-m-d') ?? $contract->start_date?->format('Y-m-d') ?? now()->format('Y-m-d'),
             'start_date' => $contract->start_date?->format('Y-m-d') ?? now()->format('Y-m-d'),
             'end_date' => $contract->end_date?->format('Y-m-d') ?? now()->format('Y-m-d'),
+            'duration_days' => $durationDays,
             'amount' => $contract->amount ?? 0,
             'total_after_discount' => ($contract->amount ?? 0) - ($contract->total_discount ?? 0),
             'total_discount' => $contract->total_discount ?? 0,
