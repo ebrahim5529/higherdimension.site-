@@ -59,6 +59,57 @@ interface SignContractProps {
   } | null;
 }
 
+type CompanySig = SignContractProps['companySignature'];
+
+/** نفس بيانات /dashboard/electronic-signature: صورة + اسم الشركة + الموقّع + الصفة */
+function LessorSignatureCell ({
+  companySignature,
+  compact = false,
+}: {
+  companySignature?: CompanySig;
+  compact?: boolean;
+}) {
+  const url = companySignature?.signature_url ?? null;
+  const company =
+    (companySignature?.company_name && companySignature.company_name.trim()) ||
+    'شركة البعد العالي للتجارة';
+  const signerName = companySignature?.signer_name?.trim() ?? '';
+  const signerTitle = companySignature?.signer_title?.trim() ?? '';
+
+  const hImg = compact ? 'h-12' : 'h-16';
+  const maxH = compact ? 'max-h-10' : 'max-h-14';
+
+  return (
+    <>
+      <div className={compact ? 'mb-3' : 'mb-4 sm:mb-6'}>
+        {url ? (
+          <div
+            className={`border border-black rounded-sm w-48 max-w-full mx-auto ${hImg} flex items-center justify-center bg-white`}
+          >
+            <img
+              src={url}
+              alt="توقيع الشركة"
+              className={`${maxH} max-w-[180px] object-contain`}
+            />
+          </div>
+        ) : (
+          <div className={`border-b-2 border-black w-48 max-w-full mx-auto mb-2 ${hImg}`} />
+        )}
+      </div>
+      <p className={`font-bold text-black ${compact ? 'mt-1 text-sm' : 'text-lg'}`}>
+        توقيع الطرف الأول (المؤجر)
+      </p>
+      <p className={compact ? 'text-sm text-black mt-1' : 'text-sm text-black mt-2'}>{company}</p>
+      {(signerName || signerTitle) ? (
+        <div className={`space-y-0.5 text-black ${compact ? 'text-[11px] mt-1' : 'text-xs mt-2'}`}>
+          {signerName ? <p>الموقّع: {signerName}</p> : null}
+          {signerTitle ? <p>الصفة: {signerTitle}</p> : null}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 export default function SignContract({ contract, companySignature }: SignContractProps) {
   const [isSigning, setIsSigning] = useState(false);
   const [customerSignature, setCustomerSignature] = useState<string>('');
@@ -498,21 +549,7 @@ export default function SignContract({ contract, companySignature }: SignContrac
                 <tbody>
                   <tr>
                     <td className="w-1/2 align-top border border-black p-3 sm:p-4 text-center min-w-0">
-                      <div className="mb-4 sm:mb-6">
-                        {companySignature?.signature_url ? (
-                          <div className="border border-black rounded-sm w-48 max-w-full mx-auto h-16 flex items-center justify-center bg-white">
-                            <img
-                              src={companySignature.signature_url}
-                              alt="توقيع الشركة"
-                              className="max-h-14 max-w-[180px] object-contain"
-                            />
-                          </div>
-                        ) : (
-                          <div className="border-b-2 border-black w-48 max-w-full mx-auto mb-2 h-16"></div>
-                        )}
-                      </div>
-                      <p className="font-bold text-lg text-black">توقيع الطرف الأول (المؤجر)</p>
-                      <p className="text-sm text-black mt-2">{companySignature?.company_name || 'شركة البعد العالي للتجارة'}</p>
+                      <LessorSignatureCell companySignature={companySignature} />
                     </td>
                     <td className="w-1/2 align-top border border-black p-3 sm:p-4 text-center min-w-0">
                       <div className="mb-4 sm:mb-6">
@@ -578,19 +615,7 @@ export default function SignContract({ contract, companySignature }: SignContrac
                 <tbody>
                   <tr>
                     <td className="w-1/2 align-top border border-black p-4 text-center">
-                      {companySignature?.signature_url ? (
-                        <div className="border border-black rounded-sm w-48 max-w-full mx-auto h-16 flex items-center justify-center bg-white">
-                          <img
-                            src={companySignature.signature_url}
-                            alt="توقيع الشركة"
-                            className="max-h-14 max-w-[180px] object-contain"
-                          />
-                        </div>
-                      ) : (
-                        <div className="border-b border-black w-48 max-w-full mx-auto h-10"></div>
-                      )}
-                      <p className="font-bold text-black mt-2">توقيع الطرف الأول (المؤجر)</p>
-                      <p className="text-black">{companySignature?.company_name || 'شركة البعد العالي للتجارة'}</p>
+                      <LessorSignatureCell companySignature={companySignature} />
                     </td>
                     <td className="w-1/2 align-top border border-black p-4 text-center">
                       <div className="border border-black rounded-sm w-48 max-w-full mx-auto h-16 flex items-center justify-center bg-white">
@@ -620,19 +645,7 @@ export default function SignContract({ contract, companySignature }: SignContrac
                 <tbody>
                   <tr>
                     <td className="w-1/2 align-top border border-black p-3 text-center">
-                      {companySignature?.signature_url ? (
-                        <div className="border border-black rounded-sm w-44 max-w-full mx-auto h-12 flex items-center justify-center bg-white">
-                          <img
-                            src={companySignature.signature_url}
-                            alt="توقيع الشركة"
-                            className="max-h-10 max-w-[180px] object-contain"
-                          />
-                        </div>
-                      ) : (
-                        <div className="border-b border-black w-44 max-w-full mx-auto h-10"></div>
-                      )}
-                      <p className="font-bold text-black mt-2">توقيع الطرف الأول (المؤجر)</p>
-                      <p className="text-black">{companySignature?.company_name || 'شركة البعد العالي للتجارة'}</p>
+                      <LessorSignatureCell companySignature={companySignature} compact />
                     </td>
                     <td className="w-1/2 align-top border border-black p-3 text-center">
                       <div className="border border-black rounded-sm w-44 max-w-full mx-auto h-12 flex items-center justify-center bg-white">

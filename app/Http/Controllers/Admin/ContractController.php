@@ -856,7 +856,7 @@ class ContractController extends Controller
                 'total_amount' => $totalAmount,
             ],
             'company' => [
-                'name_ar' => $companySignature->company_name ?? 'الـبعد الـعالي للتجـارة',
+                'name_ar' => $companySignature?->company_name ?? 'الـبعد الـعالي للتجـارة',
                 'name_en' => 'HIGHER DIMENSION TRD',
                 'address_ar' => 'سلطنة عمان | ص.ب: 215 | الرمز البريدي: 619 | نقال: 93099914',
                 'address_en' => 'Sultanate of Oman | P.O. Box: 215 | P.C: 619 | GSM: 93099914',
@@ -1047,7 +1047,7 @@ class ContractController extends Controller
                 'company_name' => $companySignature->company_name,
                 'signer_name' => $companySignature->signer_name,
                 'signer_title' => $companySignature->signer_title,
-                'signature_url' => $companySignature->signature_path ? asset(Storage::url($companySignature->signature_path)) : null,
+                'signature_url' => $companySignature->publicSignatureUrl(),
             ];
         }
 

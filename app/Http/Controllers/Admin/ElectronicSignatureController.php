@@ -20,7 +20,7 @@ class ElectronicSignatureController extends Controller
                 'company_name' => $signature->company_name,
                 'signer_name' => $signature->signer_name,
                 'signer_title' => $signature->signer_title,
-                'signature_url' => $signature->signature_path ? asset(Storage::url($signature->signature_path)) : null,
+                'signature_url' => $signature->publicSignatureUrl(),
                 'is_active' => (bool) $signature->is_active,
             ] : null,
         ]);
