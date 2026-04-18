@@ -28,8 +28,8 @@ class CompanySignature extends Model
 
     /**
      * رابط صورة التوقيع للعرض في المتصفح.
-     * مسار نسبي /storage/... يتبع نطاق الصفحة (مهم لصفحة التوقيع العامة وعدم تعارض APP_URL أو http/https).
-     * إن كان المسار في DB مطابقاً للسلوك القديم asset(Storage::url) يُعاد كما هو عند البدء بـ /storage.
+     * في الإنتاج: عبر route يقرأ الملف من storage (لا يعتمد على symlink public/storage).
+     * روابط http/https تُعاد كما هي (تخزين خارجي).
      */
     public function publicSignatureUrl(): ?string
     {
@@ -43,12 +43,9 @@ class CompanySignature extends Model
             return $path;
         }
 
-        if (Str::startsWith($path, '/storage/')) {
-            return $path;
-        }
-
-        $normalized = ltrim($path, '/');
-
-        return '/storage/'.$normalized;
+        return route('company.signature.file', [
+            'companySignature' => $this->id,
+            'v' => (string) ($this->updated_at?->getTimestamp() ?? $this->id),
+        ]);
     }
 }
