@@ -64,6 +64,11 @@ class ElectronicSignatureController extends Controller
             return redirect()->back()->with('error', 'يرجى رفع صورة التوقيع أو رسم التوقيع');
         }
 
+        $effectivePath = $newPath ?: ($current?->signature_path ?? '');
+        if ($effectivePath !== '' && CompanySignature::allowedPublicDiskPath($effectivePath) === null) {
+            return redirect()->back()->with('error', 'مسار ملف التوقيع غير مسموح. يُحفظ فقط ضمن المجلد company-signatures');
+        }
+
         if ($newPath && $current?->signature_path && Storage::disk('public')->exists($current->signature_path)) {
             Storage::disk('public')->delete($current->signature_path);
         }

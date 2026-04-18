@@ -10,6 +10,8 @@ class CompanySignature extends Model
 {
     use HasFactory;
 
+    public const STORAGE_PREFIX = 'company-signatures/';
+
     protected $fillable = [
         'company_name',
         'signer_name',
@@ -27,9 +29,49 @@ class CompanySignature extends Model
     }
 
     /**
-     * رابط صورة التوقيع للعرض في المتصفح.
-     * في الإنتاج: عبر route يقرأ الملف من storage (لا يعتمد على symlink public/storage).
-     * روابط http/https تُعاد كما هي (تخزين خارجي).
+     * مسار آمن على قرص public: فقط ملف مباشر تحت company-signatures/ (بدون .. ولا مجلدات فرعية).
+     */
+    public static function allowedPublicDiskPath(?string $raw): ?string
+    {
+        if (blank($raw)) {
+            return null;
+        }
+
+        $path = trim(str_replace('\\', '/', $raw));
+
+        if (Str::startsWith($path, ['http://', 'https://'])) {
+            return null;
+        }
+
+        if (Str::startsWith($path, '/storage/')) {
+            $path = ltrim(Str::after($path, '/storage/'), '/');
+        }
+
+        $path = ltrim($path, '/');
+
+        if ($path === '' || str_contains($path, '..') || str_contains($path, "\0")) {
+            return null;
+        }
+
+        if (! Str::startsWith($path, self::STORAGE_PREFIX)) {
+            return null;
+        }
+
+        $fileName = Str::after($path, self::STORAGE_PREFIX);
+        if ($fileName === '' || str_contains($fileName, '/')) {
+            return null;
+        }
+
+        if (! preg_match('/^[a-zA-Z0-9][a-zA-Z0-9._-]*\.(png|jpe?g)$/i', $fileName)) {
+            return null;
+        }
+
+        return self::STORAGE_PREFIX.$fileName;
+    }
+
+    /**
+     * رابط العرض: GET /files/company-signatures/{id}
+     * روابط http/https للتخزين الخارجي تُعاد كما هي.
      */
     public function publicSignatureUrl(): ?string
     {
@@ -41,6 +83,10 @@ class CompanySignature extends Model
 
         if (Str::startsWith($path, ['http://', 'https://'])) {
             return $path;
+        }
+
+        if (self::allowedPublicDiskPath($this->signature_path) === null) {
+            return null;
         }
 
         return route('company.signature.file', [

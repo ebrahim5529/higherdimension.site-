@@ -31,7 +31,7 @@ Route::post('/two-factor/challenge', [\App\Http\Controllers\Auth\TwoFactorContro
 Route::post('/two-factor/resend', [\App\Http\Controllers\Auth\TwoFactorController::class, 'resend'])->name('two-factor.resend');
 
 // Public routes (no authentication required)
-Route::get('/company/signature/{companySignature}', [CompanySignatureImageController::class, 'show'])
+Route::get('/files/company-signatures/{companySignature}', [CompanySignatureImageController::class, 'show'])
     ->name('company.signature.file');
 Route::get('/contract/sign/{contractNumber}', [\App\Http\Controllers\Admin\ContractController::class, 'sign'])->name('contracts.sign');
 Route::post('/contracts/{contractNumber}/sign', [\App\Http\Controllers\Admin\ContractController::class, 'saveSignature'])->name('contracts.saveSignature');

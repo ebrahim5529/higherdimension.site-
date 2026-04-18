@@ -17,7 +17,8 @@ class CompanySignatureSeeder extends Seeder
                 'company_name' => 'شركة البعد العالي',
                 'signer_name' => 'اسحاق',
                 'signer_title' => 'المدير العام',
-                'signature_path' => '/uploads/signatures/default_signature.png',
+                // يجب أن يكون تحت company-signatures/ فقط (انظر CompanySignature::allowedPublicDiskPath)
+                'signature_path' => 'company-signatures/default_signature.png',
                 'signature_data' => null,
                 'is_active' => true,
             ]);
@@ -27,7 +28,8 @@ class CompanySignatureSeeder extends Seeder
                 'company_name' => 'شركة البعد العالي',
                 'signer_name' => 'اسحاق',
                 'signer_title' => 'المدير العام',
-                'signature_path' => '/uploads/signatures/default_signature.png',
+                // يجب أن يكون تحت company-signatures/ فقط (انظر CompanySignature::allowedPublicDiskPath)
+                'signature_path' => 'company-signatures/default_signature.png',
                 'signature_data' => null,
                 'is_active' => true,
             ]);

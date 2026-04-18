@@ -4,12 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\CompanySignature;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class CompanySignatureImageController extends Controller
 {
     /**
-     * عرض صورة توقيع الشركة النشط — يعمل في الإنتاج دون الاعتماد على symlink لـ public/storage.
+     * عرض صورة توقيع الشركة النشط من company-signatures/ فقط (انظر CompanySignature::allowedPublicDiskPath).
      */
     public function show(CompanySignature $companySignature)
     {
@@ -17,7 +16,7 @@ class CompanySignatureImageController extends Controller
             abort(404);
         }
 
-        $path = $this->normalizedStoragePath($companySignature->signature_path);
+        $path = CompanySignature::allowedPublicDiskPath($companySignature->signature_path);
         if ($path === null) {
             abort(404);
         }
@@ -32,28 +31,5 @@ class CompanySignatureImageController extends Controller
             'Content-Type' => $mime,
             'Cache-Control' => 'public, max-age=86400',
         ]);
-    }
-
-    private function normalizedStoragePath(?string $raw): ?string
-    {
-        if (blank($raw)) {
-            return null;
-        }
-
-        $path = trim(str_replace('\\', '/', $raw));
-
-        if (Str::startsWith($path, ['http://', 'https://'])) {
-            return null;
-        }
-
-        if (Str::startsWith($path, '/storage/')) {
-            $path = ltrim(Str::after($path, '/storage/'), '/');
-        }
-
-        if (str_contains($path, '..')) {
-            return null;
-        }
-
-        return ltrim($path, '/');
     }
 }
