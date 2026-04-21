@@ -1,10 +1,15 @@
 /** @jsxImportSource react */
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { ContractsTable } from '@/components/features/ContractsTable';
 import { Card, CardContent } from '@/components/ui/card';
 import { Activity, FileText, DollarSign, TrendingUp } from 'lucide-react';
 import { openContractSignPrintWindow } from '@/components/features/ContractPrint';
+import { useCallback, useEffect, useState } from 'react';
+import { showToast } from '@/hooks/use-toast';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ContractStagesModal } from '@/components/features/ContractStagesModal';
+import { ContractInvoiceModal } from '@/components/features/ContractInvoiceModal';
 
 interface Contract {
   id: number;
@@ -33,12 +38,79 @@ interface ActiveContractsProps {
 }
 
 export default function ActiveContracts({ contracts, stats }: ActiveContractsProps) {
+  const { flash } = usePage().props as any
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [contractToDelete, setContractToDelete] = useState<Contract | null>(null)
+  const [stagesModalOpen, setStagesModalOpen] = useState(false)
+  const [contractForStages, setContractForStages] = useState<Contract | null>(null)
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
+  const [contractForInvoice, setContractForInvoice] = useState<Contract | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (flash?.success) showToast.success('نجح', flash.success)
+    if (flash?.error) showToast.error('خطأ', flash.error)
+  }, [flash])
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'OMR',
     }).format(amount);
   };
+
+  const handleViewContract = useCallback((contract: Contract) => {
+    router.visit(`/contracts/${contract.id}`)
+  }, [])
+
+  const handleEditContract = useCallback((contract: Contract) => {
+    router.visit(`/contracts/${contract.id}/edit`)
+  }, [])
+
+  const handleDeleteContract = useCallback((contract: Contract) => {
+    setContractToDelete(contract)
+    setDeleteDialogOpen(true)
+  }, [])
+
+  const confirmDelete = useCallback(() => {
+    if (!contractToDelete) return
+
+    const target = contractToDelete
+    setIsLoading(true)
+
+    router.delete(`/contracts/${target.id}`, {
+      preserveScroll: true,
+      onSuccess: () => {
+        showToast.success('تم الحذف بنجاح', `تم حذف العقد "${target.contractNumber}" بنجاح`)
+        setDeleteDialogOpen(false)
+        setContractToDelete(null)
+      },
+      onError: (errors) => {
+        let msg = 'حدث خطأ أثناء حذف العقد'
+        if (errors && typeof errors === 'object') {
+          const values = Object.values(errors as Record<string, unknown>).flat()
+          const first = values.find((v) => typeof v === 'string') as string | undefined
+          if (first) msg = first
+        }
+        showToast.error('فشل الحذف', msg)
+      },
+      onFinish: () => setIsLoading(false),
+    })
+  }, [contractToDelete])
+
+  const handleViewStages = useCallback((contract: Contract) => {
+    setContractForStages(contract)
+    setStagesModalOpen(true)
+  }, [])
+
+  const handlePrint = useCallback((contract: Contract) => {
+    openContractSignPrintWindow(contract.contractNumber)
+  }, [])
+
+  const handleIssueInvoice = useCallback((contract: Contract) => {
+    setContractForInvoice(contract)
+    setInvoiceModalOpen(true)
+  }, [])
 
   return (
     <DashboardLayout>
@@ -131,34 +203,37 @@ export default function ActiveContracts({ contracts, stats }: ActiveContractsPro
           onDeleteContract={handleDeleteContract}
           onViewStages={handleViewStages}
           onPrint={handlePrint}
-          onIssueInvoice={handleInvoice}
+          onIssueInvoice={handleIssueInvoice}
+        />
+
+        <ConfirmDialog
+          open={deleteDialogOpen}
+          onOpenChange={(open) => {
+            setDeleteDialogOpen(open)
+            if (!open) setContractToDelete(null)
+          }}
+          onConfirm={confirmDelete}
+          title="تأكيد حذف العقد"
+          description={`هل أنت متأكد من حذف العقد "${contractToDelete?.contractNumber}"؟ لا يمكن التراجع عن هذا الإجراء.`}
+          confirmText="حذف"
+          cancelText="إلغاء"
+          variant="danger"
+          isLoading={isLoading}
+        />
+
+        <ContractStagesModal
+          open={stagesModalOpen}
+          onOpenChange={setStagesModalOpen}
+          contract={contractForStages}
+        />
+
+        <ContractInvoiceModal
+          open={invoiceModalOpen}
+          onOpenChange={setInvoiceModalOpen}
+          contract={contractForInvoice}
         />
       </div>
     </DashboardLayout>
   );
-
-  function handleViewContract(contract: Contract) {
-    router.visit(`/contracts/${contract.id}`);
-  }
-
-  function handleEditContract(contract: Contract) {
-    router.visit(`/contracts/${contract.id}/edit`);
-  }
-
-  function handleDeleteContract(contract: Contract) {
-    // Handle delete
-  }
-
-  function handleViewStages(contract: Contract) {
-    // Handle view stages
-  }
-
-  function handlePrint(contract: Contract) {
-    openContractSignPrintWindow(contract.contractNumber);
-  }
-
-  function handleInvoice(contract: Contract) {
-    router.visit(`/contracts/${contract.id}/invoice`);
-  }
 }
 

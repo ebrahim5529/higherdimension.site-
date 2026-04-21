@@ -82,6 +82,14 @@ function ContractTableGroup({
   sorting,
   onSortingChange,
 }: ContractTableGroupProps) {
+  const isExpired = (endDate: string) => {
+    if (!endDate) return false
+    const [y, m, d] = String(endDate).split('T')[0].split('-').map((x) => parseInt(x, 10))
+    if (!y || !m || !d) return false
+    const endUtc = Date.UTC(y, m - 1, d, 23, 59, 59)
+    return Date.now() > endUtc
+  }
+
   const table = useReactTable({
     data: contracts,
     columns,
@@ -137,7 +145,11 @@ function ContractTableGroup({
               {table.getRowModel().rows.map((row) => (
                 <tr
                   key={row.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                  className={
+                    isExpired(row.original.endDate)
+                      ? 'bg-red-600 text-white hover:bg-red-700 [&_*]:text-white'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                  }
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td
@@ -176,7 +188,7 @@ export function ContractsTable({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'عقود مفتوحة':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
+        return 'bg-green-600 text-white';
       case 'عقود مغلقة':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
       case 'عقود مغلقة ولم يتم استلام الأصناف':
@@ -214,9 +226,32 @@ export function ContractsTable({
   }, [data, globalFilter, statusFilter]);
 
   // تقسيم البيانات المفلترة إلى 3 مجموعات
-  const openContracts = useMemo(() => filteredData.filter(contract => contract.status === 'عقود مفتوحة'), [filteredData]);
-  const closedNotReceivedContracts = useMemo(() => filteredData.filter(contract => contract.status === 'عقود مغلقة ولم يتم استلام الأصناف'), [filteredData]);
-  const closedContracts = useMemo(() => filteredData.filter(contract => contract.status === 'عقود مغلقة'), [filteredData]);
+  const isExpired = (endDate: string) => {
+    if (!endDate) return false
+    const [y, m, d] = String(endDate).split('T')[0].split('-').map((x) => parseInt(x, 10))
+    if (!y || !m || !d) return false
+    const endUtc = Date.UTC(y, m - 1, d, 23, 59, 59)
+    return Date.now() > endUtc
+  }
+
+  const sortExpiredFirst = (a: Contract, b: Contract) => {
+    const ae = isExpired(a.endDate)
+    const be = isExpired(b.endDate)
+    if (ae !== be) return ae ? -1 : 1
+    return String(a.endDate).localeCompare(String(b.endDate))
+  }
+
+  const openContracts = useMemo(() => {
+    return [...filteredData.filter((contract) => contract.status === 'عقود مفتوحة')].sort(sortExpiredFirst)
+  }, [filteredData])
+
+  const closedNotReceivedContracts = useMemo(() => {
+    return filteredData.filter((contract) => contract.status === 'عقود مغلقة ولم يتم استلام الأصناف')
+  }, [filteredData])
+
+  const closedContracts = useMemo(() => {
+    return filteredData.filter((contract) => contract.status === 'عقود مغلقة')
+  }, [filteredData])
 
 
   const columns: ColumnDef<Contract>[] = useMemo(
