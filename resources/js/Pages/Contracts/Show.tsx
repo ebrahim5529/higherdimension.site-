@@ -126,9 +126,13 @@ interface Payment {
 
 interface ShowContractProps {
   contract: Contract;
+  navigation?: {
+    previous?: { id: number; contractNumber: string } | null;
+    next?: { id: number; contractNumber: string } | null;
+  };
 }
 
-export default function ShowContract({ contract }: ShowContractProps) {
+export default function ShowContract({ contract, navigation }: ShowContractProps) {
   const { flash } = usePage().props as any;
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -285,6 +289,27 @@ export default function ShowContract({ contract }: ShowContractProps) {
                     >
                       <ArrowRight className="h-6 w-6 text-gray-600" />
                     </Button>
+                    <div className="flex items-center gap-2">
+                      {navigation?.previous ? (
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/contracts/${navigation.previous.id}`}>السابق</Link>
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="sm" disabled>
+                          السابق
+                        </Button>
+                      )}
+
+                      {navigation?.next ? (
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/contracts/${navigation.next.id}`}>التالي</Link>
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="sm" disabled>
+                          التالي
+                        </Button>
+                      )}
+                    </div>
                     <div className="flex items-center gap-3">
                       <div className="p-3 bg-[#58d2c8]/10 rounded-lg">
                         <FileText className="h-7 w-7 text-[#58d2c8]" />

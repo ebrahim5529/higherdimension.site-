@@ -1,10 +1,10 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\CompanySignatureImageController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\CompanySignatureImageController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -38,16 +38,28 @@ Route::post('/contracts/{contractNumber}/sign', [\App\Http\Controllers\Admin\Con
 
 // Dashboard routes (protected)
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::middleware('permission:access-main-dashboard')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Main Dashboard
-    Route::get('/dashboard/main-dashboard', [\App\Http\Controllers\Admin\MainDashboardController::class, 'index'])->name('dashboard.main');
-    Route::get('/dashboard/dashboard-interactive', [\App\Http\Controllers\Admin\DashboardInteractiveController::class, 'index'])->name('dashboard.interactive');
+        // Main Dashboard
+        Route::get('/dashboard/main-dashboard', [\App\Http\Controllers\Admin\MainDashboardController::class, 'index'])->name('dashboard.main');
+    });
 
-    // Reports
-    Route::get('/dashboard/operations-reports', [\App\Http\Controllers\Admin\OperationsReportsController::class, 'index'])->name('reports.operations');
-    Route::get('/dashboard/customer-reports', [\App\Http\Controllers\Admin\CustomerReportsController::class, 'index'])->name('reports.customers');
-    Route::get('/dashboard/financial-reports', [\App\Http\Controllers\Admin\FinancialReportsController::class, 'index'])->name('reports.financial');
+    Route::middleware('permission:access-dashboard-reports|access-dashboard-interactive')->group(function () {
+        Route::get('/dashboard/dashboard-interactive', [\App\Http\Controllers\Admin\DashboardInteractiveController::class, 'index'])->name('dashboard.interactive');
+    });
+
+    Route::middleware('permission:access-dashboard-reports|access-operations-reports')->group(function () {
+        Route::get('/dashboard/operations-reports', [\App\Http\Controllers\Admin\OperationsReportsController::class, 'index'])->name('reports.operations');
+    });
+
+    Route::middleware('permission:access-dashboard-reports|access-customer-reports')->group(function () {
+        Route::get('/dashboard/customer-reports', [\App\Http\Controllers\Admin\CustomerReportsController::class, 'index'])->name('reports.customers');
+    });
+
+    Route::middleware('permission:access-dashboard-reports|access-financial-reports')->group(function () {
+        Route::get('/dashboard/financial-reports', [\App\Http\Controllers\Admin\FinancialReportsController::class, 'index'])->name('reports.financial');
+    });
 
     // Customers
     Route::middleware('permission:access-customers')->group(function () {

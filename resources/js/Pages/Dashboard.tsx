@@ -41,6 +41,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { PaginationLinks } from '@/components/features/PaginationLinks';
 
 interface Stat {
   id: string;
@@ -96,6 +97,7 @@ interface Contract {
   customerName: string;
   contractType: string;
   status: string;
+  endDate?: string | null;
   progress: ContractProgress[];
   totalAmount: number;
 }
@@ -108,7 +110,14 @@ interface DashboardProps {
   monthlyRevenue: MonthlyRevenue[];
   weeklyActivity: WeeklyActivity[];
   equipmentByOffice: EquipmentData[];
-  recentContracts: Contract[];
+  contracts: {
+    data: Contract[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    links: Array<{ url: string | null; label: string; active: boolean }>;
+  };
 }
 
 const iconMap: Record<string, ComponentType<{ className?: string }>> = {
@@ -149,7 +158,7 @@ export default function Dashboard({
   monthlyRevenue,
   weeklyActivity,
   equipmentByOffice,
-  recentContracts,
+  contracts,
 }: DashboardProps) {
   const { flash } = usePage().props as any;
 
@@ -172,6 +181,15 @@ export default function Dashboard({
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat('en-US').format(num);
   };
+
+  const isExpired = (contract: Contract) => {
+    if (!contract?.endDate) return false
+    if (!(contract.status === 'ACTIVE' || contract.status === 'OPEN')) return false
+    const [y, m, d] = String(contract.endDate).split('T')[0].split('-').map((x) => parseInt(x, 10))
+    if (!y || !m || !d) return false
+    const endUtc = Date.UTC(y, m - 1, d, 23, 59, 59)
+    return Date.now() > endUtc
+  }
 
   return (
     <DashboardLayout>
@@ -434,12 +452,21 @@ export default function Dashboard({
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-2xl font-semibold">جدول العقود</CardTitle>
-                    <div className="text-sm text-gray-600">إجمالي العقود: {recentContracts.length}</div>
+                    <div className="text-sm text-gray-600">إجمالي العقود: {contracts.total}</div>
                   </div>
-                  <Button variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
-                    تصدير
-                  </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.visit('/contracts')}
+                      >
+                        عرض كل العقود
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Download className="h-4 w-4 mr-2" />
+                        تصدير
+                      </Button>
+                    </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -484,10 +511,17 @@ export default function Dashboard({
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {recentContracts.map((contract) => (
-                          <tr key={contract.id} className="border-b hover:bg-gray-50 transition-colors">
+                        {contracts.data.map((contract) => (
+                          <tr
+                            key={contract.id}
+                            className={
+                              isExpired(contract)
+                                ? 'bg-red-600 text-white hover:bg-red-700 [&_*]:text-white'
+                                : 'border-b hover:bg-gray-50 transition-colors'
+                            }
+                          >
                             <td className="px-4 py-3 text-sm">
-                              <div className="font-mono text-sm text-gray-600">{contract.id}</div>
+                              <div className="font-mono text-sm text-gray-600">{contract.contractNumber}</div>
                             </td>
                             <td className="px-4 py-3 text-sm">
                               <div className="text-sm font-medium text-gray-900">{contract.customerName}</div>
@@ -578,23 +612,11 @@ export default function Dashboard({
                     </table>
                   </div>
                 </div>
-                <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
-                      عرض 1 إلى {recentContracts.length} من {recentContracts.length} عقود
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" disabled>
-                        <ChevronLeft className="h-4 w-4 mr-2" />
-                        السابق
-                      </Button>
-                      <span className="text-sm text-gray-600">صفحة 1 من 1</span>
-                      <Button variant="outline" size="sm" disabled>
-                        التالي
-                        <ChevronRight className="h-4 w-4 ml-2" />
-                      </Button>
-                    </div>
+                <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 space-y-3">
+                  <div className="text-sm text-gray-600">
+                    عرض {contracts.data.length} من {contracts.total} عقود
                   </div>
+                  <PaginationLinks links={contracts.links} />
                 </div>
               </CardContent>
             </Card>

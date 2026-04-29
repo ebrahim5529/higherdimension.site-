@@ -21,15 +21,27 @@ class ContractController extends Controller
      */
     public function index()
     {
+        $today = now()->toDateString();
+
         $contracts = Contract::with(['customer', 'user'])
             ->withSum('contractPayments as total_paid', 'amount')
-            ->get()
-            ->map(function ($contract) {
-                // حساب المبلغ المدفوع والمتبقي
+            ->orderByRaw(
+                "CASE
+                    WHEN status IN ('ACTIVE', 'OPEN') AND end_date IS NOT NULL AND end_date < ? THEN 0
+                    WHEN status IN ('ACTIVE', 'OPEN') THEN 1
+                    ELSE 2
+                END",
+                [$today]
+            )
+            ->orderByRaw('CASE WHEN end_date IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('end_date')
+            ->orderByDesc('id')
+            ->paginate(15)
+            ->withQueryString()
+            ->through(function ($contract) {
                 $paidAmount = (float) ($contract->total_paid ?? 0);
                 $remainingAmount = max(0, (float) $contract->amount - $paidAmount);
 
-                // تحديد حالة الدفع
                 $paymentStatus = 'غير مدفوعة';
                 if ($remainingAmount == 0 && $contract->amount > 0) {
                     $paymentStatus = 'مدفوعة';
@@ -37,7 +49,6 @@ class ContractController extends Controller
                     $paymentStatus = 'مدفوعة جزئياً';
                 }
 
-                // تحديد نوع العقد من payment_type
                 $contractType = 'تأجير';
                 if ($contract->payment_type === 'CASH') {
                     $contractType = 'بيع';
@@ -68,12 +79,9 @@ class ContractController extends Controller
                 ];
             });
 
-        // إحصائيات العقود
-        $totalContracts = $contracts->count();
-        $activeContracts = $contracts->where('status', 'عقود مفتوحة')->count();
-        // ملاحظة: getStatusLabel ترجع 'عقود مفتوحة' أو 'عقود مغلقة'
-        // لذا يجب أن نستخدم القيم الأصلية للإحصائيات الدقيقة من قاعدة البيانات
-        // أو نعتمد على الكولكشن إذا كانت القيم في الـ map متطابقة
+        $allContractsForPaymentStats = Contract::query()
+            ->withSum('contractPayments as total_paid', 'amount')
+            ->get(['id', 'amount']);
 
         // الأفضل جلب الإحصائيات مباشرة من قاعدة البيانات بكفاءة
         $counts = Contract::query()
@@ -86,14 +94,15 @@ class ContractController extends Controller
             ")
             ->first();
 
-        // حساب العقود المدفوعة وغير المدفوعة من الكولكشن المحملة بالفعل
+        // حساب العقود المدفوعة وغير المدفوعة
         $paidContracts = 0;
         $pendingContracts = 0;
         $partialPaymentContracts = 0;
 
-        foreach ($contracts as $contract) {
-            $amt = (float) ($contract['amount'] ?? 0);
-            $rem = (float) ($contract['remainingAmount'] ?? 0);
+        foreach ($allContractsForPaymentStats as $contract) {
+            $amt = (float) ($contract->amount ?? 0);
+            $paid = (float) ($contract->total_paid ?? 0);
+            $rem = max(0, $amt - $paid);
 
             if ($rem == 0 && $amt > 0) {
                 $paidContracts++;
@@ -420,6 +429,16 @@ class ContractController extends Controller
         $contract = Contract::with(['customer', 'user', 'equipment.scaffold', 'contractPayments', 'attachments'])
             ->findOrFail($id);
 
+        $previousContract = Contract::query()
+            ->where('id', '<', $contract->id)
+            ->orderByDesc('id')
+            ->first(['id', 'contract_number']);
+
+        $nextContract = Contract::query()
+            ->where('id', '>', $contract->id)
+            ->orderBy('id')
+            ->first(['id', 'contract_number']);
+
         $paidAmount = $contract->contractPayments()->sum('amount') ?? 0;
         $remainingAmount = max(0, $contract->amount - $paidAmount);
 
@@ -582,6 +601,16 @@ class ContractController extends Controller
                         'createdAt' => $payment->created_at->format('Y-m-d H:i:s'),
                     ];
                 })->toArray(),
+            ],
+            'navigation' => [
+                'previous' => $previousContract ? [
+                    'id' => $previousContract->id,
+                    'contractNumber' => $previousContract->contract_number,
+                ] : null,
+                'next' => $nextContract ? [
+                    'id' => $nextContract->id,
+                    'contractNumber' => $nextContract->contract_number,
+                ] : null,
             ],
         ]);
     }

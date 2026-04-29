@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Printer, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { PaginationLinks } from '@/components/features/PaginationLinks';
 
 interface CustomerReportsProps {
   stats: Array<{
@@ -15,6 +16,7 @@ interface CustomerReportsProps {
   filters?: {
     from: string | null;
     to: string | null;
+    contractStatus?: string | null;
   };
   customers: Array<{
     id: number;
@@ -26,9 +28,36 @@ interface CustomerReportsProps {
     remainingAmount: number;
     notes: string;
   }>;
+  contracts: {
+    data: Array<{
+      id: number;
+      contractNumber: string;
+      status: string;
+      startDate: string | null;
+      endDate: string | null;
+      customerName: string;
+      amount: number;
+    }>;
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    links: Array<{ url: string | null; label: string; active: boolean }>;
+  };
 }
 
-export default function CustomerReports({ stats, customers, filters }: CustomerReportsProps) {
+const CONTRACT_STATUS_LABELS: Record<string, string> = {
+  ACTIVE: 'نشط',
+  OPEN: 'نشط',
+  EXPIRED: 'منتهي',
+  CANCELLED: 'ملغي',
+  COMPLETED: 'مكتمل',
+  CLOSED: 'مغلق',
+  CLOSED_NOT_RECEIVED: 'مغلق ولم يتم استلام الأصناف',
+  DRAFT: 'مسودة',
+};
+
+export default function CustomerReports({ stats, customers, contracts, filters }: CustomerReportsProps) {
   const handlePrint = () => {
     window.print()
   }
@@ -36,16 +65,20 @@ export default function CustomerReports({ stats, customers, filters }: CustomerR
   const [from, setFrom] = useState(filters?.from || '')
   const [to, setTo] = useState(filters?.to || '')
   const [customerQuery, setCustomerQuery] = useState('')
+  const [contractStatus, setContractStatus] = useState(filters?.contractStatus || '')
+  const [selectedContractIds, setSelectedContractIds] = useState<Record<number, boolean>>({})
 
   useEffect(() => {
     setFrom(filters?.from || '')
     setTo(filters?.to || '')
-  }, [filters?.from, filters?.to])
+    setContractStatus(filters?.contractStatus || '')
+  }, [filters?.from, filters?.to, filters?.contractStatus])
 
   const applyFilters = () => {
     router.get('/dashboard/customer-reports', {
       from: from || undefined,
       to: to || undefined,
+      contract_status: contractStatus || undefined,
     }, {
       preserveScroll: true,
       preserveState: true,
@@ -55,6 +88,7 @@ export default function CustomerReports({ stats, customers, filters }: CustomerR
   const clearFilters = () => {
     setFrom('')
     setTo('')
+    setContractStatus('')
     router.get('/dashboard/customer-reports', {}, { preserveScroll: true, preserveState: true })
   }
 
@@ -95,6 +129,29 @@ export default function CustomerReports({ stats, customers, filters }: CustomerR
     { totalAmount: 0, paidAmount: 0, remainingAmount: 0 }
   )
 
+  const isExpiredContract = (c: CustomerReportsProps['contracts']['data'][number]) => {
+    if (!c?.endDate) return false
+    if (!(c.status === 'ACTIVE' || c.status === 'OPEN')) return false
+    const [y, m, d] = String(c.endDate).split('T')[0].split('-').map((x) => parseInt(x, 10))
+    if (!y || !m || !d) return false
+    const endUtc = Date.UTC(y, m - 1, d, 23, 59, 59)
+    return Date.now() > endUtc
+  }
+
+  const toggleSelectAllContractsInPage = (isSelected: boolean) => {
+    const next = { ...selectedContractIds }
+    for (const c of contracts.data) {
+      next[c.id] = isSelected
+    }
+    setSelectedContractIds(next)
+  }
+
+  const selectedContracts = contracts.data.filter((c) => selectedContractIds[c.id])
+
+  const printSelectedContracts = () => {
+    if (selectedContracts.length === 0) return
+    window.print()
+  }
   return (
     <DashboardLayout>
       <Head title="تقارير العملاء" />
@@ -217,11 +274,120 @@ export default function CustomerReports({ stats, customers, filters }: CustomerR
                   مسح
                 </Button>
               </div>
+              <div className="w-full sm:w-auto">
+                <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">حالة العقد</label>
+                <select
+                  value={contractStatus}
+                  onChange={(e) => setContractStatus(e.target.value)}
+                  className="w-full sm:w-[220px] border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                >
+                  <option value="">الكل</option>
+                  <option value="ACTIVE">نشط</option>
+                  <option value="EXPIRED">منتهي</option>
+                  <option value="CANCELLED">ملغي</option>
+                  <option value="COMPLETED">مكتمل</option>
+                  <option value="CLOSED">مغلق</option>
+                  <option value="CLOSED_NOT_RECEIVED">مغلق ولم يتم استلام الأصناف</option>
+                  <option value="DRAFT">مسودة</option>
+                </select>
+              </div>
               {(from || to) ? (
                 <div className="text-xs text-gray-600 dark:text-gray-300 sm:mr-auto">
                   الفترة: {from || '—'} → {to || '—'}
                 </div>
               ) : null}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="no-print">
+          <CardHeader>
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle className="text-sm font-medium">قائمة العقود</CardTitle>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => toggleSelectAllContractsInPage(true)}
+                  disabled={contracts.data.length === 0}
+                >
+                  تحديد الكل (هذه الصفحة)
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => toggleSelectAllContractsInPage(false)}
+                  disabled={contracts.data.length === 0}
+                >
+                  إلغاء التحديد
+                </Button>
+                <Button
+                  type="button"
+                  className="bg-[#58d2c8] hover:bg-[#4AB8B3]"
+                  onClick={printSelectedContracts}
+                  disabled={selectedContracts.length === 0}
+                  title="قد تحتاج للسماح بالنوافذ المنبثقة"
+                >
+                  <Printer className="h-4 w-4 ml-2" />
+                  طباعة المحدد ({selectedContracts.length})
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="min-w-full border border-gray-200 dark:border-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-200">تحديد</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-200">رقم العقد</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-200">العميل</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-200">الحالة</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-200">تاريخ البدء</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-200">تاريخ الانتهاء</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-200">المبلغ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {contracts.data.map((c) => (
+                    <tr
+                      key={c.id}
+                      className={
+                        isExpiredContract(c)
+                          ? 'bg-red-600 text-white hover:bg-red-700 [&_*]:text-white'
+                          : 'bg-white dark:bg-gray-900'
+                      }
+                    >
+                      <td className="px-3 py-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(selectedContractIds[c.id])}
+                          onChange={(e) => setSelectedContractIds({ ...selectedContractIds, [c.id]: e.target.checked })}
+                        />
+                      </td>
+                      <td className="px-3 py-2 text-sm font-mono whitespace-nowrap">{c.contractNumber}</td>
+                      <td className="px-3 py-2 text-sm">{c.customerName}</td>
+                      <td className="px-3 py-2 text-sm whitespace-nowrap">
+                        {CONTRACT_STATUS_LABELS[c.status] || c.status}
+                      </td>
+                      <td className="px-3 py-2 text-sm whitespace-nowrap">{c.startDate || '—'}</td>
+                      <td className="px-3 py-2 text-sm whitespace-nowrap">{c.endDate || '—'}</td>
+                      <td className="px-3 py-2 text-sm whitespace-nowrap">{formatCurrency(c.amount)}</td>
+                    </tr>
+                  ))}
+                  {contracts.data.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                        لا توجد عقود
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="pt-4">
+              <PaginationLinks links={contracts.links} />
             </div>
           </CardContent>
         </Card>
@@ -264,6 +430,7 @@ export default function CustomerReports({ stats, customers, filters }: CustomerR
                 <div>تاريخ الطباعة: {formatDate(new Date())}</div>
                 {(from || to) ? <div>الفترة: {from || '—'} → {to || '—'}</div> : null}
                 {customerQuery ? <div>البحث: {customerQuery}</div> : null}
+                {contractStatus ? <div>حالة العقد: {CONTRACT_STATUS_LABELS[contractStatus] || contractStatus}</div> : null}
               </div>
             </div>
           </div>
@@ -307,6 +474,49 @@ export default function CustomerReports({ stats, customers, filters }: CustomerR
                 <th></th>
               </tr>
             </tfoot>
+          </table>
+
+          <div className="border border-black rounded-md p-3 mt-4 mb-3">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="text-lg font-bold text-black">قائمة العقود (المحدد)</div>
+                <div className="text-sm text-black">حسب اختيارك من الصفحة</div>
+              </div>
+              <div className="text-xs text-black">
+                <div>عدد العقود المحددة: {selectedContracts.length}</div>
+                {contractStatus ? <div>حالة العقد: {CONTRACT_STATUS_LABELS[contractStatus] || contractStatus}</div> : null}
+              </div>
+            </div>
+          </div>
+
+          <table className="print-table">
+            <thead>
+              <tr>
+                <th className="w-[16%]">رقم العقد</th>
+                <th className="w-[22%]">العميل</th>
+                <th className="w-[14%]">الحالة</th>
+                <th className="w-[14%]">تاريخ البدء</th>
+                <th className="w-[14%]">تاريخ الانتهاء</th>
+                <th className="w-[20%]">المبلغ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedContracts.map((c) => (
+                <tr key={`print-contract-${c.id}`}>
+                  <td>{c.contractNumber || '-'}</td>
+                  <td>{c.customerName}</td>
+                  <td>{CONTRACT_STATUS_LABELS[c.status] || c.status}</td>
+                  <td>{c.startDate || '—'}</td>
+                  <td>{c.endDate || '—'}</td>
+                  <td>{formatCurrency(c.amount)}</td>
+                </tr>
+              ))}
+              {selectedContracts.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center">لا توجد عقود محددة</td>
+                </tr>
+              )}
+            </tbody>
           </table>
         </div>
 

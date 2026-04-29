@@ -51,8 +51,20 @@ interface Contract {
   locationMapLink?: string | null;
 }
 
+/** يدعم مصفوفة العقود أو شكل Laravel paginator { data: [...] } */
+function normalizeContractsInput (input: Contract[] | { data: Contract[] } | null | undefined): Contract[] {
+  if (Array.isArray(input)) return input
+  if (input && typeof input === 'object' && Array.isArray((input as { data?: Contract[] }).data)) {
+    return (input as { data: Contract[] }).data
+  }
+  return []
+}
+
 interface ContractsTableProps {
-  data: Contract[];
+  data: Contract[] | { data: Contract[] };
+  totals?: {
+    openContracts?: number;
+  };
   onAddContract: () => void;
   onEditContract: (contract: Contract) => void;
   onDeleteContract: (contract: Contract) => void;
@@ -66,6 +78,7 @@ interface ContractsTableProps {
 interface ContractTableGroupProps {
   contracts: Contract[];
   title: string;
+  displayCount?: number;
   bgColor: string;
   borderColor: string;
   columns: ColumnDef<Contract>[];
@@ -76,6 +89,7 @@ interface ContractTableGroupProps {
 function ContractTableGroup({
   contracts,
   title,
+  displayCount,
   bgColor,
   borderColor,
   columns,
@@ -110,7 +124,7 @@ function ContractTableGroup({
       <CardHeader className={`${bgColor} border-b`}>
         <CardTitle className="flex items-center gap-2">
           <Package className="h-5 w-5" />
-          {title} ({contracts.length})
+          {title} ({typeof displayCount === 'number' ? displayCount : contracts.length})
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -171,6 +185,7 @@ function ContractTableGroup({
 
 export function ContractsTable({
   data,
+  totals,
   onAddContract,
   onEditContract,
   onDeleteContract,
@@ -184,6 +199,8 @@ export function ContractsTable({
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  const rows = useMemo(() => normalizeContractsInput(data), [data])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -213,7 +230,7 @@ export function ContractsTable({
 
   // فلترة البيانات
   const filteredData = useMemo(() => {
-    return data.filter((contract) => {
+    return rows.filter((contract) => {
       const matchesSearch =
         contract.customerName.toLowerCase().includes(globalFilter.toLowerCase()) ||
         contract.contractNumber.toLowerCase().includes(globalFilter.toLowerCase()) ||
@@ -223,7 +240,7 @@ export function ContractsTable({
 
       return matchesSearch && matchesStatus;
     });
-  }, [data, globalFilter, statusFilter]);
+  }, [rows, globalFilter, statusFilter]);
 
   // تقسيم البيانات المفلترة إلى 3 مجموعات
   const isExpired = (endDate: string) => {
@@ -475,6 +492,7 @@ export function ContractsTable({
       <ContractTableGroup
         contracts={openContracts}
         title="عقود مفتوحة"
+        displayCount={totals?.openContracts}
         bgColor="bg-green-50 dark:bg-green-900/10"
         borderColor="border-green-200 dark:border-green-800"
         columns={columns}
@@ -505,7 +523,7 @@ export function ContractsTable({
       />
 
       {/* رسالة إذا لم تكن هناك عقود */}
-      {data.length === 0 && !isLoading && (
+      {rows.length === 0 && !isLoading && (
         <Card>
           <CardContent className="p-8 text-center">
             <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />

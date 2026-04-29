@@ -10,6 +10,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { showToast } from '@/hooks/use-toast';
 import { FileText, Plus } from 'lucide-react';
 import { openContractSignPrintWindow } from '@/components/features/ContractPrint';
+import { PaginationLinks } from '@/components/features/PaginationLinks';
 
 interface Contract {
   id: number;
@@ -41,7 +42,14 @@ interface ContractsStatsType {
 }
 
 interface ContractsIndexProps {
-  contracts: Contract[];
+  contracts: {
+    data: Contract[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    links: Array<{ url: string | null; label: string; active: boolean }>;
+  };
   stats: ContractsStatsType;
 }
 
@@ -149,11 +157,12 @@ export default function ContractsIndex({ contracts, stats }: ContractsIndexProps
         </div>
 
         {/* إحصائيات العقود */}
-        <ContractsStats contracts={contracts} stats={stats} />
+        <ContractsStats contracts={contracts.data} stats={stats} />
 
         {/* جدول العقود */}
         <ContractsTable
-          data={contracts}
+          data={contracts.data}
+          totals={{ openContracts: stats.activeContracts }}
           onAddContract={handleAddContract}
           onEditContract={handleEditContract}
           onDeleteContract={handleDeleteContract}
@@ -163,6 +172,10 @@ export default function ContractsIndex({ contracts, stats }: ContractsIndexProps
           onIssueInvoice={handleIssueInvoice}
           isLoading={isLoading}
         />
+
+        <div className="pt-2">
+          <PaginationLinks links={contracts.links} />
+        </div>
 
         {/* نافذة تأكيد الحذف */}
         <ConfirmDialog
