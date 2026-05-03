@@ -145,24 +145,7 @@ export default function Login() {
               </div>
 
               {/* زر البيانات الافتراضية ورابط نسيان كلمة المرور */}
-              <div className="flex justify-between items-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail('admin@easyloman.com');
-                    setPassword('123456');
-                  }}
-                  className="text-sm text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors"
-                >
-                  استخدام بيانات افتراضية
-                </button>
-                <a
-                  href="/forgot-password"
-                  className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                >
-                  نسيت كلمة المرور؟
-                </a>
-              </div>
+         
 
               {/* زر تسجيل الدخول */}
               <Button
@@ -177,19 +160,7 @@ export default function Login() {
         </Card>
 
         {/* معلومات البيانات الافتراضية */}
-        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
-            للاختبار - بيانات افتراضية:
-          </h3>
-          <div className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
-            <p>
-              <strong>البريد الإلكتروني:</strong> admin@easyloman.com
-            </p>
-            <p>
-              <strong>كلمة المرور:</strong> 123456
-            </p>
-          </div>
-        </div>
+       
 
         {/* معلومات الشركة */}
         <div className="mt-8 text-center">
