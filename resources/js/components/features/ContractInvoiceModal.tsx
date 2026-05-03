@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Printer, Download, Copy, X } from 'lucide-react';
 import { showToast } from '@/hooks/use-toast';
 import { router } from '@inertiajs/react';
+import { CONTRACT_AGREEMENT_PLACE_AR } from '@/lib/contract-agreement-place';
 
 interface Contract {
   id: number;
@@ -273,7 +274,7 @@ export function ContractInvoiceModal({
             <p className="text-lg mb-2 text-black">
               <span className="font-bold">ثانياً: مكان الاتفاق:</span>
             </p>
-            <p className="text-base mr-4 text-black">{invoiceData.contract.delivery_address || 'ولاية السيب، سلطنة عمان'}</p>
+            <p className="text-base mr-4 text-black">{CONTRACT_AGREEMENT_PLACE_AR}</p>
           </div>
 
           {/* Contract Duration */}

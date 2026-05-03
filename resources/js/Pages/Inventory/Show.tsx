@@ -52,9 +52,6 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
   const contractUsages = scaffold.contractUsages ?? [];
   const usedDiff = scaffold.usedQuantityDifference ?? Math.max(0, scaffold.quantity - scaffold.availableQuantity);
   const usedFromContracts = scaffold.usedQuantityFromContracts ?? contractUsages.reduce((s, r) => s + r.quantityUsed, 0);
-  const hasContractUsageData = contractUsages.length > 0;
-  const usageMismatch = hasContractUsageData && usedDiff !== usedFromContracts;
-  const usedButNoContractLines = usedDiff > 0 && !hasContractUsageData;
 
   const getStatusLabel = (status: string) => {
     const statuses: Record<string, string> = {
@@ -165,16 +162,6 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
                     <p>
                       <span className="text-gray-600 dark:text-gray-400">مجموع المسجل في العقود:</span>{' '}
                       <span className="font-medium tabular-nums">{usedFromContracts.toLocaleString('en-US')}</span>
-                    </p>
-                  )}
-                  {usageMismatch && (
-                    <p className="text-xs text-amber-700 dark:text-amber-300 pt-1">
-                      ملاحظة: مجموع الكميات في جدول العقود لا يساوي فرق الكمية أعلاه؛ قد يكون هناك تعديل يدوي أو بيانات قديمة.
-                    </p>
-                  )}
-                  {usedButNoContractLines && (
-                    <p className="text-xs text-amber-700 dark:text-amber-300 pt-1">
-                      يوجد فرق كمية لكن لا توجد بنود عقد مرتبطة بهذه المعدة في النظام (قد تكون المعدة أُضيفت للعقد قبل ربط السجل أو حُدّثت الكميات يدوياً).
                     </p>
                   )}
                 </div>

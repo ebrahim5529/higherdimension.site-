@@ -39,11 +39,11 @@ export function ContractsStats({ contracts, stats }: ContractsStatsProps) {
       icon: FileText,
       color: 'text-[#58d2c8]',
       bgColor: 'bg-[#58d2c8]/10',
-      change: `${stats.activeContracts} نشط، ${stats.expiredContracts} منتهي`,
+      change: `${stats.activeContracts} مفتوحة، ${stats.expiredContracts} مغلقة، ${stats.cancelledContracts} مغلقة دون استلام`,
       changeType: 'positive' as const,
     },
     {
-      title: 'العقود النشطة',
+      title: 'عقود مفتوحة',
       value: stats.activeContracts,
       icon: CheckCircle,
       color: 'text-[#58d2c8]',
@@ -52,7 +52,7 @@ export function ContractsStats({ contracts, stats }: ContractsStatsProps) {
       changeType: 'positive' as const,
     },
     {
-      title: 'العقود المنتهية',
+      title: 'عقود مغلقة',
       value: stats.expiredContracts,
       icon: Clock,
       color: 'text-[#58d2c8]',

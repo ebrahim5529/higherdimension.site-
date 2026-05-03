@@ -66,12 +66,12 @@ export default function ExpiredContracts({ contracts, stats }: ExpiredContractsP
 
   return (
     <DashboardLayout>
-      <Head title="عقود منتهية" />
+      <Head title="عقود مغلقة" />
       <div className="space-y-6 pb-8 mt-2 -mx-1 sm:-mx-2 lg:-mx-3 xl:-mx-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">عقود منتهية</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">عرض جميع العقود المنتهية</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">عقود مغلقة</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">العقود المغلقة أو المنتهية أو الملغاة (تم التعامل معها)</p>
           </div>
         </div>
 

@@ -88,8 +88,8 @@ class ContractController extends Controller
             ->selectRaw("
                 COUNT(*) as total,
                 SUM(CASE WHEN status IN ('ACTIVE', 'OPEN') THEN 1 ELSE 0 END) as active,
-                SUM(CASE WHEN status = 'EXPIRED' THEN 1 ELSE 0 END) as expired,
-                SUM(CASE WHEN status = 'CANCELLED' THEN 1 ELSE 0 END) as cancelled,
+                SUM(CASE WHEN status IN ('CLOSED', 'COMPLETED', 'RENTAL_CLOSED', 'EXPIRED', 'CANCELLED') THEN 1 ELSE 0 END) as expired,
+                SUM(CASE WHEN status = 'CLOSED_NOT_RECEIVED' THEN 1 ELSE 0 END) as cancelled,
                 SUM(amount) as total_value
             ")
             ->first();
@@ -137,7 +137,7 @@ class ContractController extends Controller
     {
         $contracts = Contract::with(['customer', 'user'])
             ->withSum('contractPayments as total_paid', 'amount')
-            ->where('status', 'ACTIVE')
+            ->whereIn('status', ['ACTIVE', 'OPEN'])
             ->get()
             ->map(function ($contract) {
                 $paidAmount = (float) ($contract->total_paid ?? 0);
@@ -182,7 +182,7 @@ class ContractController extends Controller
     {
         $contracts = Contract::with(['customer', 'user'])
             ->withSum('contractPayments as total_paid', 'amount')
-            ->where('status', 'EXPIRED')
+            ->whereIn('status', ['CLOSED', 'COMPLETED', 'RENTAL_CLOSED', 'EXPIRED', 'CANCELLED'])
             ->get()
             ->map(function ($contract) {
                 $paidAmount = (float) ($contract->total_paid ?? 0);
@@ -227,7 +227,7 @@ class ContractController extends Controller
     {
         $contracts = Contract::with(['customer', 'user'])
             ->withSum('contractPayments as total_paid', 'amount')
-            ->where('status', 'CANCELLED')
+            ->where('status', 'CLOSED_NOT_RECEIVED')
             ->get()
             ->map(function ($contract) {
                 $paidAmount = (float) ($contract->total_paid ?? 0);
@@ -510,7 +510,7 @@ class ContractController extends Controller
             'signed' => $contract->signed_at !== null,
             'delivered' => false, // يمكن إضافة منطق للتسليم
             'inactive' => $contract->status === 'CANCELLED',
-            'completed' => $contract->status === 'EXPIRED' || $contract->status === 'COMPLETED',
+            'completed' => in_array($contract->status, ['EXPIRED', 'COMPLETED', 'CLOSED', 'RENTAL_CLOSED', 'CANCELLED'], true),
         ];
 
         // حساب المدة التفصيلية
@@ -733,7 +733,7 @@ class ContractController extends Controller
             'status' => 'nullable|string|in:ACTIVE,CLOSED,CLOSED_NOT_RECEIVED',
         ]);
 
-        return DB::transaction(function () use ($request, $contract, $validated) {
+        return DB::transaction(function () use ($contract, $validated) {
             // حساب المبلغ الإجمالي
             $equipmentTotal = collect($validated['rental_details'])->sum('total');
             $transportCost = $validated['transport_and_installation_cost'] ?? 0;
@@ -758,7 +758,7 @@ class ContractController extends Controller
                 'total_discount' => $discount,
                 'contract_notes' => $validated['contract_notes'] ?? null,
                 'amount' => $totalAmount,
-                'status' => $request->status ?? $contract->status,
+                'status' => $validated['status'] ?? $contract->status,
             ]);
 
             // حذف المعدات القديمة وإضافة الجديدة
@@ -1182,12 +1182,10 @@ class ContractController extends Controller
     private function getStatusLabel(string $status): string
     {
         return match ($status) {
-            'ACTIVE', 'OPEN' => 'عقود مفتوحة',
-            'CLOSED', 'COMPLETED', 'RENTAL_CLOSED' => 'عقود مغلقة',
-            'CLOSED_NOT_RECEIVED' => 'عقود مغلقة ولم يتم استلام الأصناف',
-            'EXPIRED' => 'عقود مغلقة',
-            'CANCELLED' => 'عقود مغلقة',
-            default => 'عقود مفتوحة',
+            'ACTIVE', 'OPEN' => 'مفتوحة',
+            'CLOSED', 'COMPLETED', 'RENTAL_CLOSED', 'EXPIRED', 'CANCELLED' => 'مغلقة',
+            'CLOSED_NOT_RECEIVED' => 'مغلقة ولم يتم الاستلام',
+            default => 'مفتوحة',
         };
     }
 

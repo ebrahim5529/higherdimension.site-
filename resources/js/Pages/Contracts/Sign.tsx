@@ -6,6 +6,7 @@ import { ContractPrintStyles, ContractPrintButton } from '@/components/features/
 import DigitalSignature from '@/components/features/DigitalSignature';
 import { showToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { CONTRACT_AGREEMENT_PLACE_AR } from '@/lib/contract-agreement-place';
 
 interface RentalDetail {
   id: number;
@@ -456,9 +457,7 @@ export default function SignContract({ contract, companySignature }: SignContrac
           {/* ثانياً: مكان الاتفاق */}
           <div className="mb-6 sign-print-section">
             <p className="font-bold text-lg text-black mb-2">ثانياً: مكان الاتفاق:</p>
-            <p className="text-black">
-              {contract.delivery_address || 'مسقط، سلطنة عمان'}
-            </p>
+            <p className="text-black">{CONTRACT_AGREEMENT_PLACE_AR}</p>
           </div>
 
           {/* ثالثاً: مدة العقد */}

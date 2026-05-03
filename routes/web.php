@@ -83,6 +83,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/contracts/active', [\App\Http\Controllers\Admin\ContractController::class, 'active'])->name('contracts.active');
         Route::get('/contracts/expired', [\App\Http\Controllers\Admin\ContractController::class, 'expired'])->name('contracts.expired');
         Route::get('/contracts/cancelled', [\App\Http\Controllers\Admin\ContractController::class, 'cancelled'])->name('contracts.cancelled');
+        Route::patch('/contracts/{contract}/status', [\App\Http\Controllers\Admin\ContractController::class, 'updateStatus'])->name('contracts.update-status');
         Route::get('/contracts/{id}/invoice', [\App\Http\Controllers\Admin\ContractController::class, 'invoice'])->name('contracts.invoice');
         Route::resource('contracts', \App\Http\Controllers\Admin\ContractController::class);
         Route::get('/dashboard/contract-management', [\App\Http\Controllers\Admin\ContractController::class, 'index'])->name('contracts.management');

@@ -275,13 +275,15 @@ class CustomerController extends Controller
         $customer = Customer::with(['contracts.contractPayments', 'contracts.customer', 'payments', 'customerNotes'])
             ->findOrFail($id);
 
-        // حساب إحصائيات العقود
+        $contracts = $customer->contracts;
+
+        // حساب إحصائيات العقود (مطابقة لتصنيف قوائم العقود)
         $contractsSummary = [
-            'total' => $customer->contracts->count(),
-            'active' => $customer->contracts->where('status', 'ACTIVE')->count(),
-            'completed' => $customer->contracts->where('status', 'COMPLETED')->count(),
-            'cancelled' => $customer->contracts->where('status', 'CANCELLED')->count(),
-            'totalValue' => $customer->contracts->sum('amount') ?? 0,
+            'total' => $contracts->count(),
+            'open' => $contracts->whereIn('status', ['ACTIVE', 'OPEN'])->count(),
+            'closed' => $contracts->whereIn('status', ['CLOSED', 'COMPLETED', 'RENTAL_CLOSED', 'EXPIRED', 'CANCELLED'])->count(),
+            'closedNotReceived' => $contracts->where('status', 'CLOSED_NOT_RECEIVED')->count(),
+            'totalValue' => $contracts->sum('amount') ?? 0,
         ];
 
         $allContractPayments = $customer->contracts->flatMap(function ($contract) {

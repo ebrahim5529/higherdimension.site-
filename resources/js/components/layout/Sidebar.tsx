@@ -319,25 +319,25 @@ export function Sidebar({
         children: [
           {
             id: 'contract-management',
-            label: 'إدارة العقود والاتفاقيات',
-            icon: FileText,
+            label: 'متابعة العقود وتعديل الحالة',
+            icon: PenTool,
             href: '/contracts',
           },
           {
             id: 'active-contracts',
-            label: 'عقود نشطة',
+            label: 'عقود مفتوحة',
             icon: Activity,
             href: '/contracts/active',
           },
           {
             id: 'expired-contracts',
-            label: 'عقود منتهية',
+            label: 'عقود مغلقة',
             icon: Clock,
             href: '/contracts/expired',
           },
           {
             id: 'cancelled-contracts',
-            label: 'عقود ملغاة',
+            label: 'عقود مغلقة ولم يتم الاستلام',
             icon: X,
             href: '/contracts/cancelled',
           },

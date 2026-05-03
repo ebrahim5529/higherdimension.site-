@@ -246,12 +246,12 @@ export default function ShowContract({ contract, navigation }: ShowContractProps
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
-      case 'نشط':
+      case 'مفتوحة':
         return 'bg-green-100 text-green-800 border-green-300';
-      case 'منتهي':
-        return 'bg-gray-100 text-gray-800 border-gray-300';
-      case 'ملغي':
-        return 'bg-red-100 text-red-800 border-red-300';
+      case 'مغلقة':
+        return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'مغلقة ولم يتم الاستلام':
+        return 'bg-orange-100 text-orange-800 border-orange-300';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-300';
     }

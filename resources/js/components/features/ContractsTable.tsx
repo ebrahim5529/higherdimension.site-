@@ -10,6 +10,8 @@ import {
   flexRender,
   SortingState,
   ColumnFiltersState,
+  PaginationState,
+  type OnChangeFn,
 } from '@tanstack/react-table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,6 +34,7 @@ import {
   PenSquare,
 } from 'lucide-react';
 import { Combobox } from '@/components/ui/combobox';
+import { TablePageSizeControl } from '@/components/ui/table-page-size-control';
 
 interface Contract {
   id: number;
@@ -84,6 +87,8 @@ interface ContractTableGroupProps {
   columns: ColumnDef<Contract>[];
   sorting: SortingState;
   onSortingChange: (updaterOrValue: SortingState | ((old: SortingState) => SortingState)) => void;
+  /** معرف فريد لعناصر التحكم بعدد الصفوف (وصولية) */
+  pageSizeControlId: string;
 }
 
 function ContractTableGroup({
@@ -95,7 +100,17 @@ function ContractTableGroup({
   columns,
   sorting,
   onSortingChange,
+  pageSizeControlId,
 }: ContractTableGroupProps) {
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+
+  const onPaginationChange: OnChangeFn<PaginationState> = React.useCallback((updater) => {
+    setPagination((prev) => (typeof updater === 'function' ? updater(prev) : updater));
+  }, []);
+
   const isExpired = (endDate: string) => {
     if (!endDate) return false
     const [y, m, d] = String(endDate).split('T')[0].split('-').map((x) => parseInt(x, 10))
@@ -112,19 +127,41 @@ function ContractTableGroup({
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange,
+    onPaginationChange,
     state: {
       sorting,
+      pagination,
     },
   });
 
   if (contracts.length === 0) return null;
 
+  const totalRows = contracts.length;
+  const pageIndex = table.getState().pagination.pageIndex;
+  const pageSize = table.getState().pagination.pageSize;
+  const pageRows = table.getPaginationRowModel().rows;
+  const fromRow = totalRows === 0 || pageRows.length === 0 ? 0 : pageIndex * pageSize + 1;
+  const toRow =
+    totalRows === 0 || pageRows.length === 0 ? 0 : pageIndex * pageSize + pageRows.length;
+
   return (
     <Card key={title} className={`mb-6 ${borderColor}`}>
       <CardHeader className={`${bgColor} border-b`}>
-        <CardTitle className="flex items-center gap-2">
-          <Package className="h-5 w-5" />
-          {title} ({typeof displayCount === 'number' ? displayCount : contracts.length})
+        <CardTitle className="flex flex-wrap items-center justify-between gap-3 gap-y-2 w-full">
+          <span className="flex items-center gap-2 min-w-0">
+            <Package className="h-5 w-5 shrink-0" />
+            <span className="truncate">
+              {title} ({typeof displayCount === 'number' ? displayCount : contracts.length})
+            </span>
+          </span>
+          <TablePageSizeControl
+            id={pageSizeControlId}
+            value={pagination.pageSize}
+            onChange={(next) => {
+              setPagination({ pageIndex: 0, pageSize: next });
+            }}
+            label="عدد الصفوف"
+          />
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -156,7 +193,7 @@ function ContractTableGroup({
               ))}
             </thead>
             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-              {table.getRowModel().rows.map((row) => (
+              {pageRows.map((row) => (
                 <tr
                   key={row.id}
                   className={
@@ -178,6 +215,36 @@ function ContractTableGroup({
             </tbody>
           </table>
         </div>
+        {totalRows > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/40">
+            <p className="text-sm text-muted-foreground" dir="rtl">
+              عرض {fromRow}–{toRow} من {totalRows}
+            </p>
+            <div className="flex items-center gap-2" dir="rtl">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!table.getCanPreviousPage()}
+                onClick={() => table.previousPage()}
+              >
+                السابق
+              </Button>
+              <span className="text-sm text-muted-foreground tabular-nums px-1">
+                {pageIndex + 1} / {table.getPageCount() || 1}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!table.getCanNextPage()}
+                onClick={() => table.nextPage()}
+              >
+                التالي
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -204,11 +271,11 @@ export function ContractsTable({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'عقود مفتوحة':
+      case 'مفتوحة':
         return 'bg-green-600 text-white';
-      case 'عقود مغلقة':
+      case 'مغلقة':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
-      case 'عقود مغلقة ولم يتم استلام الأصناف':
+      case 'مغلقة ولم يتم الاستلام':
         return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -259,15 +326,15 @@ export function ContractsTable({
   }
 
   const openContracts = useMemo(() => {
-    return [...filteredData.filter((contract) => contract.status === 'عقود مفتوحة')].sort(sortExpiredFirst)
-  }, [filteredData])
-
-  const closedNotReceivedContracts = useMemo(() => {
-    return filteredData.filter((contract) => contract.status === 'عقود مغلقة ولم يتم استلام الأصناف')
+    return [...filteredData.filter((contract) => contract.status === 'مفتوحة')].sort(sortExpiredFirst)
   }, [filteredData])
 
   const closedContracts = useMemo(() => {
-    return filteredData.filter((contract) => contract.status === 'عقود مغلقة')
+    return filteredData.filter((contract) => contract.status === 'مغلقة')
+  }, [filteredData])
+
+  const closedNotReceivedContracts = useMemo(() => {
+    return filteredData.filter((contract) => contract.status === 'مغلقة ولم يتم الاستلام')
   }, [filteredData])
 
 
@@ -498,17 +565,7 @@ export function ContractsTable({
         columns={columns}
         sorting={sorting}
         onSortingChange={setSorting}
-      />
-
-      {/* جدول العقود المغلقة ولم يتم استلام الأصناف */}
-      <ContractTableGroup
-        contracts={closedNotReceivedContracts}
-        title="عقود مغلقة ولم يتم استلام الأصناف"
-        bgColor="bg-orange-50 dark:bg-orange-900/10"
-        borderColor="border-orange-200 dark:border-orange-800"
-        columns={columns}
-        sorting={sorting}
-        onSortingChange={setSorting}
+        pageSizeControlId="contracts-open-page-size"
       />
 
       {/* جدول العقود المغلقة */}
@@ -520,6 +577,19 @@ export function ContractsTable({
         columns={columns}
         sorting={sorting}
         onSortingChange={setSorting}
+        pageSizeControlId="contracts-closed-page-size"
+      />
+
+      {/* جدول العقود المغلقة دون استلام */}
+      <ContractTableGroup
+        contracts={closedNotReceivedContracts}
+        title="عقود مغلقة ولم يتم الاستلام"
+        bgColor="bg-orange-50 dark:bg-orange-900/10"
+        borderColor="border-orange-200 dark:border-orange-800"
+        columns={columns}
+        sorting={sorting}
+        onSortingChange={setSorting}
+        pageSizeControlId="contracts-closed-not-received-page-size"
       />
 
       {/* رسالة إذا لم تكن هناك عقود */}

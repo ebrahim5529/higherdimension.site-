@@ -646,9 +646,9 @@ export default function EditContract({ contract, customers }: EditContractProps)
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#58d2c8] focus:border-transparent bg-white"
                   required
                 >
-                  <option value="ACTIVE">عقود مفتوحة</option>
-                  <option value="CLOSED">عقود مغلقة</option>
-                  <option value="CLOSED_NOT_RECEIVED">عقود مغلقة ولم يتم استلام الأصناف</option>
+                  <option value="ACTIVE">مفتوحة</option>
+                  <option value="CLOSED">مغلقة</option>
+                  <option value="CLOSED_NOT_RECEIVED">مغلقة ولم يتم الاستلام</option>
                 </select>
               </div>
 

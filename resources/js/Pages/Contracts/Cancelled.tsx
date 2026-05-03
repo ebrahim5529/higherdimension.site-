@@ -66,12 +66,12 @@ export default function CancelledContracts({ contracts, stats }: CancelledContra
 
   return (
     <DashboardLayout>
-      <Head title="عقود ملغاة" />
+      <Head title="عقود مغلقة ولم يتم الاستلام" />
       <div className="space-y-6 pb-8 mt-2 -mx-1 sm:-mx-2 lg:-mx-3 xl:-mx-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">عقود ملغاة</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">عرض جميع العقود الملغاة</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">عقود مغلقة ولم يتم الاستلام</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">العقود المغلقة دون استلام الأصناف بعد</p>
           </div>
         </div>
 

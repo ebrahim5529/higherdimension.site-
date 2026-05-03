@@ -5,12 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Contract;
 use App\Models\ContractPayment;
-use App\Models\Customer;
+use App\Services\AccountingService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
-use App\Services\AccountingService;
 
 class PaymentController extends Controller
 {
@@ -25,7 +22,7 @@ class PaymentController extends Controller
                 // حساب المبلغ المدفوع والمتبقي
                 $paidAmount = $contract->contractPayments()->sum('amount') ?? 0;
                 $remainingAmount = max(0, $contract->amount - $paidAmount);
-                
+
                 // تحديد حالة الدفع
                 $paymentStatus = 'غير مدفوع';
                 $paymentPercentage = 0;
@@ -74,7 +71,7 @@ class PaymentController extends Controller
             return $contract->contractPayments()->sum('amount') ?? 0;
         });
         $totalRemaining = $totalAmount - $totalPaid;
-        
+
         $fullyPaidContracts = $contracts->where('paymentStatus', 'مدفوع بالكامل')->count();
         $partiallyPaidContracts = $contracts->where('paymentStatus', 'مدفوع جزئياً')->count();
         $unpaidContracts = $contracts->where('paymentStatus', 'غير مدفوع')->count();
@@ -124,13 +121,13 @@ class PaymentController extends Controller
     {
         $contractId = $request->query('contract_id');
         $contract = null;
-        
+
         if ($contractId) {
             $contract = Contract::with(['customer', 'contractPayments'])->find($contractId);
             if ($contract) {
                 $paidAmount = $contract->contractPayments()->sum('amount') ?? 0;
                 $remainingAmount = max(0, $contract->amount - $paidAmount);
-                
+
                 $contract = [
                     'id' => $contract->id,
                     'contractNumber' => $contract->contract_number,
@@ -149,7 +146,7 @@ class PaymentController extends Controller
             ->map(function ($contract) {
                 $paidAmount = $contract->contractPayments()->sum('amount') ?? 0;
                 $remainingAmount = max(0, $contract->amount - $paidAmount);
-                
+
                 return [
                     'id' => $contract->id,
                     'contractNumber' => $contract->contract_number,
@@ -195,7 +192,7 @@ class PaymentController extends Controller
 
         if ($validated['amount'] > $remainingAmount) {
             return redirect()->back()->withErrors([
-                'amount' => 'المبلغ المدخل يتجاوز المبلغ المتبقي (' . number_format($remainingAmount, 2) . ' ر.ع)'
+                'amount' => 'المبلغ المدخل يتجاوز المبلغ المتبقي ('.number_format($remainingAmount, 2).' ر.ع)',
             ]);
         }
 
@@ -220,7 +217,7 @@ class PaymentController extends Controller
 
         // إنشاء قيد محاسبي تلقائي
         $payment->load('contract.customer');
-        (new AccountingService())->onContractPaymentCreated($payment);
+        (new AccountingService)->onContractPaymentCreated($payment);
 
         return redirect()->route('payments.index')->with('success', 'تم تسديد الدفعة بنجاح');
     }
@@ -231,11 +228,11 @@ class PaymentController extends Controller
     public function show(string $id)
     {
         $payment = ContractPayment::with(['contract.customer', 'contract.user'])->findOrFail($id);
-        
+
         $contract = $payment->contract;
         $paidAmount = $contract->contractPayments()->sum('amount') ?? 0;
         $remainingAmount = max(0, $contract->amount - $paidAmount);
-        
+
         return Inertia::render('Payments/Show', [
             'payment' => [
                 'id' => $payment->id,
@@ -302,18 +299,18 @@ class PaymentController extends Controller
             ->map(function ($contract) {
                 $paidAmount = $contract->contractPayments()->sum('amount') ?? 0;
                 $remainingAmount = max(0, $contract->amount - $paidAmount);
-                
+
                 // حساب المبلغ المتأخر بناءً على نوع الدفع
                 $isOverdue = false;
                 $overdueAmount = 0;
                 $overdueDays = 0;
-                
+
                 if ($contract->payment_type === 'MONTHLY' && $contract->installment_count) {
                     // حساب المبلغ المتوقع لكل دفعة شهرية
                     $expectedPaymentPerMonth = $contract->amount / $contract->installment_count;
                     $monthsElapsed = $contract->start_date->diffInMonths(now());
                     $expectedPaid = $monthsElapsed * $expectedPaymentPerMonth;
-                    
+
                     if ($paidAmount < $expectedPaid) {
                         $isOverdue = true;
                         $overdueAmount = $expectedPaid - $paidAmount;
@@ -325,7 +322,7 @@ class PaymentController extends Controller
                     $expectedPaymentPerInstallment = $contract->amount / $contract->installment_count;
                     $expectedInstallments = floor($paidAmount / $expectedPaymentPerInstallment);
                     $expectedPaid = $expectedInstallments * $expectedPaymentPerInstallment;
-                    
+
                     if ($paidAmount < $expectedPaid) {
                         $isOverdue = true;
                         $overdueAmount = $expectedPaid - $paidAmount;
@@ -442,11 +439,10 @@ class PaymentController extends Controller
      */
     private function getStatusLabel($status)
     {
-        return match($status) {
-            'ACTIVE' => 'نشط',
-            'EXPIRED' => 'منتهي',
-            'CANCELLED' => 'ملغي',
-            'COMPLETED' => 'مكتمل',
+        return match ($status) {
+            'ACTIVE', 'OPEN' => 'مفتوحة',
+            'CLOSED', 'COMPLETED', 'RENTAL_CLOSED', 'EXPIRED', 'CANCELLED' => 'مغلقة',
+            'CLOSED_NOT_RECEIVED' => 'مغلقة ولم يتم الاستلام',
             default => $status,
         };
     }
@@ -456,7 +452,7 @@ class PaymentController extends Controller
      */
     private function getPaymentMethodLabel($method)
     {
-        return match($method) {
+        return match ($method) {
             'cash' => 'نقداً',
             'check' => 'شيك',
             'credit_card' => 'بطاقة ائتمان',

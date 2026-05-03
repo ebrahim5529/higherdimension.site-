@@ -114,12 +114,12 @@ export default function ActiveContracts({ contracts, stats }: ActiveContractsPro
 
   return (
     <DashboardLayout>
-      <Head title="عقود نشطة" />
+      <Head title="عقود مفتوحة" />
       <div className="space-y-6 pb-8 mt-2 -mx-1 sm:-mx-2 lg:-mx-3 xl:-mx-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">عقود نشطة</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">عرض جميع العقود النشطة</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">عقود مفتوحة</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">العقود ذات الحالة المفتوحة (نشطة)</p>
           </div>
         </div>
 

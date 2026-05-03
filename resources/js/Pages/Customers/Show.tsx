@@ -89,9 +89,9 @@ interface Customer {
   customerNotes?: any[];
   contractsSummary?: {
     total: number;
-    active: number;
-    completed: number;
-    cancelled: number;
+    open: number;
+    closed: number;
+    closedNotReceived: number;
     totalValue: number;
   };
   paymentsSummary?: {
@@ -176,9 +176,11 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
   // استخدام الإحصائيات من الـ controller إذا كانت موجودة
   const contractsSummary = customer.contractsSummary || {
     total: customer.contracts?.length || 0,
-    active: customer.contracts?.filter((c: any) => c.status === 'ACTIVE').length || 0,
-    completed: customer.contracts?.filter((c: any) => c.status === 'COMPLETED').length || 0,
-    cancelled: customer.contracts?.filter((c: any) => c.status === 'CANCELLED').length || 0,
+    open: customer.contracts?.filter((c: any) => ['ACTIVE', 'OPEN'].includes(c.status)).length || 0,
+    closed: customer.contracts?.filter((c: any) =>
+      ['CLOSED', 'COMPLETED', 'RENTAL_CLOSED', 'EXPIRED', 'CANCELLED'].includes(c.status)
+    ).length || 0,
+    closedNotReceived: customer.contracts?.filter((c: any) => c.status === 'CLOSED_NOT_RECEIVED').length || 0,
     totalValue: customer.contracts?.reduce((sum: number, c: any) => sum + (c.total_value || 0), 0) || 0,
   };
 
@@ -394,14 +396,14 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
                 <td>{formatCurrency(contractsSummary.totalValue)}</td>
               </tr>
               <tr>
-                <th>عقود نشطة</th>
-                <td>{contractsSummary.active}</td>
-                <th>عقود مكتملة</th>
-                <td>{contractsSummary.completed}</td>
+                <th>عقود مفتوحة</th>
+                <td>{contractsSummary.open}</td>
+                <th>عقود مغلقة</th>
+                <td>{contractsSummary.closed}</td>
               </tr>
               <tr>
-                <th>عقود ملغاة</th>
-                <td colSpan={3}>{contractsSummary.cancelled}</td>
+                <th>عقود مغلقة ولم يتم الاستلام</th>
+                <td colSpan={3}>{contractsSummary.closedNotReceived}</td>
               </tr>
               <tr>
                 <th className="font-bold" colSpan={4}>ملخص المدفوعات</th>
@@ -896,16 +898,16 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
                     <span className="font-medium">{contractsSummary.total}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">عقود نشطة</span>
-                    <span className="font-medium text-green-600">{contractsSummary.active}</span>
+                    <span className="text-sm text-muted-foreground">عقود مفتوحة</span>
+                    <span className="font-medium text-green-600">{contractsSummary.open}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">عقود مكتملة</span>
-                    <span className="font-medium text-blue-600">{contractsSummary.completed}</span>
+                    <span className="text-sm text-muted-foreground">عقود مغلقة</span>
+                    <span className="font-medium text-blue-600">{contractsSummary.closed}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">عقود ملغاة</span>
-                    <span className="font-medium text-red-600">{contractsSummary.cancelled}</span>
+                    <span className="text-sm text-muted-foreground">عقود مغلقة ولم يتم الاستلام</span>
+                    <span className="font-medium text-red-600">{contractsSummary.closedNotReceived}</span>
                   </div>
                   <div className="pt-2 border-t">
                     <div className="flex justify-between">
