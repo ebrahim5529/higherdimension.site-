@@ -8,6 +8,7 @@ use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class CustomerController extends Controller
 {
@@ -399,6 +400,88 @@ class CustomerController extends Controller
     }
 
     /**
+     * تقرير عقود ومدفوعات عميل (بحث، فلترة عقد، طباعة).
+     */
+    public function contractsPaymentsReport(Request $request): Response
+    {
+        $customerOptions = Customer::query()
+            ->orderBy('name')
+            ->get(['id', 'customer_number', 'name', 'phone'])
+            ->map(fn ($c) => [
+                'id' => (int) $c->id,
+                'customerNumber' => (string) ($c->customer_number ?? ''),
+                'name' => (string) ($c->name ?? ''),
+                'phone' => (string) ($c->phone ?? ''),
+            ])
+            ->values();
+
+        $selectedCustomer = null;
+        $contractsPayload = [];
+        $selectedCustomerId = null;
+
+        $rawId = $request->query('customer_id');
+        if ($rawId !== null && $rawId !== '' && ctype_digit((string) $rawId)) {
+            $customer = Customer::query()
+                ->with([
+                    'contracts' => fn ($q) => $q->orderByDesc('id'),
+                    'contracts.contractPayments',
+                ])
+                ->find((int) $rawId);
+
+            if ($customer !== null) {
+                $selectedCustomerId = $customer->id;
+                $selectedCustomer = [
+                    'id' => $customer->id,
+                    'customerNumber' => (string) ($customer->customer_number ?? ''),
+                    'name' => (string) ($customer->name ?? ''),
+                    'phone' => (string) ($customer->phone ?? ''),
+                    'email' => (string) ($customer->email ?? ''),
+                ];
+
+                $contractsPayload = $customer->contracts->map(function ($contract) {
+                    $paid = (float) $contract->contractPayments->sum('amount');
+                    $amount = (float) ($contract->amount ?? 0);
+
+                    return [
+                        'id' => (int) $contract->id,
+                        'contractNumber' => (string) ($contract->contract_number ?? ''),
+                        'title' => (string) ($contract->title ?? ''),
+                        'status' => (string) ($contract->status ?? ''),
+                        'statusLabel' => $this->getContractStatusLabel((string) $contract->status),
+                        'startDate' => $contract->start_date?->format('Y-m-d'),
+                        'endDate' => $contract->end_date?->format('Y-m-d'),
+                        'amount' => $amount,
+                        'totalPaid' => $paid,
+                        'remaining' => max(0, $amount - $paid),
+                        'payments' => $contract->contractPayments
+                            ->sortByDesc(fn ($p) => $p->payment_date?->timestamp ?? 0)
+                            ->values()
+                            ->map(function ($payment) {
+                                return [
+                                    'id' => (int) $payment->id,
+                                    'paymentDate' => $payment->payment_date->format('Y-m-d'),
+                                    'paymentMethod' => $this->getPaymentMethodLabel($payment->payment_method),
+                                    'amount' => (float) $payment->amount,
+                                    'checkNumber' => $payment->check_number,
+                                    'bankName' => $payment->bank_name,
+                                    'notes' => $payment->notes,
+                                ];
+                            })
+                            ->all(),
+                    ];
+                })->values()->all();
+            }
+        }
+
+        return Inertia::render('Customers/ContractsPaymentsReport', [
+            'customerOptions' => $customerOptions,
+            'selectedCustomerId' => $selectedCustomerId,
+            'selectedCustomer' => $selectedCustomer,
+            'contracts' => $contractsPayload,
+        ]);
+    }
+
+    /**
      * Get payment method label in Arabic.
      */
     private function getPaymentMethodLabel($method)
@@ -409,6 +492,16 @@ class CustomerController extends Controller
             'credit_card' => 'بطاقة ائتمان',
             'bank_transfer' => 'تحويل بنكي',
             default => $method,
+        };
+    }
+
+    private function getContractStatusLabel(string $status): string
+    {
+        return match ($status) {
+            'ACTIVE', 'OPEN' => 'مفتوحة',
+            'CLOSED', 'COMPLETED', 'RENTAL_CLOSED', 'EXPIRED', 'CANCELLED' => 'مغلقة',
+            'CLOSED_NOT_RECEIVED' => 'مغلقة ولم يتم الاستلام',
+            default => $status,
         };
     }
 

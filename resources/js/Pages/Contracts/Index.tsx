@@ -36,6 +36,8 @@ interface ContractsStatsType {
   expiredContracts: number;
   cancelledContracts: number;
   totalValue: number;
+  totalPaid: number;
+  totalRemaining: number;
   paidContracts: number;
   pendingContracts: number;
   partialPaymentContracts: number;

@@ -1,6 +1,7 @@
 /** @jsxImportSource react */
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, CheckCircle, Clock, DollarSign } from 'lucide-react';
+import { FileText, CheckCircle, Clock, DollarSign, Banknote, AlertCircle } from 'lucide-react';
+import { EnglishNumerals } from '@/components/ui/english-numerals';
+import { formatCurrencyOmrEn, formatNumberEn } from '@/lib/utils';
 
 interface Contract {
   id: number;
@@ -25,6 +26,8 @@ interface ContractsStatsProps {
     expiredContracts: number;
     cancelledContracts: number;
     totalValue: number;
+    totalPaid: number;
+    totalRemaining: number;
     paidContracts: number;
     pendingContracts: number;
     partialPaymentContracts: number;
@@ -35,44 +38,60 @@ export function ContractsStats({ contracts, stats }: ContractsStatsProps) {
   const statsCards = [
     {
       title: 'إجمالي العقود',
-      value: stats.totalContracts,
+      value: formatNumberEn(stats.totalContracts, { maximumFractionDigits: 0 }),
       icon: FileText,
       color: 'text-[#58d2c8]',
       bgColor: 'bg-[#58d2c8]/10',
-      change: `${stats.activeContracts} مفتوحة، ${stats.expiredContracts} مغلقة، ${stats.cancelledContracts} مغلقة دون استلام`,
+      change: `${formatNumberEn(stats.activeContracts, { maximumFractionDigits: 0 })} مفتوحة، ${formatNumberEn(stats.expiredContracts, { maximumFractionDigits: 0 })} مغلقة، ${formatNumberEn(stats.cancelledContracts, { maximumFractionDigits: 0 })} مغلقة دون استلام`,
       changeType: 'positive' as const,
     },
     {
       title: 'عقود مفتوحة',
-      value: stats.activeContracts,
+      value: formatNumberEn(stats.activeContracts, { maximumFractionDigits: 0 }),
       icon: CheckCircle,
       color: 'text-[#58d2c8]',
       bgColor: 'bg-[#58d2c8]/10',
-      change: `${stats.partialPaymentContracts} مدفوع جزئياً`,
+      change: `${formatNumberEn(stats.partialPaymentContracts, { maximumFractionDigits: 0 })} مدفوع جزئياً`,
       changeType: 'positive' as const,
     },
     {
       title: 'عقود مغلقة',
-      value: stats.expiredContracts,
+      value: formatNumberEn(stats.expiredContracts, { maximumFractionDigits: 0 }),
       icon: Clock,
       color: 'text-[#58d2c8]',
       bgColor: 'bg-[#58d2c8]/10',
-      change: `${stats.paidContracts} مدفوع بالكامل`,
+      change: `${formatNumberEn(stats.paidContracts, { maximumFractionDigits: 0 })} مدفوع بالكامل`,
       changeType: 'neutral' as const,
     },
     {
       title: 'القيمة الإجمالية',
-      value: new Intl.NumberFormat('ar-SA', {
-        style: 'currency',
-        currency: 'OMR',
+      value: formatCurrencyOmrEn(stats.totalValue, {
         minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }).format(stats.totalValue),
+        maximumFractionDigits: 0,
+      }),
       icon: DollarSign,
       color: 'text-[#58d2c8]',
       bgColor: 'bg-[#58d2c8]/10',
-      change: `${stats.pendingContracts} غير مدفوع`,
+      change: `${formatNumberEn(stats.pendingContracts, { maximumFractionDigits: 0 })} غير مدفوع`,
       changeType: 'positive' as const,
+    },
+    {
+      title: 'إجمالي المدفوع',
+      value: formatCurrencyOmrEn(stats.totalPaid),
+      icon: Banknote,
+      color: 'text-green-600 dark:text-green-400',
+      bgColor: 'bg-green-500/10',
+      change: 'مجموع المبالغ المحصّلة من جميع العقود',
+      changeType: 'positive' as const,
+    },
+    {
+      title: 'إجمالي المتبقي',
+      value: formatCurrencyOmrEn(stats.totalRemaining),
+      icon: AlertCircle,
+      color: 'text-orange-600 dark:text-orange-400',
+      bgColor: 'bg-orange-500/10',
+      change: 'المبلغ المستحق على العقود بعد خصم المدفوع',
+      changeType: 'neutral' as const,
     },
   ];
 
@@ -82,7 +101,7 @@ export function ContractsStats({ contracts, stats }: ContractsStatsProps) {
         <FileText className="h-5 w-5" />
         <h2 className="text-xl font-semibold">إحصائيات العقود</h2>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statsCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -96,9 +115,9 @@ export function ContractsStats({ contracts, stats }: ContractsStatsProps) {
                     {stat.title}
                   </h3>
                   <div className="text-2xl font-bold text-[#58d2c8] group-hover:text-[#4AB8B3] transition-colors duration-300 font-tajawal">
-                    {stat.value}
+                    <EnglishNumerals>{stat.value}</EnglishNumerals>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 mt-1 tabular-nums">
                     {stat.change}
                   </p>
                 </div>

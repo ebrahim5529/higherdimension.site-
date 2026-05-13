@@ -30,6 +30,7 @@ export default function DashboardLayout({
       '/dashboard/customer-reports': 'customer-reports',
       '/dashboard/customer-management': 'customer-management',
       '/dashboard/customer-contracts': 'customer-contracts',
+      '/dashboard/customer-contracts-payments-report': 'customer-contracts-payments-report',
       '/dashboard/customer-claims': 'customer-claims',
       '/contracts': 'contract-management',
       '/contracts/create': 'contract-management',

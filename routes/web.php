@@ -66,6 +66,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('customers', \App\Http\Controllers\Admin\CustomerController::class);
         Route::get('/dashboard/customer-management', [\App\Http\Controllers\Admin\CustomerController::class, 'index'])->name('customers.management');
         Route::get('/dashboard/customer-contracts', [\App\Http\Controllers\Admin\CustomerController::class, 'contracts'])->name('customers.contracts');
+        Route::get('/dashboard/customer-contracts-payments-report', [\App\Http\Controllers\Admin\CustomerController::class, 'contractsPaymentsReport'])->name('customers.contracts-payments-report');
         Route::get('/dashboard/customer-claims', [\App\Http\Controllers\Admin\CustomerController::class, 'claims'])->name('customers.claims');
     });
     Route::middleware('permission:access-customers')->group(function () {

@@ -159,11 +159,12 @@ export default function CustomerReports({ stats, customers, contracts, filters }
         @media print {
           @page {
             size: A4;
-            margin: 8mm;
+            margin: 14mm 12mm;
           }
-          body {
+          html, body {
             margin: 0 !important;
             padding: 0 !important;
+            width: 100% !important;
             font-size: 11px;
           }
           .no-print { display: none !important; }
@@ -174,7 +175,23 @@ export default function CustomerReports({ stats, customers, contracts, filters }
           .fixed.inset-0.z-40 {
             display: none !important;
           }
-          main { padding: 0 !important; overflow: visible !important; }
+          main {
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: visible !important;
+            max-width: 100% !important;
+          }
+          main > div.max-w-full {
+            margin: 0 !important;
+            padding: 0 !important;
+            max-width: 100% !important;
+          }
+          .print-layout-root {
+            margin: 0 !important;
+            padding: 0 !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+          }
           body { background: #fff !important; }
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           table { page-break-inside: auto; }
@@ -182,7 +199,12 @@ export default function CustomerReports({ stats, customers, contracts, filters }
 
           .print-only { display: block !important; }
           .print-report { display: block !important; }
-          .print-container { margin: 0 !important; padding: 0 !important; }
+          .print-container {
+            margin: 0 !important;
+            padding: 0 !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+          }
           .print-container .shadow,
           .print-container .shadow-sm,
           .print-container .shadow-md,
@@ -206,7 +228,7 @@ export default function CustomerReports({ stats, customers, contracts, filters }
           .print-report { display: none; }
         }
       `}</style>
-      <div className="space-y-6 mt-2 -mx-1 sm:-mx-2 lg:-mx-3 xl:-mx-4">
+      <div className="print-layout-root space-y-6 mt-2 -mx-1 sm:-mx-2 lg:-mx-3 xl:-mx-4 print:mx-0 print:mt-0">
         <div className="flex items-start justify-between gap-4 no-print">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">

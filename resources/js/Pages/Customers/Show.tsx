@@ -242,12 +242,13 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
         @media print {
           @page {
             size: A4;
-            margin: 8mm;
+            margin: 14mm 12mm;
           }
 
-          body {
+          html, body {
             margin: 0 !important;
             padding: 0 !important;
+            width: 100% !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
             font-size: 11px;
@@ -258,6 +259,26 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
           .fixed.inset-y-0.right-0.z-50,
           .fixed.inset-0.z-40 {
             display: none !important;
+          }
+
+          main {
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: visible !important;
+            max-width: 100% !important;
+          }
+
+          main > div.max-w-full {
+            margin: 0 !important;
+            padding: 0 !important;
+            max-width: 100% !important;
+          }
+
+          .print-layout-root {
+            margin: 0 !important;
+            padding: 0 !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
           }
 
           .no-print {
@@ -279,6 +300,8 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
           .print-container {
             margin: 0 !important;
             padding: 0 !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
           }
 
           .print-container .shadow,
@@ -315,7 +338,7 @@ export default function CustomerShow({ customer }: CustomerShowProps) {
           }
         }
       `}</style>
-      <div className="space-y-6 mt-2 -mx-1 sm:-mx-2 lg:-mx-3 xl:-mx-4">
+      <div className="print-layout-root space-y-6 mt-2 -mx-1 sm:-mx-2 lg:-mx-3 xl:-mx-4 print:mx-0 print:mt-0">
         <div className="print-report print-container">
           <div className="border border-black rounded-md p-3 mb-3">
             <div className="flex items-start justify-between">

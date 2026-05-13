@@ -44,3 +44,27 @@ export function isValidNumber(value: string | number): boolean {
   return !isNaN(num) && converted.trim() !== '';
 }
 
+const EN_NUMBER_LOCALE = 'en-US' as const;
+
+/**
+ * تنسيق رقم بأرقام لاتينية (إنجليزية) — مناسب للعرض داخل واجهة عربية (RTL).
+ */
+export function formatNumberEn(value: number, options?: Intl.NumberFormatOptions): string {
+  return new Intl.NumberFormat(EN_NUMBER_LOCALE, options).format(value);
+}
+
+/**
+ * تنسيق عملة ريال عماني بأرقام لاتينية.
+ */
+export function formatCurrencyOmrEn(
+  value: number,
+  options?: { minimumFractionDigits?: number; maximumFractionDigits?: number }
+): string {
+  return new Intl.NumberFormat(EN_NUMBER_LOCALE, {
+    style: 'currency',
+    currency: 'OMR',
+    minimumFractionDigits: options?.minimumFractionDigits ?? 2,
+    maximumFractionDigits: options?.maximumFractionDigits ?? 2,
+  }).format(value);
+}
+

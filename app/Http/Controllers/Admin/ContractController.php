@@ -94,15 +94,20 @@ class ContractController extends Controller
             ")
             ->first();
 
-        // حساب العقود المدفوعة وغير المدفوعة
+        // حساب العقود المدفوعة وغير المدفوعة + إجمالي المبالغ
         $paidContracts = 0;
         $pendingContracts = 0;
         $partialPaymentContracts = 0;
+        $totalPaidAmount = 0.0;
+        $totalRemainingAmount = 0.0;
 
         foreach ($allContractsForPaymentStats as $contract) {
             $amt = (float) ($contract->amount ?? 0);
             $paid = (float) ($contract->total_paid ?? 0);
             $rem = max(0, $amt - $paid);
+
+            $totalPaidAmount += $paid;
+            $totalRemainingAmount += $rem;
 
             if ($rem == 0 && $amt > 0) {
                 $paidContracts++;
@@ -119,6 +124,8 @@ class ContractController extends Controller
             'expiredContracts' => (int) (($counts?->expired ?? 0) ?: 0),
             'cancelledContracts' => (int) (($counts?->cancelled ?? 0) ?: 0),
             'totalValue' => (float) (($counts?->total_value ?? 0) ?: 0),
+            'totalPaid' => $totalPaidAmount,
+            'totalRemaining' => $totalRemainingAmount,
             'paidContracts' => $paidContracts,
             'pendingContracts' => $pendingContracts,
             'partialPaymentContracts' => $partialPaymentContracts,

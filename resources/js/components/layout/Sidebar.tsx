@@ -39,6 +39,7 @@ import {
   Landmark,
   Scale,
   Plus,
+  Printer,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -94,6 +95,7 @@ export function Sidebar({
     'customers': 'access-customers',
     'customer-management': 'manage-customers',
     'customer-contracts': 'view-customer-contracts',
+    'customer-contracts-payments-report': 'access-customers',
     'customer-claims': 'manage-customer-claims',
     'suppliers': 'access-suppliers',
     'supplier-management': 'manage-suppliers',
@@ -253,6 +255,12 @@ export function Sidebar({
             label: 'سجل العقود الخاصة بالعملاء',
             icon: FileText,
             href: '/dashboard/customer-contracts',
+          },
+          {
+            id: 'customer-contracts-payments-report',
+            label: 'تقرير عقود ومدفوعات عميل',
+            icon: Printer,
+            href: '/dashboard/customer-contracts-payments-report',
           },
           {
             id: 'customer-claims',
