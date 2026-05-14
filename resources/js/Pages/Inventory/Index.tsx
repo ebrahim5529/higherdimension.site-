@@ -6,6 +6,7 @@ import { InventoryStats } from '@/components/features/InventoryStats';
 import { ScaffoldsTable } from '@/components/features/ScaffoldsTable';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { showToast } from '@/hooks/use-toast';
+import { exportInventoryScaffoldsCsv } from '@/lib/exportInventoryCsv';
 import { Package, BarChart3, TrendingUp, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -37,6 +38,9 @@ interface Scaffold {
 }
 
 interface InventoryStatsType {
+  totalQuantity: number;
+  quantityLinkedToContract: number;
+  availableQuantity: number;
   totalScaffolds: number;
   availableScaffolds: number;
   rentedScaffolds: number;
@@ -140,7 +144,12 @@ export default function InventoryIndex({ scaffolds, stats }: InventoryIndexProps
   };
 
   const handleExportScaffolds = () => {
-    showToast.info('قريباً', 'سيتم إضافة ميزة التصدير قريباً');
+    if (tableData.length === 0) {
+      showToast.info('لا بيانات', 'لا توجد سجلات للتصدير');
+      return;
+    }
+    exportInventoryScaffoldsCsv(tableData);
+    showToast.success('تم التصدير', 'تم تنزيل ملف CSV لجميع السجلات');
   };
 
   return (

@@ -61,9 +61,13 @@ class InventoryController extends Controller
                 SUM(CASE WHEN status = 'RENTED' THEN 1 ELSE 0 END) as rented,
                 SUM(CASE WHEN status = 'SOLD' THEN 1 ELSE 0 END) as sold,
                 SUM(CASE WHEN status = 'MAINTENANCE' THEN 1 ELSE 0 END) as maintenance,
-                SUM(CASE WHEN status = 'RESERVED' THEN 1 ELSE 0 END) as reserved
+                SUM(CASE WHEN status = 'RESERVED' THEN 1 ELSE 0 END) as reserved,
+                COALESCE(SUM(quantity), 0) as total_quantity,
+                COALESCE(SUM(available_quantity), 0) as total_available_quantity
             ")
             ->first();
+
+        $quantityLinkedToContract = (int) ContractEquipment::query()->sum('quantity');
 
         // توزيع حسب النوع في استعلام واحد
         $typeDistribution = Scaffold::query()
@@ -92,6 +96,9 @@ class InventoryController extends Controller
             ->count();
 
         $stats = [
+            'totalQuantity' => (int) $statsData->total_quantity,
+            'quantityLinkedToContract' => $quantityLinkedToContract,
+            'availableQuantity' => (int) $statsData->total_available_quantity,
             'totalScaffolds' => (int) $statsData->total,
             'availableScaffolds' => (int) $statsData->available,
             'rentedScaffolds' => (int) $statsData->rented,
