@@ -1,7 +1,7 @@
 /** @jsxImportSource react */
 import { Head, Link, router } from '@inertiajs/react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -49,9 +49,22 @@ interface ShowScaffoldProps {
 }
 
 export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
+  const num = (v: unknown) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+
   const contractUsages = scaffold.contractUsages ?? [];
-  const usedDiff = scaffold.usedQuantityDifference ?? Math.max(0, scaffold.quantity - scaffold.availableQuantity);
-  const usedFromContracts = scaffold.usedQuantityFromContracts ?? contractUsages.reduce((s, r) => s + r.quantityUsed, 0);
+  const qtyTotal = num(scaffold.quantity);
+  const qtyAvail = num(scaffold.availableQuantity);
+  const qtyUsed =
+    scaffold.usedQuantityDifference != null
+      ? num(scaffold.usedQuantityDifference)
+      : Math.max(0, qtyTotal - qtyAvail);
+  const usedFromContracts =
+    scaffold.usedQuantityFromContracts != null
+      ? num(scaffold.usedQuantityFromContracts)
+      : contractUsages.reduce((s, r) => s + num(r.quantityUsed), 0);
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('ar-SA', {
@@ -59,7 +72,9 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
       currency: 'OMR',
     }).format(amount);
 
-  const formatQty = (n: number) => n.toLocaleString('en-US');
+  /** بدون فواصل آلاف لتفادي قراءة 21,320 كـ «21 و320» */
+  const formatQty = (n: number) =>
+    new Intl.NumberFormat('en-US', { useGrouping: false, maximumFractionDigits: 0 }).format(n);
 
   const getStatusLabel = (status: string) => {
     const statuses: Record<string, string> = {
@@ -215,14 +230,16 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
                 </th>
               </tr>
               <tr>
-                <th>الإجمالي</th>
-                <td>{formatQty(scaffold.quantity)}</td>
-                <th>المتاح</th>
-                <td>{formatQty(scaffold.availableQuantity)}</td>
+                <th>إجمالي الكمية</th>
+                <td colSpan={3}>{formatQty(qtyTotal)}</td>
               </tr>
               <tr>
-                <th>المستخدم (فرق الكمية)</th>
-                <td colSpan={3}>{formatQty(usedDiff)} (الإجمالي − المتاح)</td>
+                <th>الكمية المستخدمة</th>
+                <td colSpan={3}>{formatQty(qtyUsed)}</td>
+              </tr>
+              <tr>
+                <th>الكمية المتاحة</th>
+                <td colSpan={3}>{formatQty(qtyAvail)}</td>
               </tr>
               <tr>
                 <th className="font-bold" colSpan={4}>
@@ -250,7 +267,7 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
               </tr>
               <tr>
                 <th className="font-bold" colSpan={4}>
-                  الكمية المستخدمة في العقود
+                  الكمية في العقود (جميع الحالات)
                 </th>
               </tr>
               <tr>
@@ -265,12 +282,12 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
                     <td>{row.contractTitle}</td>
                     <td>{row.customerName ?? '—'}</td>
                     <td>{row.contractNumber}</td>
-                    <td>{formatQty(row.quantityUsed)}</td>
+                    <td>{formatQty(num(row.quantityUsed))}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4}>لا توجد بنود عقد مرتبطة بهذه المعدة حالياً.</td>
+                  <td colSpan={4}>لا توجد بنود عقد مرتبطة بهذه المعدة.</td>
                 </tr>
               )}
               <tr>
@@ -339,25 +356,24 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
                       <TableCell className="align-middle bg-gray-50 dark:bg-gray-800/80 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">
                         إجمالي الكمية
                       </TableCell>
-                      <TableCell className="align-middle text-right tabular-nums text-sm font-medium text-gray-900 dark:text-white">
-                        {scaffold.quantity.toLocaleString('en-US')}
+                      <TableCell className="align-middle text-right tabular-nums text-sm font-medium text-gray-900 dark:text-white" colSpan={3}>
+                        {formatQty(qtyTotal)}
                       </TableCell>
+                    </TableRow>
+                    <TableRow className="hover:bg-transparent border-b border-gray-200 dark:border-gray-700">
                       <TableCell className="align-middle bg-gray-50 dark:bg-gray-800/80 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        الكمية المتاحة
+                        الكمية المستخدمة
                       </TableCell>
-                      <TableCell className="align-middle text-right tabular-nums text-sm font-medium text-green-700 dark:text-green-400">
-                        {scaffold.availableQuantity.toLocaleString('en-US')}
+                      <TableCell className="align-middle text-right tabular-nums text-sm font-medium text-amber-700 dark:text-amber-300" colSpan={3}>
+                        {formatQty(qtyUsed)}
                       </TableCell>
                     </TableRow>
                     <TableRow className="hover:bg-transparent border-0">
                       <TableCell className="align-middle bg-gray-50 dark:bg-gray-800/80 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        المستخدم (فرق الكمية)
+                        الكمية المتاحة
                       </TableCell>
-                      <TableCell className="align-middle text-right text-sm text-gray-900 dark:text-white" colSpan={3}>
-                        <span className="tabular-nums font-semibold text-amber-700 dark:text-amber-300">
-                          {usedDiff.toLocaleString('en-US')}
-                        </span>
-                        <span className="text-gray-500 dark:text-gray-400 text-xs mr-2">(الإجمالي − المتاح)</span>
+                      <TableCell className="align-middle text-right tabular-nums text-sm font-medium text-green-700 dark:text-green-400" colSpan={3}>
+                        {formatQty(qtyAvail)}
                       </TableCell>
                     </TableRow>
                   </TableBody>
@@ -369,10 +385,15 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
         {/* استخدام الكمية في العقود */}
         <Card>
           <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <FileText className="h-5 w-5 shrink-0" />
-              الكمية المستخدمة في العقود
-            </CardTitle>
+            <div className="space-y-1.5">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <FileText className="h-5 w-5 shrink-0" />
+                الكمية المؤجرة (جميع العقود)
+              </CardTitle>
+              <CardDescription className="text-right text-xs leading-relaxed max-w-xl">
+                يُحسب المجموع من كل بنود العقود المرتبطة بهذه المعدة، لجميع حالات العقد.
+              </CardDescription>
+            </div>
             {contractUsages.length > 0 && (
               <Button type="button" variant="outline" size="sm" onClick={() => window.print()} className="no-print shrink-0 gap-2">
                 <Printer className="h-4 w-4" />
@@ -383,7 +404,7 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
           <CardContent>
             {contractUsages.length === 0 ? (
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                لا توجد بنود عقد مرتبطة بهذه المعدة حالياً.
+                لا توجد بنود عقد مرتبطة بهذه المعدة.
               </p>
             ) : (
               <Table>
@@ -408,7 +429,7 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
                         </Link>
                       </TableCell>
                       <TableCell className="text-right tabular-nums font-medium">
-                        {row.quantityUsed.toLocaleString('en-US')}
+                        {formatQty(num(row.quantityUsed))}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -419,7 +440,7 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
                       الإجمالي
                     </TableCell>
                     <TableCell className="text-right tabular-nums font-bold text-gray-900 dark:text-white">
-                      {usedFromContracts.toLocaleString('en-US')}
+                      {formatQty(usedFromContracts)}
                     </TableCell>
                   </TableRow>
                 </TableFooter>
