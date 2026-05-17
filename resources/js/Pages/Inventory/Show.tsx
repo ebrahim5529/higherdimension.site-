@@ -26,6 +26,7 @@ interface ContractUsageRow {
   contractNumber: string;
   contractTitle: string;
   customerName: string | null;
+  contractStatus: string;
   quantityUsed: number;
 }
 
@@ -96,6 +97,38 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
       RESERVED: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
     };
     return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+  };
+
+  const getContractStatusLabel = (status: string) => {
+    const statuses: Record<string, string> = {
+      ACTIVE: 'مفتوح',
+      OPEN: 'مفتوح',
+      CLOSED: 'مغلق',
+      COMPLETED: 'مغلق',
+      RENTAL_CLOSED: 'مغلق',
+      EXPIRED: 'مغلق',
+      CANCELLED: 'مغلق',
+      CLOSED_NOT_RECEIVED: 'مغلق ولم يتم الاستلام',
+    };
+    return statuses[status] || status;
+  };
+
+  const getContractStatusColor = (status: string) => {
+    switch (status) {
+      case 'ACTIVE':
+      case 'OPEN':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'CLOSED':
+      case 'COMPLETED':
+      case 'RENTAL_CLOSED':
+      case 'EXPIRED':
+      case 'CANCELLED':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'CLOSED_NOT_RECEIVED':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+    }
   };
 
   return (
@@ -266,7 +299,7 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
                 <td>{formatCurrency(scaffold.monthlyRentalPrice)}</td>
               </tr>
               <tr>
-                <th className="font-bold" colSpan={4}>
+                <th className="font-bold" colSpan={5}>
                   الكمية في العقود (جميع الحالات)
                 </th>
               </tr>
@@ -274,6 +307,7 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
                 <th>اسم العقد</th>
                 <th>العميل</th>
                 <th>رقم العقد</th>
+                <th>حالة العقد</th>
                 <th>الكمية المستخدمة</th>
               </tr>
               {contractUsages.length > 0 ? (
@@ -282,16 +316,17 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
                     <td>{row.contractTitle}</td>
                     <td>{row.customerName ?? '—'}</td>
                     <td>{row.contractNumber}</td>
+                    <td>{getContractStatusLabel(row.contractStatus)}</td>
                     <td>{formatQty(num(row.quantityUsed))}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4}>لا توجد بنود عقد مرتبطة بهذه المعدة.</td>
+                  <td colSpan={5}>لا توجد بنود عقد مرتبطة بهذه المعدة.</td>
                 </tr>
               )}
               <tr>
-                <th colSpan={3}>الإجمالي</th>
+                <th colSpan={4}>الإجمالي</th>
                 <td>{formatQty(usedFromContracts)}</td>
               </tr>
             </tbody>
@@ -413,6 +448,7 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
                     <TableHead className="text-right">اسم العقد</TableHead>
                     <TableHead className="text-right">العميل</TableHead>
                     <TableHead className="text-right">رقم العقد</TableHead>
+                    <TableHead className="text-right w-[150px]">حالة العقد</TableHead>
                     <TableHead className="text-right w-[120px]">الكمية المستخدمة</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -428,6 +464,11 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
                           {row.contractNumber}
                         </Link>
                       </TableCell>
+                      <TableCell className="text-right">
+                        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${getContractStatusColor(row.contractStatus)}`}>
+                          {getContractStatusLabel(row.contractStatus)}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-right tabular-nums font-medium">
                         {formatQty(num(row.quantityUsed))}
                       </TableCell>
@@ -436,7 +477,7 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
                 </TableBody>
                 <TableFooter>
                   <TableRow>
-                    <TableCell colSpan={3} className="text-right font-bold text-gray-900 dark:text-white">
+                    <TableCell colSpan={4} className="text-right font-bold text-gray-900 dark:text-white">
                       الإجمالي
                     </TableCell>
                     <TableCell className="text-right tabular-nums font-bold text-gray-900 dark:text-white">

@@ -265,7 +265,7 @@ class InventoryController extends Controller
         $equipmentLines = ContractEquipment::query()
             ->where('scaffold_id', $scaffold->id)
             ->with([
-                'contract:id,contract_number,title,customer_id',
+                'contract:id,contract_number,title,customer_id,status',
                 'contract.customer:id,name',
             ])
             ->orderBy('contract_id')
@@ -283,6 +283,7 @@ class InventoryController extends Controller
                     'contractId' => $contract->id,
                     'contractNumber' => $contract->contract_number,
                     'contractTitle' => $contract->title,
+                    'contractStatus' => $contract->status,
                     'customerName' => $contract->customer?->name,
                     'quantityUsed' => (int) $rows->sum('quantity'),
                 ];
