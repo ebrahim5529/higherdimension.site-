@@ -9,6 +9,14 @@ use Illuminate\Validation\ValidationException;
 class ScaffoldInventoryService
 {
     /**
+     * هل حالة العقد تعني أن الكميات مخصومة من المخزون؟
+     */
+    public static function contractStatusReservesInventory(string $status): bool
+    {
+        return in_array($status, ['ACTIVE', 'OPEN'], true);
+    }
+
+    /**
      * خصم كمية من الرصيد المتاح عند ربط المعدة بعقد.
      */
     public static function reserve(?int $scaffoldId, int $quantity): void

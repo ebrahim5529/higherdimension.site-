@@ -5,12 +5,11 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { ContractWhatsAppModalSection } from '@/components/contracts/ContractWhatsAppModalSection';
 import { showToast } from '@/hooks/use-toast';
 import {
   FileText,
   ArrowRight,
-  Send,
+  Edit,
   User,
   Calendar,
   DollarSign,
@@ -139,8 +138,6 @@ export default function ShowContract({ contract, navigation }: ShowContractProps
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [attachmentToDelete, setAttachmentToDelete] = useState<Attachment | null>(null);
-  const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
-
   const uploadForm = useForm({
     file: null as File | null,
     description: '',
@@ -334,29 +331,15 @@ export default function ShowContract({ contract, navigation }: ShowContractProps
                   <div className="flex items-center gap-3">
                     <Button
                       className="px-6 py-3 bg-[#58d2c8] hover:bg-[#4AB8B3] text-white font-medium rounded-lg transition-colors flex items-center gap-2"
-                      onClick={() => setWhatsAppModalOpen(true)}
+                      onClick={() => router.visit(`/contracts/${contract.id}/edit`)}
                     >
-                      <Send className="h-4 w-4" />
-                      إرسال سند استلام
+                      <Edit className="h-4 w-4" />
+                      تعديل العقد
                     </Button>
                   </div>
                 </div>
               </div>
             </div>
-
-            <ContractWhatsAppModalSection
-              open={whatsAppModalOpen}
-              onOpenChange={setWhatsAppModalOpen}
-              contract={{
-                id: contract.id,
-                contract_number: contract.contractNumber,
-                customer_name: contract.customerName,
-                total_amount: contract.amount,
-                contract_date: contract.createdDate || contract.startDate,
-                contract_type: contract.type,
-              }}
-              customerPhone={contract.customerPhone || ''}
-            />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <div className="space-y-6">

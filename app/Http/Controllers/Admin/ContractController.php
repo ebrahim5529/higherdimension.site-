@@ -741,15 +741,22 @@ class ContractController extends Controller
         ]);
 
         return DB::transaction(function () use ($contract, $validated) {
+            $oldStatus = $contract->status;
+            $newStatus = $validated['status'] ?? $oldStatus;
+            $oldHeldInventory = ScaffoldInventoryService::contractStatusReservesInventory($oldStatus);
+            $newHoldsInventory = ScaffoldInventoryService::contractStatusReservesInventory($newStatus);
+
             // حساب المبلغ الإجمالي
             $equipmentTotal = collect($validated['rental_details'])->sum('total');
             $transportCost = $validated['transport_and_installation_cost'] ?? 0;
             $discount = $validated['total_discount'] ?? 0;
             $totalAmount = $equipmentTotal + $transportCost - $discount;
 
-            // إرجاع كميات بنود العقد القديمة إلى المخزون قبل الحذف
-            foreach ($contract->equipment as $line) {
-                ScaffoldInventoryService::release($line->scaffold_id, (int) $line->quantity);
+            // إرجاع كميات بنود العقد القديمة إلى المخزون فقط إذا كانت محجوزة سابقاً
+            if ($oldHeldInventory) {
+                foreach ($contract->equipment as $line) {
+                    ScaffoldInventoryService::release($line->scaffold_id, (int) $line->quantity);
+                }
             }
 
             // تحديث بيانات العقد
@@ -765,7 +772,7 @@ class ContractController extends Controller
                 'total_discount' => $discount,
                 'contract_notes' => $validated['contract_notes'] ?? null,
                 'amount' => $totalAmount,
-                'status' => $validated['status'] ?? $contract->status,
+                'status' => $newStatus,
             ]);
 
             // حذف المعدات القديمة وإضافة الجديدة
@@ -773,7 +780,7 @@ class ContractController extends Controller
             foreach ($validated['rental_details'] as $rental) {
                 $scaffoldId = isset($rental['scaffold_id']) ? (int) $rental['scaffold_id'] : null;
                 $qty = (int) $rental['quantity'];
-                if ($scaffoldId) {
+                if ($newHoldsInventory && $scaffoldId) {
                     ScaffoldInventoryService::reserve($scaffoldId, $qty);
                 }
 
