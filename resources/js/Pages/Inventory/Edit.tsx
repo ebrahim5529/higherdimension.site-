@@ -6,6 +6,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DecimalInput, IntegerInput } from '@/components/ui/numeric-input';
 import { showToast } from '@/hooks/use-toast';
 import { Package, Save, ArrowRight, X } from 'lucide-react';
 import { scaffoldStatuses } from '@/data/inventoryData';
@@ -110,11 +111,10 @@ export default function EditScaffold({ scaffold }: EditScaffoldProps) {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     الكمية *
                   </label>
-                  <Input
-                    type="number"
-                    min="1"
+                  <IntegerInput
+                    min={1}
                     value={data.quantity}
-                    onChange={(e) => setData('quantity', parseInt(e.target.value) || 1)}
+                    onValueChange={(v) => setData('quantity', v)}
                     placeholder="1"
                     className={errors.quantity ? 'border-red-500' : ''}
                   />
@@ -174,12 +174,10 @@ export default function EditScaffold({ scaffold }: EditScaffoldProps) {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     قيمة الإيجار اليومي *
                   </label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
+                  <DecimalInput
+                    min={0}
                     value={data.daily_rental_price}
-                    onChange={(e) => setData('daily_rental_price', parseFloat(e.target.value) || 0)}
+                    onValueChange={(v) => setData('daily_rental_price', v)}
                     placeholder="50.00"
                     className={errors.daily_rental_price ? 'border-red-500' : ''}
                   />
@@ -191,12 +189,10 @@ export default function EditScaffold({ scaffold }: EditScaffoldProps) {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     قيمة الإيجار الشهري *
                   </label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
+                  <DecimalInput
+                    min={0}
                     value={data.monthly_rental_price}
-                    onChange={(e) => setData('monthly_rental_price', parseFloat(e.target.value) || 0)}
+                    onValueChange={(v) => setData('monthly_rental_price', v)}
                     placeholder="1200.00"
                     className={errors.monthly_rental_price ? 'border-red-500' : ''}
                   />
