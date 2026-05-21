@@ -1,6 +1,8 @@
 /** @jsxImportSource react */
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { showToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,7 +16,7 @@ import {
 } from '@/components/ui/table';
 import {
   Package,
-  ArrowRight,
+  ArrowLeft,
   Printer,
   Edit,
   DollarSign,
@@ -51,6 +53,17 @@ interface ShowScaffoldProps {
 }
 
 export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
+  const { flash } = usePage().props as { flash?: { success?: string; error?: string } };
+
+  useEffect(() => {
+    if (flash?.success) {
+      showToast.success('نجح', flash.success);
+    }
+    if (flash?.error) {
+      showToast.error('خطأ', flash.error);
+    }
+  }, [flash]);
+
   const num = (v: unknown) => {
     const n = Number(v);
     return Number.isFinite(n) ? n : 0;
@@ -339,7 +352,7 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
           <div className="flex items-center justify-between no-print">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="sm" onClick={() => router.visit('/inventory')}>
-                <ArrowRight className="h-4 w-4" />
+                <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">

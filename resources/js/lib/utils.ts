@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { ChangeEvent } from "react";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -10,6 +11,18 @@ export function cn(...inputs: ClassValue[]) {
  * @param text النص الذي يحتوي على أرقام (عربية أو إنجليزية)
  * @returns النص مع تحويل الأرقام العربية إلى إنجليزية
  */
+/**
+ * قراءة قيمة حقل نصي مع تحويل الأرقام العربية (للتوافق بين كل الشاشات).
+ */
+export function readInputValue(
+  e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  normalizeNumerals = true,
+): string {
+  const raw = e.target.value;
+
+  return normalizeNumerals ? convertArabicToEnglishNumbers(raw) : raw;
+}
+
 export function convertArabicToEnglishNumbers(text: string): string {
   if (!text) return text;
   

@@ -159,7 +159,7 @@ export default function InventoryIndex({ scaffolds, stats }: InventoryIndexProps
         {/* العنوان */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
+            <BarChart3 className="h-5 w-5" />
             <h2 className="text-xl font-semibold">المخزون</h2>
           </div>
           <Button

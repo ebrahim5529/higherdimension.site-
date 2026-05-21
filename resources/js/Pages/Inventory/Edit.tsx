@@ -3,12 +3,13 @@ import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
 import React from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { FormPageHeader } from '@/components/layout/FormPageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DecimalInput, IntegerInput } from '@/components/ui/numeric-input';
 import { showToast } from '@/hooks/use-toast';
-import { Package, Save, ArrowRight, X } from 'lucide-react';
+import { Package, Save, X } from 'lucide-react';
 import { scaffoldStatuses } from '@/data/inventoryData';
 
 interface Scaffold {
@@ -70,18 +71,12 @@ export default function EditScaffold({ scaffold }: EditScaffoldProps) {
     <DashboardLayout>
       <Head title={`تعديل المعدة: ${scaffold.scaffoldNumber}`} />
       <div className="space-y-6 mt-2 -mx-1 sm:-mx-2 lg:-mx-3 xl:-mx-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => router.visit('/inventory')}>
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">تعديل معدة</h1>
-              <p className="text-gray-600 dark:text-gray-400">تعديل بيانات المعدة</p>
-            </div>
-          </div>
-        </div>
+        <FormPageHeader
+          title="تعديل معدة"
+          subtitle={`تعديل بيانات المعدة: ${scaffold.scaffoldNumber}`}
+          backHref="/inventory"
+          icon={Package}
+        />
 
         {/* النموذج */}
         <Card className="p-6">
