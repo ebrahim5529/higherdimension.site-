@@ -5,24 +5,37 @@ import { convertArabicToEnglishNumbers } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
 type NumericInputProps = Omit<React.ComponentProps<typeof Input>, 'type' | 'value' | 'onChange'> & {
-  value: number;
+  value: number | string;
   onValueChange: (value: number) => void;
 };
+
+function toNumber(value: number | string | undefined | null, fallback = 0): number {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+
+  const parsed = typeof value === 'number' ? value : Number(value);
+
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
 
 /**
  * حقل عدد صحيح (نصي) — يمنع تغيّر القيمة بعجلة الماوس على حقول type="number".
  */
 export function IntegerInput({ value, onValueChange, className, onBlur, ...props }: NumericInputProps) {
+  const numericValue = toNumber(value, 0);
+
   const [displayValue, setDisplayValue] = useState<string>(
-    value !== undefined && value !== null ? String(value) : '',
+    numericValue !== 0 ? String(Math.trunc(numericValue)) : '',
   );
 
   useEffect(() => {
     const parsed = displayValue === '' ? NaN : Number.parseInt(displayValue, 10);
-    if (Number.isNaN(parsed) ? value !== 0 : parsed !== value) {
-      setDisplayValue(value !== undefined && value !== null ? String(value) : '');
+    const current = Math.trunc(numericValue);
+    if (Number.isNaN(parsed) ? current !== 0 : parsed !== current) {
+      setDisplayValue(current !== 0 ? String(current) : '');
     }
-  }, [value]);
+  }, [numericValue]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = convertArabicToEnglishNumbers(e.target.value);
@@ -70,16 +83,18 @@ export function IntegerInput({ value, onValueChange, className, onBlur, ...props
  * حقل عدد عشري (نصي) — يمنع فقدان القيمة أثناء الكتابة وتغيّرها بعجلة الماوس.
  */
 export function DecimalInput({ value, onValueChange, className, onBlur, ...props }: NumericInputProps) {
+  const numericValue = toNumber(value, 0);
+
   const [displayValue, setDisplayValue] = useState<string>(
-    value !== undefined && value !== null ? String(value) : '',
+    numericValue !== 0 ? String(numericValue) : '',
   );
 
   useEffect(() => {
     const parsed = displayValue === '' || displayValue === '.' ? NaN : Number.parseFloat(displayValue);
-    if (Number.isNaN(parsed) ? value !== 0 : parsed !== value) {
-      setDisplayValue(value !== undefined && value !== null ? String(value) : '');
+    if (Number.isNaN(parsed) ? numericValue !== 0 : parsed !== numericValue) {
+      setDisplayValue(numericValue !== 0 ? String(numericValue) : '');
     }
-  }, [value]);
+  }, [numericValue]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = convertArabicToEnglishNumbers(e.target.value);

@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ContractEquipment;
 use App\Models\Scaffold;
+use App\Services\ScaffoldInventoryService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class InventoryController extends Controller
@@ -377,10 +379,22 @@ class InventoryController extends Controller
             $validated['size'] = json_encode($validated['size']);
         }
 
-        // تحديث الحقول الأساسية
+        $reservedQuantity = ScaffoldInventoryService::reservedQuantity((int) $scaffold->id);
+        $newQuantity = (int) $validated['quantity'];
+
+        if ($newQuantity < $reservedQuantity) {
+            throw ValidationException::withMessages([
+                'quantity' => "لا يمكن أن تكون الكمية الإجمالية ({$newQuantity}) أقل من الكمية المرتبطة بالعقود ({$reservedQuantity}).",
+            ]);
+        }
+
+        $availableQuantity = ScaffoldInventoryService::availableForQuantity($newQuantity, $reservedQuantity);
+
+        // تحديث الحقول الأساسية مع مزامنة الكمية المتاحة
         $scaffold->update([
             'scaffold_number' => $validated['scaffold_number'],
-            'quantity' => $validated['quantity'],
+            'quantity' => $newQuantity,
+            'available_quantity' => $availableQuantity,
             'description_ar' => $validated['description_ar'],
             'description_en' => $validated['description_en'],
             'daily_rental_price' => $validated['daily_rental_price'],

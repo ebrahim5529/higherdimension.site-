@@ -41,11 +41,11 @@ export default function EditScaffold({ scaffold }: EditScaffoldProps) {
 
   const { data, setData, put, processing, errors } = useForm({
     scaffold_number: scaffold.scaffoldNumber || '',
-    quantity: scaffold.quantity || 1,
+    quantity: Number(scaffold.quantity) || 1,
     description_ar: scaffold.descriptionAr || '',
     description_en: scaffold.descriptionEn || '',
-    daily_rental_price: scaffold.dailyRentalPrice || 0,
-    monthly_rental_price: scaffold.monthlyRentalPrice || 0,
+    daily_rental_price: Number(scaffold.dailyRentalPrice) || 0,
+    monthly_rental_price: Number(scaffold.monthlyRentalPrice) || 0,
     status: scaffold.status || 'AVAILABLE',
   });
 

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ContractEquipment;
 use App\Models\Scaffold;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -14,6 +15,24 @@ class ScaffoldInventoryService
     public static function contractStatusReservesInventory(string $status): bool
     {
         return in_array($status, ['ACTIVE', 'OPEN'], true);
+    }
+
+    /**
+     * مجموع الكميات المرتبطة بالعقود لمعدة معيّنة.
+     */
+    public static function reservedQuantity(int $scaffoldId): int
+    {
+        return (int) ContractEquipment::query()
+            ->where('scaffold_id', $scaffoldId)
+            ->sum('quantity');
+    }
+
+    /**
+     * الكمية المتاحة = الإجمالي − المحجوز (لا تقل عن 0).
+     */
+    public static function availableForQuantity(int $totalQuantity, int $reservedQuantity): int
+    {
+        return max(0, $totalQuantity - $reservedQuantity);
     }
 
     /**
