@@ -146,4 +146,52 @@ class InventoryUpdateAvailableQuantityTest extends TestCase
         $this->assertEquals(100, $scaffold->quantity);
         $this->assertEquals(75, $scaffold->available_quantity);
     }
+
+    public function test_closed_not_received_contract_reduces_available_on_inventory_update(): void
+    {
+        $this->actingAs($this->user);
+
+        $customer = Customer::factory()->create();
+        $scaffold = Scaffold::create([
+            'scaffold_number' => 'SC-UPD-004',
+            'quantity' => 100,
+            'available_quantity' => 75,
+            'daily_rental_price' => 10,
+            'monthly_rental_price' => 200,
+            'description_ar' => 'وصف',
+            'description_en' => 'desc',
+        ]);
+
+        $contract = Contract::factory()->create([
+            'customer_id' => $customer->id,
+            'user_id' => $this->user->id,
+            'status' => 'CLOSED_NOT_RECEIVED',
+            'delivery_address' => 'مسقط',
+        ]);
+
+        ContractEquipment::create([
+            'contract_id' => $contract->id,
+            'scaffold_id' => $scaffold->id,
+            'quantity' => 25,
+            'daily_rate' => 10,
+            'monthly_rate' => 200,
+            'total' => 1000,
+        ]);
+
+        $response = $this->put(route('inventory.update', $scaffold->id), [
+            'scaffold_number' => $scaffold->scaffold_number,
+            'quantity' => 30000,
+            'description_ar' => 'وصف',
+            'description_en' => 'desc',
+            'daily_rental_price' => 10,
+            'monthly_rental_price' => 200,
+            'status' => 'AVAILABLE',
+        ]);
+
+        $response->assertRedirect(route('inventory.index'));
+
+        $scaffold->refresh();
+        $this->assertEquals(30000, $scaffold->quantity);
+        $this->assertEquals(29975, $scaffold->available_quantity);
+    }
 }

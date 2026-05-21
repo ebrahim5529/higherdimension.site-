@@ -836,8 +836,10 @@ class ContractController extends Controller
         $contract = Contract::with('equipment')->findOrFail($id);
 
         DB::transaction(function () use ($contract) {
-            foreach ($contract->equipment as $line) {
-                ScaffoldInventoryService::release($line->scaffold_id, (int) $line->quantity);
+            if (ScaffoldInventoryService::contractStatusReservesInventory($contract->status)) {
+                foreach ($contract->equipment as $line) {
+                    ScaffoldInventoryService::release($line->scaffold_id, (int) $line->quantity);
+                }
             }
             $contract->delete();
         });

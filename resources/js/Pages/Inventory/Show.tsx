@@ -36,6 +36,7 @@ interface Scaffold {
   quantity: number;
   availableQuantity: number;
   usedQuantityDifference: number;
+  usedQuantityFromActiveContracts: number;
   usedQuantityFromContracts: number;
   contractUsages: ContractUsageRow[];
   descriptionAr: string;
@@ -426,7 +427,7 @@ export default function ShowScaffold({ scaffold }: ShowScaffoldProps) {
                 الكمية المؤجرة (جميع العقود)
               </CardTitle>
               <CardDescription className="text-right text-xs leading-relaxed max-w-xl">
-                يُحسب المجموع من كل بنود العقود المرتبطة بهذه المعدة، لجميع حالات العقد.
+                العقود «مغلقة ولم يتم الاستلام» والعقود المفتوحة تُخصم من الكمية المتاحة. العقود المغلقة (بعد الاستلام) لا تُخصم.
               </CardDescription>
             </div>
             {contractUsages.length > 0 && (

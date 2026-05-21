@@ -72,6 +72,56 @@ class ContractUpdateInventoryTest extends TestCase
         $this->assertEquals('CLOSED', $contract->fresh()->status);
     }
 
+    public function test_closing_contract_as_not_received_keeps_equipment_reserved_in_inventory(): void
+    {
+        $this->actingAs($this->user);
+
+        $customer = Customer::factory()->create();
+        $scaffold = Scaffold::create([
+            'scaffold_number' => 'SC-TEST-003',
+            'quantity' => 100,
+            'available_quantity' => 100,
+            'daily_rental_price' => 10,
+            'monthly_rental_price' => 200,
+            'description_ar' => 'وصف',
+            'description_en' => 'desc',
+        ]);
+
+        $contract = Contract::factory()->active()->create([
+            'customer_id' => $customer->id,
+            'user_id' => $this->user->id,
+            'delivery_address' => 'مسقط',
+        ]);
+
+        $rentedQty = 25;
+        $scaffold->update(['available_quantity' => 100 - $rentedQty]);
+
+        ContractEquipment::create([
+            'contract_id' => $contract->id,
+            'scaffold_id' => $scaffold->id,
+            'item_code' => 'SC-TEST-003',
+            'item_description' => 'وصف',
+            'start_date' => now()->format('Y-m-d'),
+            'end_date' => now()->addMonth()->format('Y-m-d'),
+            'duration' => 1,
+            'duration_type' => 'monthly',
+            'quantity' => $rentedQty,
+            'daily_rate' => 10,
+            'monthly_rate' => 200,
+            'total' => 200,
+        ]);
+
+        $payload = $this->buildUpdatePayload($contract, $customer, $scaffold, $rentedQty, 'CLOSED_NOT_RECEIVED');
+
+        $response = $this->put(route('contracts.update', $contract->id), $payload);
+
+        $response->assertRedirect();
+        $scaffold->refresh();
+
+        $this->assertEquals(75, $scaffold->available_quantity);
+        $this->assertEquals('CLOSED_NOT_RECEIVED', $contract->fresh()->status);
+    }
+
     public function test_editing_closed_contract_does_not_double_release_inventory(): void
     {
         $this->actingAs($this->user);

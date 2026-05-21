@@ -10,21 +10,49 @@ use Illuminate\Validation\ValidationException;
 class ScaffoldInventoryService
 {
     /**
+     * حالات العقود التي تخصم الكمية من المخزون المتاح.
+     *
+     * @return list<string>
+     */
+    public static function inventoryReservingContractStatuses(): array
+    {
+        return ['ACTIVE', 'OPEN', 'CLOSED_NOT_RECEIVED'];
+    }
+
+    /**
      * هل حالة العقد تعني أن الكميات مخصومة من المخزون؟
      */
     public static function contractStatusReservesInventory(string $status): bool
     {
-        return in_array($status, ['ACTIVE', 'OPEN'], true);
+        return in_array($status, self::inventoryReservingContractStatuses(), true);
     }
 
     /**
-     * مجموع الكميات المرتبطة بالعقود لمعدة معيّنة.
+     * مجموع الكميات المحجوزة من العقود المفتوحة أو «مغلقة ولم يتم الاستلام».
      */
     public static function reservedQuantity(int $scaffoldId): int
     {
         return (int) ContractEquipment::query()
             ->where('scaffold_id', $scaffoldId)
+            ->whereHas('contract', function ($query) {
+                $query->whereIn('status', self::inventoryReservingContractStatuses());
+            })
             ->sum('quantity');
+    }
+
+    /**
+     * مزامنة available_quantity مع الإجمالي − المحجوز من العقود التي تخصم المخزون.
+     */
+    public static function syncAvailableQuantity(Scaffold $scaffold): void
+    {
+        $expected = self::availableForQuantity(
+            (int) $scaffold->quantity,
+            self::reservedQuantity((int) $scaffold->id),
+        );
+
+        if ((int) $scaffold->available_quantity !== $expected) {
+            $scaffold->update(['available_quantity' => $expected]);
+        }
     }
 
     /**

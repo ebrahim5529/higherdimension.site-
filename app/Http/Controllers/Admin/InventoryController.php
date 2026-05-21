@@ -262,6 +262,9 @@ class InventoryController extends Controller
     public function show(string $id)
     {
         $scaffold = Scaffold::with('supplier')->findOrFail($id);
+        ScaffoldInventoryService::syncAvailableQuantity($scaffold);
+        $scaffold->refresh();
+
         $size = is_array($scaffold->size) ? $scaffold->size : json_decode($scaffold->size ?? '{}', true);
 
         $equipmentLines = ContractEquipment::query()
@@ -297,6 +300,10 @@ class InventoryController extends Controller
         $quantityTotal = (int) $scaffold->quantity;
         $availableTotal = (int) $scaffold->available_quantity;
         $usedQuantityDifference = max(0, $quantityTotal - $availableTotal);
+        $activeContractStatuses = ScaffoldInventoryService::inventoryReservingContractStatuses();
+        $usedQuantityFromActiveContracts = (int) collect($contractUsages)
+            ->filter(fn (array $row) => in_array($row['contractStatus'], $activeContractStatuses, true))
+            ->sum('quantityUsed');
         $usedQuantityFromContracts = (int) collect($contractUsages)->sum('quantityUsed');
 
         return Inertia::render('Inventory/Show', [
@@ -311,6 +318,7 @@ class InventoryController extends Controller
                 'quantity' => $scaffold->quantity,
                 'availableQuantity' => $scaffold->available_quantity,
                 'usedQuantityDifference' => $usedQuantityDifference,
+                'usedQuantityFromActiveContracts' => $usedQuantityFromActiveContracts,
                 'usedQuantityFromContracts' => $usedQuantityFromContracts,
                 'contractUsages' => $contractUsages,
                 'location' => $scaffold->location,
