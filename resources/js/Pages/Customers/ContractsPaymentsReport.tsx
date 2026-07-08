@@ -38,6 +38,7 @@ interface ContractReportRow {
   title: string;
   status: string;
   statusLabel: string;
+  rentedQuantity: number;
   startDate: string | null;
   endDate: string | null;
   amount: number;
@@ -339,6 +340,10 @@ export default function ContractsPaymentsReport({
                         </div>
                       </div>
                       <div>
+                        <div className="text-gray-500 dark:text-gray-400 text-xs">كمية المعدات المستأجرة</div>
+                        <div className="font-semibold tabular-nums">{contract.rentedQuantity}</div>
+                      </div>
+                      <div>
                         <div className="text-gray-500 dark:text-gray-400 text-xs">قيمة العقد</div>
                         <div className="font-semibold tabular-nums">{formatCurrency(contract.amount)}</div>
                       </div>
@@ -450,14 +455,18 @@ export default function ContractsPaymentsReport({
                     <tr>
                       <th>تاريخ البدء</th>
                       <td>{contract.startDate || '—'}</td>
-                      <th>تاريخ الانتهاء</th>
-                      <td>{contract.endDate || '—'}</td>
+                      <th>كمية المعدات المستأجرة</th>
+                      <td>{contract.rentedQuantity}</td>
                     </tr>
                     <tr>
+                      <th>تاريخ الانتهاء</th>
+                      <td>{contract.endDate || '—'}</td>
                       <th>قيمة العقد</th>
                       <td>{formatCurrency(contract.amount)}</td>
+                    </tr>
+                    <tr>
                       <th>المدفوع / المتبقي</th>
-                      <td>
+                      <td colSpan={3}>
                         {formatCurrency(contract.totalPaid)} / {formatCurrency(contract.remaining)}
                       </td>
                     </tr>

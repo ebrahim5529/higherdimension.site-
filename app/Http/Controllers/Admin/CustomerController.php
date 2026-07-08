@@ -425,6 +425,7 @@ class CustomerController extends Controller
                 ->with([
                     'contracts' => fn ($q) => $q->orderByDesc('id'),
                     'contracts.contractPayments',
+                    'contracts.equipment',
                 ])
                 ->find((int) $rawId);
 
@@ -441,6 +442,7 @@ class CustomerController extends Controller
                 $contractsPayload = $customer->contracts->map(function ($contract) {
                     $paid = (float) $contract->contractPayments->sum('amount');
                     $amount = (float) ($contract->amount ?? 0);
+                    $rentedQuantity = (int) $contract->equipment->sum('quantity');
 
                     return [
                         'id' => (int) $contract->id,
@@ -448,6 +450,7 @@ class CustomerController extends Controller
                         'title' => (string) ($contract->title ?? ''),
                         'status' => (string) ($contract->status ?? ''),
                         'statusLabel' => $this->getContractStatusLabel((string) $contract->status),
+                        'rentedQuantity' => $rentedQuantity,
                         'startDate' => $contract->start_date?->format('Y-m-d'),
                         'endDate' => $contract->end_date?->format('Y-m-d'),
                         'amount' => $amount,
