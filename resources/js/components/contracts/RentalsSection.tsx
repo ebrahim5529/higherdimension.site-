@@ -3,9 +3,11 @@ import { RentalDetail, Scaffold } from '@/types/contracts';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { ScaffoldSelector } from '@/components/features/ScaffoldSelector';
 import { convertArabicToEnglishNumbers } from '@/lib/utils';
-import { Trash2, Plus } from 'lucide-react';
+import { Trash2, Plus, CalendarIcon } from 'lucide-react';
 
 interface DecimalInputProps extends React.ComponentProps<typeof Input> {
   value: number;
@@ -68,6 +70,23 @@ export function RentalsSection({
   onScaffoldChange,
   errors = {},
 }: RentalsSectionProps) {
+  const formatDateDisplay = (value: string) => {
+    if (!value) {
+      return '';
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+
+    return `${day}/${month}/${year}`;
+  };
+
   return (
     <Card className="p-6 mb-6">
       <div className="border-b border-gray-200 pb-4 mb-6 flex items-center justify-between">
@@ -122,18 +141,40 @@ export function RentalsSection({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   تاريخ بداية الإيجار *
                 </label>
-                <Input
-                  type="date"
-                  value={rental.startDate}
-                  onChange={(e) => onUpdateRentalDetail(rental.id, 'startDate', e.target.value)}
-                  className={`w-full bg-white ${errors[`rental_details.${index}.start_date`] ? 'border-red-500' : ''}`}
-                  dir="ltr"
-                  lang="en"
-                  required
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={`w-full justify-between bg-white font-normal ${errors[`rental_details.${index}.start_date`] ? 'border-red-500' : ''}`}
+                    >
+                      <span dir="ltr">{formatDateDisplay(rental.startDate) || 'اختر التاريخ'}</span>
+                      <CalendarIcon className="h-4 w-4 text-gray-500" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={rental.startDate ? new Date(rental.startDate) : undefined}
+                      onSelect={(date) => {
+                        if (!date) {
+                          return;
+                        }
+
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+
+                        onUpdateRentalDetail(rental.id, 'startDate', `${year}-${month}-${day}`);
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
                 {errors[`rental_details.${index}.start_date`] && (
                   <div className="text-red-500 text-xs mt-1">{errors[`rental_details.${index}.start_date`]}</div>
                 )}
+                <p className="text-xs text-gray-500 mt-1">الاختيار بصيغة: يوم/شهر/سنة</p>
               </div>
 
               {/* المدة */}
@@ -273,15 +314,10 @@ export function RentalsSection({
                   تاريخ النهاية
                  
                 </label>
-                <Input
-                  type="date"
-                  value={rental.endDate || ''}
-                  className="w-full bg-gray-100"
-                  dir="ltr"
-                  lang="en"
-                  readOnly
-                  placeholder={rental.endDate ? '' : 'سيتم حسابه تلقائياً'}
-                />
+                <div className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-gray-100 px-3 py-2 text-sm">
+                  <span dir="ltr">{rental.endDate ? formatDateDisplay(rental.endDate) : 'سيتم حسابه تلقائياً'}</span>
+                  <CalendarIcon className="h-4 w-4 text-gray-400" />
+                </div>
                 {errors[`rental_details.${index}.end_date`] && (
                   <div className="text-red-500 text-xs mt-1">{errors[`rental_details.${index}.end_date`]}</div>
                 )}

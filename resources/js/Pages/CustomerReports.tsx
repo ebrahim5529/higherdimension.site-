@@ -33,6 +33,7 @@ interface CustomerReportsProps {
       id: number;
       contractNumber: string;
       status: string;
+      itemsCount: number;
       startDate: string | null;
       endDate: string | null;
       customerName: string;
@@ -365,6 +366,7 @@ export default function CustomerReports({ stats, customers, contracts, filters }
                     <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-200">رقم العقد</th>
                     <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-200">العميل</th>
                     <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-200">الحالة</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-200">كمية المعدات المستأجرة</th>
                     <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-200">تاريخ البدء</th>
                     <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-200">تاريخ الانتهاء</th>
                     <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-200">المبلغ</th>
@@ -392,6 +394,7 @@ export default function CustomerReports({ stats, customers, contracts, filters }
                       <td className="px-3 py-2 text-sm whitespace-nowrap">
                         {CONTRACT_STATUS_LABELS[c.status] || c.status}
                       </td>
+                      <td className="px-3 py-2 text-sm whitespace-nowrap">{c.itemsCount}</td>
                       <td className="px-3 py-2 text-sm whitespace-nowrap">{c.startDate || '—'}</td>
                       <td className="px-3 py-2 text-sm whitespace-nowrap">{c.endDate || '—'}</td>
                       <td className="px-3 py-2 text-sm whitespace-nowrap">{formatCurrency(c.amount)}</td>
@@ -399,7 +402,7 @@ export default function CustomerReports({ stats, customers, contracts, filters }
                   ))}
                   {contracts.data.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                      <td colSpan={8} className="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
                         لا توجد عقود
                       </td>
                     </tr>
@@ -517,9 +520,10 @@ export default function CustomerReports({ stats, customers, contracts, filters }
                 <th className="w-[16%]">رقم العقد</th>
                 <th className="w-[22%]">العميل</th>
                 <th className="w-[14%]">الحالة</th>
+                <th className="w-[10%]">كمية المعدات المستأجرة</th>
                 <th className="w-[14%]">تاريخ البدء</th>
-                <th className="w-[14%]">تاريخ الانتهاء</th>
-                <th className="w-[20%]">المبلغ</th>
+                <th className="w-[12%]">تاريخ الانتهاء</th>
+                <th className="w-[12%]">المبلغ</th>
               </tr>
             </thead>
             <tbody>
@@ -528,6 +532,7 @@ export default function CustomerReports({ stats, customers, contracts, filters }
                   <td>{c.contractNumber || '-'}</td>
                   <td>{c.customerName}</td>
                   <td>{CONTRACT_STATUS_LABELS[c.status] || c.status}</td>
+                  <td>{c.itemsCount}</td>
                   <td>{c.startDate || '—'}</td>
                   <td>{c.endDate || '—'}</td>
                   <td>{formatCurrency(c.amount)}</td>
@@ -535,7 +540,7 @@ export default function CustomerReports({ stats, customers, contracts, filters }
               ))}
               {selectedContracts.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-center">لا توجد عقود محددة</td>
+                  <td colSpan={7} className="text-center">لا توجد عقود محددة</td>
                 </tr>
               )}
             </tbody>

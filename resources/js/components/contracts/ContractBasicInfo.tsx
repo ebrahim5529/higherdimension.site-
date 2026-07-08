@@ -1,9 +1,12 @@
 /** @jsxImportSource react */
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { NationalitySelector } from '@/components/features/NationalitySelector';
 import { AddressSelector } from '@/components/features/AddressSelector';
 import { Customer } from '@/types/contracts';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { CalendarIcon } from 'lucide-react';
 
 interface ContractBasicInfoProps {
     contractDate: string;
@@ -57,6 +60,23 @@ export function ContractBasicInfo({
     errors,
     actions,
 }: ContractBasicInfoProps) {
+    const formatContractDate = (value: string): string => {
+        if (!value) {
+            return '';
+        }
+
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return value;
+        }
+
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+
+        return `${day}/${month}/${year}`;
+    };
+
     return (
         <Card className="p-6 mb-6">
             <div className="border-b border-gray-200 pb-4 mb-6">
@@ -66,18 +86,42 @@ export function ContractBasicInfo({
                 {/* تاريخ العقد */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">تاريخ العقد *</label>
-                    <Input
-                        type="date"
-                        value={contractDate}
-                        onChange={(e) => actions.setContractDate(e.target.value)}
-                        className={`w-full bg-white ${errors.contract_date ? 'border-red-500' : ''}`}
-                        dir="ltr"
-                        lang="en"
-                        required
-                    />
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className={`w-full justify-between bg-white text-left font-normal ${errors.contract_date ? 'border-red-500' : ''}`}
+                                disabled={processing}
+                            >
+                                <span dir="ltr">{formatContractDate(contractDate) || 'اختر التاريخ'}</span>
+                                <CalendarIcon className="h-4 w-4 text-gray-500" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                mode="single"
+                                selected={contractDate ? new Date(contractDate) : undefined}
+                                onSelect={(date) => {
+                                    if (!date) {
+                                        return;
+                                    }
+
+                                    const year = date.getFullYear();
+                                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                                    const day = String(date.getDate()).padStart(2, '0');
+
+                                    actions.setContractDate(`${year}-${month}-${day}`);
+                                    actions.clearErrors('contract_date');
+                                }}
+                                initialFocus
+                            />
+                        </PopoverContent>
+                    </Popover>
                     {errors.contract_date && (
                         <div className="text-red-500 text-sm mt-1 font-medium">{errors.contract_date}</div>
                     )}
+                    <p className="text-xs text-gray-500 mt-1">الاختيار بصيغة: يوم/شهر/سنة</p>
                 </div>
 
                 {/* رقم العقد */}

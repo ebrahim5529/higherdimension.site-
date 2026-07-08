@@ -95,6 +95,7 @@ class CustomerReportsController extends Controller
 
         $contracts = Contract::query()
             ->with(['customer'])
+            ->withSum('equipment', 'quantity')
             ->when($fromDate, function ($q) use ($fromDate) {
                 $q->whereDate('start_date', '>=', $fromDate);
             })
@@ -122,6 +123,7 @@ class CustomerReportsController extends Controller
                     'id' => (int) $contract->id,
                     'contractNumber' => (string) ($contract->contract_number ?? ''),
                     'status' => (string) ($contract->status ?? ''),
+                    'itemsCount' => (int) ($contract->equipment_sum_quantity ?? 0),
                     'startDate' => $contract->start_date?->format('Y-m-d'),
                     'endDate' => $contract->end_date?->format('Y-m-d'),
                     'customerName' => (string) ($contract->customer?->name ?? 'غير معروف'),
